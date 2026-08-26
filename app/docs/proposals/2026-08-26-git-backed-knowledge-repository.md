@@ -8,7 +8,6 @@ tags: []
 aliases:
   - Use Git and Git LFS for the Knowledge Repository
   - Add Git-based backend support
-  - Import PDFs as managed or linked assets
 targets:
   - app/docs/adr/0005-use-git-and-git-lfs-for-repository-storage.md
   - app/docs/adr/0006-keep-knowledge-repositories-application-independent.md
@@ -22,7 +21,8 @@ targets:
   - app/docs/architecture/v1-ui/code-map.md
   - app/docs/agents/knowledge-base.md
   - app/docs/agents/software-development.md
-  - knowledge-repository/templates/source.md
+  - README.md
+  - knowledge-repository/README.md
 ---
 
 # Use an application-independent Git Repository Format
@@ -33,11 +33,11 @@ Define a versioned Galaxy Brain Repository Format as the application-independent
 
 Make a local Git working tree the production Knowledge Repository and use Git commits for durable Governed Knowledge versions. Support repository-managed large binaries through standard Git LFS pointers and committed `.gitattributes` policy, with GitHub interoperability but no GitHub-specific knowledge model.
 
-Add an **Add PDF** flow, also discoverable as “Import PDF,” that always creates a portable Source Record and asks the user to choose the Source Asset mode: copy it into the repository and manage it with Git LFS, or leave it in the broader filesystem and resolve it through machine-local configuration. Neither mode commits a machine-specific path.
+Leave PDF-specific import behavior, the `Source Asset` term, and source-template fields to the dependent [PDF-import proposal](2026-08-26-pdf-import-with-managed-or-linked-assets.md). This proposal owns only the application-independent repository contract and generic Git/LFS infrastructure that the PDF proposal consumes.
 
 Require compatibility checks before writes, preservation of unknown repository content, and explicit, previewed, reversible format migrations. This proposal contains the complete diff and does not authorize applying it until explicit final approval.
 
-If both this proposal and [Resolve V1 document clarity and consistency issues](2026-08-26-document-review-concerns.md) are approved, apply the document-review proposal first. This diff is verified against both the current documents and that post-review state.
+Apply the proposals in this order: [Resolve V1 document clarity and consistency issues](2026-08-26-document-review-concerns.md), this Repository Format proposal, then the dependent [PDF-import proposal](2026-08-26-pdf-import-with-managed-or-linked-assets.md). This diff is verified against the post-document-review state and must be revalidated before approval.
 
 ## Rationale
 
@@ -45,7 +45,7 @@ Knowledge should outlive any Workbench implementation. A documented portable for
 
 Git makes the repository's existing versioned and auditable operating model explicit. Git LFS allows intentionally managed large binaries without ordinary-Git blob growth, while a separate format version lets application releases evolve independently of knowledge files.
 
-The explicit PDF choice lets users trade repository portability and LFS storage against keeping a large local file in place. A single portable Source Record model keeps annotations and citations stable when either kind of asset is unavailable or later relinked.
+The dependent PDF-import proposal can build on this contract to let users trade repository portability and LFS storage against keeping a large local file in place.
 
 ## Evidence
 
@@ -58,23 +58,21 @@ The explicit PDF choice lets users trade repository portability and LFS storage 
 
 **Interpretation — user:** knowledge files must use a standardized format and remain logically and physically distinct from application files so users can update the application while retaining the same knowledge base.
 
-**Interpretation — user:** adding a PDF must let the user choose between Git LFS management and tracking the PDF's location elsewhere in the operating-system filesystem.
-
 **Inference — agent:** “standardized” is best represented by a documented Galaxy Brain Repository Format built from UTF-8 Markdown, YAML, Git, and optional Git LFS, with a root format-version declaration and preservation rules. This provides a stable contract without pretending every current Markdown extension is an external standard.
 
-The proposal resolves the current storage deferral and the instruction to keep all large papers and datasets outside Git. It also clarifies that this development repository's co-location of project files and fixture knowledge is not the production installation model.
+The proposal resolves the repository-backend and application-independence questions while leaving PDF-specific storage choices to the dependent proposal. It also clarifies that the public application project may contain infrastructure and sanitized fixtures, while a user's actual Knowledge Repository remains a separate private Git repository.
 
 ## Evolution
 
 The previous design required portable text but did not define a repository manifest, release-compatibility contract, physical application boundary, or production storage backend. ADR 0005 records the Git/LFS choice; ADR 0006 records the separate and broader principle that Knowledge Repositories remain independent of Workbench releases.
 
-The revised proposal also distinguishes the portable Source Record from its Source Asset and makes managed-versus-linked storage an explicit Paper Desk choice. This feature is reversible and fits the existing Source Processing boundary, so it does not require another ADR.
+The revised proposal separates generic repository storage from the dependent PDF-import behavior. The PDF feature remains reversible and fits the existing Source Processing boundary, so it does not require another ADR.
 
 ## Deferred work
 
-- LFS path patterns, any size threshold, and migration of existing large files require separate reviewed policy.
-- The concrete machine-local configuration file and UI for changing an existing PDF's mode remain implementation details constrained by the specified outcomes.
-- Bundled versus system Git tooling remains an implementation decision subject to security support.
+- Managed PDF policy is defined by the dependent PDF-import proposal: `assets/sources/**/*.pdf`, with no size threshold; linked-local sources remain outside the repository.
+- The concrete machine-local configuration file and UI for changing an existing PDF's mode remain implementation details of the dependent PDF-import proposal.
+- The Workbench bundles pinned, security-maintained Git and Git LFS clients rather than depending on system installations.
 - GitHub authentication, automatic synchronization, conflict resolution, and verified off-device backup remain separate capabilities.
 - Future Repository Format versions and their concrete migrations require their own exact proposals. No migration occurs merely by applying this design proposal.
 
@@ -107,7 +105,7 @@ index 0000000..9ef384a
 +
 +Applying an eligible Proposal creates one Git commit containing the approved changes and audit record without absorbing unrelated working-tree changes. Working Material may remain autosaved and uncommitted; Git commit status never determines whether material is Governed Knowledge. LFS tracking rules are human-owned repository policy, and changing them for existing files is an explicit migration rather than a silent rewrite.
 +
-+Git and Git LFS become production dependencies for repository-managed large assets. When adding a PDF, the user chooses whether its Source Asset is copied into the repository and managed with Git LFS or remains outside the repository and is resolved through machine-local configuration. A missing client, object, or linked file produces an actionable unavailable-source outcome instead of exposing pointer text as content or corrupting Source Records and annotations. GitHub and other remotes remain optional and user-configured; V1 does not automate authentication, push, pull, merge, or complete off-device backup.
++Git and Git LFS become production dependencies for repository-managed large assets. The Workbench bundles pinned, security-maintained clients and reports unavailable or integrity-failed LFS content without exposing pointer text as source content. GitHub and other remotes remain optional and user-configured; V1 may use standard Git credential helpers but does not provide GitHub-specific authentication, automatic synchronization, push, pull, merge, or verified off-device backup.
 diff --git a/app/docs/adr/0006-keep-knowledge-repositories-application-independent.md b/app/docs/adr/0006-keep-knowledge-repositories-application-independent.md
 new file mode 100644
 index 0000000..b6f1fed
@@ -145,7 +143,7 @@ index 0000000..206e4c1
 +
 +The Galaxy Brain Repository Format is the application-independent contract for a portable Knowledge Repository. It lets the same repository survive Workbench upgrades, move between machines, remain intelligible without the Workbench, and be processed by other conforming tools.
 +
-+The packaged Workbench and a user's Knowledge Repository are separate filesystem roots with independent lifecycles. Installing, updating, moving, or uninstalling the Workbench must not move, replace, or delete a Knowledge Repository. Application source, executables, dependencies, build output, caches, indexes, logs, credentials, and session preferences are not Repository Format content.
++The packaged Workbench and a user's Knowledge Repository are separate filesystem roots with independent lifecycles. Installing, updating, moving, or uninstalling the Workbench must not move, replace, or delete a Knowledge Repository. The public application project may include Repository Format infrastructure and sanitized development fixtures, but a user's actual Knowledge Repository content remains in a separate private repository and is never bundled with or required by the application. Application source, executables, dependencies, build output, caches, indexes, logs, credentials, and session preferences are not Repository Format content.
 +
 +## Version declaration
 +
@@ -163,15 +161,6 @@ index 0000000..206e4c1
 +V1 repositories use ordinary directories and UTF-8 Markdown with YAML frontmatter. The canonical roots are `knowledge/`, `sources/`, `projects/`, `scratch/`, `proposals/`, `templates/`, and `assets/`. The supported extended-Markdown constructs and metadata contracts remain documented in repository guidance and templates rather than inferred from application internals.
 +
 +Standard Git stores text and metadata. Git LFS may store repository-managed large binary assets selected by committed `.gitattributes` rules. LFS pointers, unavailable objects, and hydrated objects are representations of asset availability; none changes the authority of related knowledge.
-+
-+### PDF asset modes
-+
-+Every added PDF creates a portable Source Record. Its `asset_mode` is either `managed-lfs` or `linked-local`:
-+
-+- `managed-lfs` copies the Source Asset under `assets/sources/`, records its repository-relative path in `repository_asset`, and requires matching committed Git LFS policy. Absolute paths are invalid.
-+- `linked-local` leaves the Source Asset outside the repository. `repository_asset` remains empty, and machine-local application configuration maps the Source Record to an absolute path without committing that path.
-+
-+Changing modes is an explicit operation. Moving from linked to managed copies and verifies the bytes before changing the Source Record; moving from managed to linked does not delete the managed asset until the user confirms the reviewed repository change. Missing assets never remove the Source Record, Source Locators, or annotations.
 +
 +Conforming writers preserve unrecognized files, frontmatter fields, and Markdown extensions unless an explicit operation targets them. Derived or machine-local state stays outside the repository or in documented ignored paths and can be deleted and rebuilt without losing knowledge.
 +
@@ -202,11 +191,6 @@ index 9064623..cfa8c1e 100644
 +The documented, versioned contract that makes a Knowledge Repository portable across Workbench versions and other conforming tools.
 +_Avoid_: Internal schema, application storage layout
 +
-@@ -38,0 +47,4 @@ _Avoid_: File, attachment
-+**Source Asset**:
-+The source bytes associated with a Source Record, whether managed inside the Knowledge Repository or resolved from a linked local file.
-+_Avoid_: Source Record, annotation
-+
 diff --git a/app/docs/architecture/v1-ui/README.md b/app/docs/architecture/v1-ui/README.md
 index a21257e..c32888f 100644
 --- a/app/docs/architecture/v1-ui/README.md
@@ -220,9 +204,9 @@ diff --git a/app/docs/architecture/v1-ui/product-decisions.md b/app/docs/archite
 index 886e72b..d8a5833 100644
 --- a/app/docs/architecture/v1-ui/product-decisions.md
 +++ b/app/docs/architecture/v1-ui/product-decisions.md
-@@ -13 +13,9 @@ Atlas is home without becoming a tollbooth. Opening the Workbench resumes meanin
+@@ -13 +13,10 @@ Atlas is home without becoming a tollbooth. Opening the Workbench resumes meanin
 -V1 officially supports macOS only while using a cross-platform-capable desktop foundation. It opens an arbitrary user-selected Galaxy Brain repository; this repository is the development Fixture, not a hard-coded production location. Tablet and phone adaptations are deferred rather than approximated with layouts that hide essential context.
-+V1 officially supports macOS only while using a cross-platform-capable desktop foundation. It opens an arbitrary user-selected Galaxy Brain Git working tree that conforms to the versioned Repository Format; the development Fixture is not a hard-coded production location or production installation layout. Tablet and phone adaptations are deferred rather than approximated with layouts that hide essential context.
++V1 officially supports macOS only while using a cross-platform-capable desktop foundation. It opens an arbitrary user-selected Galaxy Brain Git working tree that conforms to the versioned Repository Format. The public application project may include repository infrastructure and sanitized development fixtures, but the user's actual Knowledge Repository is a separate private Git repository and is never bundled with or required by the application. Tablet and phone adaptations are deferred rather than approximated with layouts that hide essential context.
 +
 +The packaged Workbench and each Knowledge Repository occupy separate filesystem roots and have independent lifecycles. Installing, updating, moving, or uninstalling the Workbench does not move, replace, or mutate a repository. A newer Workbench continues using the same supported repository; any required Repository Format migration is separately previewed, explicitly confirmed, reversible, and recorded without being hidden inside application startup.
 +
@@ -231,14 +215,6 @@ index 886e72b..d8a5833 100644
 +Repository-managed large binary assets may use Git LFS according to committed `.gitattributes` rules. The Workbench preserves standard LFS pointers, distinguishes Git synchronization from LFS object availability, and never presents pointer text as source content. GitHub-compatible remotes are supported through standard Git and Git LFS behavior, but V1 does not require a remote or automate authentication, push, pull, merge, or backup verification.
 +
 +The Repository Format is a public compatibility contract built from portable files, not the Workbench's internal object model. Application code, dependencies, build output, caches, indexes, credentials, and session preferences remain outside it. The Workbench checks the format version before writing, preserves unknown repository content, and refuses unsafe writes when a repository is newer than the formats it supports.
-@@ -37,0 +46,7 @@ Paper Desk provides deep PDF support in V1. Other source kinds may have Source R
-+**Add PDF**—also discoverable as “Import PDF”—first creates a portable Source Record and then asks how to retain the Source Asset:
-+
-+1. **Manage with Git LFS** copies the PDF into the Knowledge Repository under its standardized asset area and records a repository-relative reference. The Workbench verifies applicable LFS tracking before committing the asset.
-+2. **Link local file** leaves the PDF in place and stores its absolute path only in machine-local application configuration. No machine-specific path enters the Source Record or Git history.
-+
-+The chooser explains portability and storage consequences before confirmation. Either mode opens the same Paper Desk workflow and supports later relinking or an explicit mode change. If a linked file moves or an LFS object is unavailable, the Source Record, Source Locators, annotations, and citations remain.
-+
 @@ -79 +94 @@ Applying an accepted Proposal creates a reversible new version and an immutable
 -- An editor engine, PDF engine, index, model provider, updater, router, state-management library, native database, and storage technology beyond the repository's existing portable-source requirements.
 +- An editor engine, PDF engine, index, model provider, updater, router, state-management library, native database, remote hosting provider, and automatic synchronization or backup service.
@@ -255,9 +231,6 @@ index b71cdc5..af0902a 100644
 @@ -55 +55 @@ flowchart LR
 -The renderer owns presentation and unprivileged interaction state. It receives only small operation-specific capabilities from preload. The main process owns the selected repository root, validates privileged requests, and composes framework-independent application Modules with production Adapters. Domain rules do not live in React views, preload, or IPC handlers.
 +The renderer owns presentation and unprivileged interaction state. It receives only small operation-specific capabilities from preload. The main process owns the selected Git working-tree root, validates privileged requests, and composes framework-independent application Modules with production Adapters. Domain rules do not live in React views, preload, or IPC handlers.
-@@ -69 +69 @@ Callers do not manage route serialization, session persistence, or context recon
--Its interface captures a Structured Annotation, reports source availability, relinks a Source Record, and requests Synthesis from selected annotations. Its implementation owns locator integrity, attribution, capture classification, incomplete-capture tracking, target suggestions, and the distinction between capture and Synthesis.
-+Its interface adds a PDF with an explicit Source Asset mode, captures a Structured Annotation, reports source availability, relinks or changes the mode of a Source Record, and requests Synthesis from selected annotations. Its implementation owns Source Record creation, storage-choice validation, locator integrity, attribution, capture classification, incomplete-capture tracking, target suggestions, and the distinction between adding a source, capture, and Synthesis.
 @@ -99,4 +99,4 @@ Its interface records user-owned goals, suggests progress with evidence, and acc
 -| Governed Knowledge | reviewed topics, maps, registries, guidance, templates | Repository source of truth; changes only through eligible applied Proposals |
 -| Working Material | drafts, annotations, captures, draft Proposals | Continuously autosaved; attributed; not authoritative merely because it is saved |
@@ -277,7 +250,7 @@ index b71cdc5..af0902a 100644
 +
 +Before enabling writes, the adapter validates the root `galaxy-brain.yaml` declaration against the supported Repository Format versions. It preserves unknown repository files, metadata fields, and Markdown extensions unless an explicit operation targets them. Unsupported newer formats produce a read-only or unsupported outcome rather than an optimistic write. Installing or launching a Workbench version never performs a repository migration.
 +
-+For a managed Source Asset, the adapter copies verified bytes to the standardized repository asset area, checks that committed LFS policy covers the destination, and records only a repository-relative reference. For a linked Source Asset, a machine-local resolver stores the absolute path outside the repository. Source Processing sees availability and relinking outcomes rather than filesystem paths or LFS commands.
++For a repository-managed asset, the adapter copies verified bytes to the standardized repository asset area, checks that committed LFS policy covers the destination, and records only a repository-relative reference. Asset-specific adapters see availability outcomes rather than filesystem paths or LFS commands.
 +
 +Committed `.gitattributes` rules are the source of truth for which repository-managed assets use Git LFS. Adding or changing a rule for existing files is a separately reviewed migration because it can rewrite stored representation and history. The adapter distinguishes an LFS pointer from hydrated content and reports missing clients, credentials, quota, remote objects, or integrity failures as actionable source-unavailability outcomes while preserving Source Records, Source Locators, annotations, and pointer identity.
 +
@@ -289,51 +262,34 @@ index b71cdc5..af0902a 100644
 +13. Application installation and update operations never write into a Knowledge Repository.
 +14. A Repository Format migration is explicit, previewed, user-confirmed, reversible, and separate from opening the Workbench.
 +15. Conforming writes preserve unknown repository content outside the requested operation.
-+16. Adding a PDF always creates a portable Source Record and never commits a machine-specific path.
-+17. Source Asset storage mode changes are explicit; unavailable assets do not invalidate Source Records, Source Locators, or annotations.
 @@ -133 +152 @@ Do not introduce interfaces around internal parsers, reducers, view models, or w
 -The selected foundation is Electron, React, strict TypeScript, Electron Forge with Webpack, npm, Vitest, WebdriverIO, ESLint, and Prettier. The rationale and version-sensitive evidence live in the [stack decision brief](stack-research.md).
-+The selected foundation is Electron, React, strict TypeScript, Electron Forge with Webpack, npm, Git, Git LFS for tracked large assets, the Galaxy Brain Repository Format, Vitest, WebdriverIO, ESLint, and Prettier. The desktop rationale and version-sensitive evidence live in the [stack decision brief](stack-research.md); storage and compatibility decisions are recorded in [ADR 0005](../../adr/0005-use-git-and-git-lfs-for-repository-storage.md) and [ADR 0006](../../adr/0006-keep-knowledge-repositories-application-independent.md).
++The selected foundation is Electron, React, strict TypeScript, Electron Forge with Webpack, npm, Git, bundled Git LFS for tracked large assets, the Galaxy Brain Repository Format, Vitest, WebdriverIO, ESLint, and Prettier. The desktop rationale and version-sensitive evidence live in the [stack decision brief](stack-research.md); storage and compatibility decisions are recorded in [ADR 0005](../../adr/0005-use-git-and-git-lfs-for-repository-storage.md) and [ADR 0006](../../adr/0006-keep-knowledge-repositories-application-independent.md).
 diff --git a/app/docs/architecture/v1-ui/test-strategy.md b/app/docs/architecture/v1-ui/test-strategy.md
 index 46672c9..facc201 100644
 --- a/app/docs/architecture/v1-ui/test-strategy.md
 +++ b/app/docs/architecture/v1-ui/test-strategy.md
-@@ -80,0 +81,3 @@ Critical behaviors:
-+- Adding a PDF creates the same portable Source Record shape for either Source Asset mode.
-+- Managed mode copies the fixture bytes to a repository-relative LFS-tracked asset; linked mode leaves the fixture untouched and persists its absolute path only through the machine-local resolver.
-+- A missing linked file or unavailable LFS object preserves the Source Record, Source Locators, and annotations and permits relinking.
 @@ -124,0 +128,4 @@ Contract tests are shared across adapters. They do not assert filenames, SQL, pa
-+Repository Format cases at S5 prove that portable content round-trips independently of application objects, unknown files and supported extensions survive unrelated writes, linked-local Source Records contain no machine paths, supported older-version fixtures open without incidental mutation, and an unsupported newer version cannot be written. A migration case proves the previewed source and target versions, exact migration commit, preserved unknown content, and recoverable prior version.
++Repository Format cases at S5 prove that portable content round-trips independently of application objects, unknown files and supported extensions survive unrelated writes, supported older-version fixtures open without incidental mutation, and an unsupported newer version cannot be written. A migration case proves the previewed source and target versions, exact migration commit, preserved unknown content, and recoverable prior version.
 +
-+Production Git-adapter cases at S5 additionally use temporary repositories and the real Git boundary to prove that an eligible application creates one exact commit, leaves unrelated working-tree changes outside that commit, detects a changed target version, and translates Git failures into repository outcomes. Git LFS cases prove that a tracked hydrated asset is available, pointer-only or missing content is reported unavailable without returning pointer text as asset content, and Source Records and annotations remain usable. These are production Adapter obligations at the existing S5 seam, not a new Test Seam or requirements for the In-memory Adapter to emulate Git commands.
++Production Git-adapter cases at S5 additionally use temporary repositories and the real Git boundary to prove that an eligible application creates one exact commit, leaves unrelated working-tree changes outside that commit, detects a changed target version, and translates Git failures into repository outcomes. Git LFS cases prove that a tracked hydrated asset is available and pointer-only or missing content is reported unavailable without returning pointer text as asset content. These are production Adapter obligations at the existing S5 seam, not a new Test Seam or requirements for the In-memory Adapter to emulate Git commands.
 +
 diff --git a/app/docs/architecture/v1-ui/delivery-plan.md b/app/docs/architecture/v1-ui/delivery-plan.md
 index 01bd31b..b750343 100644
 --- a/app/docs/architecture/v1-ui/delivery-plan.md
 +++ b/app/docs/architecture/v1-ui/delivery-plan.md
-@@ -34 +34 @@ At S1, prove a contextual transition from an Atlas item to Studio and then to it
--### 4. Capture one located source claim
-+### 4. Add and capture one PDF source
-@@ -36 +36,3 @@ At S1, prove a contextual transition from an Atlas item to Studio and then to it
--At S3, prove that capturing the known PDF passage produces a source-claim Structured Annotation with the fixture Source Locator and attribution. Implement the minimum PDF adapter and Working Material persistence needed for that outcome.
-+At S1, prove that **Add PDF** explains both storage choices and records the user's selection before opening Paper Desk. At S3 in separate cycles, prove managed mode copies the fixture to a repository-relative LFS asset while linked mode leaves it untouched and stores its absolute path only in the machine-local resolver.
-+
-+Then at S3, prove that capturing the known PDF passage produces a source-claim Structured Annotation with the fixture Source Locator and attribution. Implement only the minimum Source Processing, PDF Adapter, and persistence needed for each outcome.
 @@ -57,0 +60,4 @@ At S1, prove that Atlas opens the dedicated review route, displays the fixture c
 +At S5 in the next cycle, define the V1 Repository Format fixture and run the Knowledge Repository contract against both the In-memory Adapter and a temporary real Git working tree. Prove that applying the same fixture Proposal creates one exact commit, excludes a known unrelated working-tree edit, and preserves an unknown file and frontmatter field. Add separate cases that reject writes to a future format version and prove opening a supported prior-version fixture causes no incidental migration.
 +
-+Add Git LFS behavior one case at a time: hydrate one tracked fixture, then report one pointer-only fixture unavailable without losing its Source Record or annotations. Do not add remote synchronization or GitHub authentication to this slice.
++Add Git LFS behavior one case at a time: hydrate one tracked fixture, then report one pointer-only fixture unavailable without exposing pointer text as asset content. Do not add remote synchronization or GitHub authentication to this slice.
 +
 diff --git a/app/docs/architecture/v1-ui/code-map.md b/app/docs/architecture/v1-ui/code-map.md
 index 1788e83..b5d5949 100644
 --- a/app/docs/architecture/v1-ui/code-map.md
 +++ b/app/docs/architecture/v1-ui/code-map.md
-@@ -52 +52 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
--| [Source Processing](architecture.md#source-processing-module) | Capture located annotations, report source availability, relink, and request Synthesis | S3 | `src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 4 |
-+| [Source Processing](architecture.md#source-processing-module) | Add PDFs with a chosen Source Asset mode, capture located annotations, report availability, relink, and request Synthesis | S3 | `src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 4 |
 @@ -71 +71 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
--| Knowledge Repository | Node-backed, root-scoped repository Adapter under `src/adapters/knowledge-repository/` | In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1 |
-+| Knowledge Repository | Versioned Repository Format and Git-backed, root-scoped Adapter with Git LFS hydration under `src/adapters/knowledge-repository/` | Format-conforming In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1, production path after Tracer Bullet 9 |
+-| Knowledge Repository | Node-backed, root-scoped repository Adapter under `app/src/adapters/knowledge-repository/` | In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1 |
++| Knowledge Repository | Versioned Repository Format and Git-backed, root-scoped Adapter with Git LFS hydration under `app/src/adapters/knowledge-repository/` | Format-conforming In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1, production path after Tracer Bullet 9 |
 diff --git a/app/docs/agents/knowledge-base.md b/app/docs/agents/knowledge-base.md
 --- a/app/docs/agents/knowledge-base.md
 +++ b/app/docs/agents/knowledge-base.md
@@ -352,9 +308,7 @@ diff --git a/app/docs/agents/knowledge-base.md b/app/docs/agents/knowledge-base.
 +
 +Keep replaceable generated output, caches, credentials, and machine-specific paths outside Git. Files intentionally kept elsewhere remain external and are referenced through portable Source Records with stable identifiers, canonical URLs, logical locators, and repository-held annotations.
 +
-+Repository-managed large binary assets may use Git LFS when committed `.gitattributes` policy selects them. Keep tracking rules narrow and reviewable; adding LFS tracking for existing files is an explicit migration because it can change history and remote storage requirements. A Git remote is not a verified backup unless recovery covers every required Git ref and reachable LFS object. Missing LFS content makes the asset unavailable, not the Source Record or its annotations.
-+
-+When adding a PDF, create the portable Source Record before choosing its Source Asset mode. Managed assets use a repository-relative reference and reviewed Git LFS policy. Linked local assets retain no machine path in repository content; machine-local configuration resolves them. Changing modes is explicit, and unavailable assets preserve their Source Records, Source Locators, annotations, and citations.
++Repository-managed large binary assets may use Git LFS when committed `.gitattributes` policy selects them. Keep tracking rules narrow and reviewable; adding LFS tracking for existing files is an explicit migration because it can change history and remote storage requirements. A Git remote is not a verified backup unless recovery covers every required Git ref and reachable LFS object. Missing LFS content makes the asset unavailable.
 diff --git a/app/docs/agents/software-development.md b/app/docs/agents/software-development.md
 index 06b3ae3..dc6b097 100644
 --- a/app/docs/agents/software-development.md
@@ -366,21 +320,29 @@ index 06b3ae3..dc6b097 100644
 +- Keep the packaged application, source checkout, and user-selected Knowledge Repository as separate roots. Updaters may replace application-owned files only; uninstallers never delete a repository.
 +- Validate `galaxy-brain.yaml` before writes. Preserve unknown repository content, reject unsafe writes to unsupported versions, and keep every format migration explicit, previewed, reversible, and separate from application startup or update.
 +- Store caches, indexes, logs, credentials, and session preferences outside the Repository Format. Tests must be able to delete and rebuild derived application state without changing repository content.
-+- Keep linked Source Asset paths in validated machine-local configuration keyed by portable Source Record identity. Never serialize an absolute path into a Source Record, Proposal, log, or Git commit.
-+- Managed Source Asset writes verify the copy before updating the Source Record and verify committed LFS coverage before commit. Mode changes and partial failures preserve the prior usable state.
-diff --git a/knowledge-repository/templates/source.md b/knowledge-repository/templates/source.md
-index a7797f5..1ba3941 100644
---- a/knowledge-repository/templates/source.md
-+++ b/knowledge-repository/templates/source.md
-@@ -16 +16,2 @@ citekey:
--external_locator:
-+asset_mode:
-+repository_asset:
++- Bundle pinned, security-maintained Git and Git LFS clients; do not rely on system installations for repository behavior.
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -20,7 +20,7 @@
+-This development repository deliberately contains both application-project material and a working Knowledge Repository. Keep their roles distinct:
++This development repository contains application-project material and a sanitized Knowledge Repository fixture. Keep their roles distinct; a user's actual Knowledge Repository is a separate private Git repository and is never bundled with the public application project:
+@@ -25,1 +25,1 @@
+-- `knowledge-repository/`: the local, portable Knowledge Repository
++- `knowledge-repository/`: a sanitized development fixture for the portable Knowledge Repository format
+diff --git a/knowledge-repository/README.md b/knowledge-repository/README.md
+--- a/knowledge-repository/README.md
++++ b/knowledge-repository/README.md
+@@ -1,3 +1,3 @@
+ # Local Knowledge Repository
+
+-This directory is the development checkout for the user's local Knowledge Repository. Its contents are knowledge-base material, not Galaxy Brain application documentation or source code.
++This directory is a sanitized development fixture for the portable Knowledge Repository format. A user's actual Knowledge Repository is a separate private Git repository; fixture contents are not bundled user knowledge. These files are knowledge-base-shaped material, not Galaxy Brain application documentation or source code.
 ```
 
 ## Approval
 
-- Decision: pending
+- Decision: pending explicit approval after reconciliation with the document-review proposal; the PDF-import proposal depends on this post-state.
 - Approved diff identifier:
 - Approved on:
 - Applied on:

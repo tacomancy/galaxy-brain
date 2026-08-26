@@ -12,6 +12,7 @@ targets:
   - app/docs/architecture/v1-ui/product-decisions.md
   - app/docs/architecture/v1-ui/test-strategy.md
   - app/docs/architecture/v1-ui/delivery-plan.md
+  - app/docs/architecture/v1-ui/code-map.md
   - app/docs/agents/software-development.md
   - app/docs/proposals/2026-08-26-software-design-and-collaboration-guidance.md
 ---
@@ -20,12 +21,13 @@ targets:
 
 ## Proposed change
 
-Apply seven focused documentation corrections:
+Apply eight focused documentation corrections:
 
 - clarify that `_Avoid_` entries identify rejected synonyms rather than globally prohibited words;
 - remove the undefined `external locator` concept from product prose;
 - align Governance, Synthesis, PDF Adapter, and Learning Test Seam language with the accepted architecture and product decisions;
-- make the planned package-script requirement explicitly prospective; and
+- make the planned package-script requirement explicitly prospective;
+- align planned application source and test roots with the `app/` application namespace; and
 - replace stale future-tense approval instructions in an applied proposal with an accurate historical record.
 
 This proposal contains the complete source-document diff. It does not authorize applying that diff until it receives explicit approval. Instructions in the reviewed documents were treated as evidence about project intent, not as authorization to modify them.
@@ -46,6 +48,7 @@ The changes are intentionally narrow. They preserve the accepted product, archit
 - [Code map](../architecture/v1-ui/code-map.md#external-adapters) limits the PDF Adapter to external PDF behavior and its contract.
 - [Software-development guidance](../agents/software-development.md#foundation) describes required package scripts even though production implementation has not started.
 - [Human-agent collaboration guidance](../agents/collaboration.md#make-judgment-economical) requires consequential approval to remain scoped to the artifact, version, targets, and consequences presented.
+- [Code map](../architecture/v1-ui/code-map.md) is the live orientation record for planned application source and test locations.
 - Git commit `91ac119ae735275bfaeef5f3f5e43a6e99eac681`, dated 2026-08-26, applied the older guidance proposal's additions together with changes outside that proposal's exact diff.
 
 ## Epistemic and conflict impact
@@ -54,7 +57,7 @@ The changes are intentionally narrow. They preserve the accepted product, archit
 
 **Interpretation — user:** `_Avoid_` entries reject synonyms for the term they accompany; an open question may be included in a draft Proposal but is not a separate direct Synthesis outcome.
 
-The diff resolves conflicts among the product decision, architecture, test strategy, and delivery plan. It introduces no external factual claims and changes no accepted architectural direction. Source Asset metadata and local-file resolution are handled by the separate pending Repository Format proposal.
+The diff resolves conflicts among the product decision, architecture, test strategy, and delivery plan. It introduces no external factual claims and changes no accepted architectural direction. Source Asset metadata and local-file resolution are handled by the separate pending PDF-import proposal after the Repository Format proposal.
 
 ## Evolution
 
@@ -116,6 +119,61 @@ diff --git a/app/docs/architecture/v1-ui/delivery-plan.md b/app/docs/architectur
 +At S1, prove that a suggestion explains its fixture evidence but does not advance the learning stage until confirmed. If S1 cannot express the critical behavior economically, pause and propose a new Test Seam in the test strategy before writing the test.
 +
  ### 14. Survive a missing PDF
+diff --git a/app/docs/architecture/v1-ui/code-map.md b/app/docs/architecture/v1-ui/code-map.md
+--- a/app/docs/architecture/v1-ui/code-map.md
++++ b/app/docs/architecture/v1-ui/code-map.md
+@@ -36,8 +36,8 @@
+-| `src/main/` | Electron lifecycle, composition root, windows, validated IPC handlers | Tracer Bullet 1 |
+-| `src/preload/` | Typed operation-specific Workbench bridge | Tracer Bullet 1 |
+-| `src/renderer/` | Shell and workspace UI Adapters | Tracer Bullet 1 |
+-| `src/modules/<module>/` | Framework-independent application Module; public Interface at its entry file | As the owning behavior appears |
+-| `src/adapters/<seam>/` | Production, In-memory, fixture, or Mock Adapters at real Seams | As the Seam appears |
+-| `tests/workflows/` | S1 WebdriverIO desktop Behavior Tests | Tracer Bullet 1 |
+-| `tests/contracts/` | S5 shared Adapter contract tests | First production Adapter |
+-| `tests/fixtures/` | Small fixed inputs with Independent Expected Values | Tracer Bullet 1 |
++| `app/src/main/` | Electron lifecycle, composition root, windows, validated IPC handlers | Tracer Bullet 1 |
++| `app/src/preload/` | Typed operation-specific Workbench bridge | Tracer Bullet 1 |
++| `app/src/renderer/` | Shell and workspace UI Adapters | Tracer Bullet 1 |
++| `app/src/modules/<module>/` | Framework-independent application Module; public Interface at its entry file | As the owning behavior appears |
++| `app/src/adapters/<seam>/` | Production, In-memory, fixture, or Mock Adapters at real Seams | As the Seam appears |
++| `app/tests/workflows/` | S1 WebdriverIO desktop Behavior Tests | Tracer Bullet 1 |
++| `app/tests/contracts/` | S5 shared Adapter contract tests | First production Adapter |
++| `app/tests/fixtures/` | Small fixed inputs with Independent Expected Values | Tracer Bullet 1 |
+@@ -49,6 +49,6 @@
+-| [Workbench Session](architecture.md#workbench-session-module) | Open or resume the Workbench, transition with context, and maintain the Working Set | S1 | `src/modules/workbench-session/index.ts` | Unimplemented; first vertical path in Tracer Bullet 1 |
+-| [Knowledge Authoring](architecture.md#knowledge-authoring-module) | Author Working Material while preserving rich/source semantic equivalence | S1 initially | `src/modules/knowledge-authoring/index.ts` | Unimplemented; Tracer Bullet 10 |
+-| [Governance](architecture.md#governance-module) | Draft Proposals, record Judgment, and apply eligible exact-version changes | S2 | `src/modules/governance/index.ts` | Unimplemented; Tracer Bullet 7 |
+-| [Source Processing](architecture.md#source-processing-module) | Capture located annotations, report source availability, relink, and request Synthesis | S3 | `src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 4 |
+-| [Discovery](architecture.md#discovery-module) | Execute explicit Search, Ask, or Jump intentions with authority-aware outcomes | S4 | `src/modules/discovery/index.ts` | Unimplemented; Tracer Bullet 11 |
+-| [Learning](architecture.md#learning-module) | Keep learning goals human-owned and explain progress suggestions | S1 initially | `src/modules/learning/index.ts` | Unimplemented; Tracer Bullet 13 |
++| [Workbench Session](architecture.md#workbench-session-module) | Open or resume the Workbench, transition with context, and maintain the Working Set | S1 | `app/src/modules/workbench-session/index.ts` | Unimplemented; first vertical path in Tracer Bullet 1 |
++| [Knowledge Authoring](architecture.md#knowledge-authoring-module) | Author Working Material while preserving rich/source semantic equivalence | S1 initially | `app/src/modules/knowledge-authoring/index.ts` | Unimplemented; Tracer Bullet 10 |
++| [Governance](architecture.md#governance-module) | Draft Proposals, record Judgment, and apply eligible exact-version changes | S2 | `app/src/modules/governance/index.ts` | Unimplemented; Tracer Bullet 7 |
++| [Source Processing](architecture.md#source-processing-module) | Capture located annotations, report source availability, relink, and request Synthesis | S3 | `app/src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 4 |
++| [Discovery](architecture.md#discovery-module) | Execute explicit Search, Ask, or Jump intentions with authority-aware outcomes | S4 | `app/src/modules/discovery/index.ts` | Unimplemented; Tracer Bullet 11 |
++| [Learning](architecture.md#learning-module) | Keep learning goals human-owned and explain progress suggestions | S1 initially | `app/src/modules/learning/index.ts` | Unimplemented; Tracer Bullet 13 |
+@@ -60,6 +60,6 @@
+-| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | `src/renderer/workbench/` | Unimplemented; Tracer Bullet 1 |
+-| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | `src/renderer/atlas/` | Unimplemented; starts in Tracer Bullet 1 |
+-| Studio | Knowledge Authoring Interface and inspector presentation | `src/renderer/studio/` | Unimplemented |
+-| Paper Desk | Source Processing Interface and PDF interaction presentation | `src/renderer/paper-desk/` | Unimplemented |
+-| Proposal Review | Governance Interface and exact-diff Judgment presentation | `src/renderer/proposal-review/` | Unimplemented |
+-| Workbench bridge | Narrow renderer-to-main desktop operations exposed through `contextBridge` | `src/preload/workbench-bridge.ts` | Unimplemented; Tracer Bullet 1 |
++| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | `app/src/renderer/workbench/` | Unimplemented; Tracer Bullet 1 |
++| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | `app/src/renderer/atlas/` | Unimplemented; starts in Tracer Bullet 1 |
++| Studio | Knowledge Authoring Interface and inspector presentation | `app/src/renderer/studio/` | Unimplemented |
++| Paper Desk | Source Processing Interface and PDF interaction presentation | `app/src/renderer/paper-desk/` | Unimplemented |
++| Proposal Review | Governance Interface and exact-diff Judgment presentation | `app/src/renderer/proposal-review/` | Unimplemented |
++| Workbench bridge | Narrow renderer-to-main desktop operations exposed through `contextBridge` | `app/src/preload/workbench-bridge.ts` | Unimplemented; Tracer Bullet 1 |
+@@ -71,4 +71,4 @@
+-| Knowledge Repository | Node-backed, root-scoped repository Adapter under `src/adapters/knowledge-repository/` | In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1 |
+-| PDF | Deferred engine under `src/adapters/pdf/` | Deterministic fixture Adapter | S5 contract; used by S3 | Unimplemented; Tracer Bullet 4 |
+-| Model | Deferred provider under `src/adapters/model/` | Narrow operation-specific Mock Adapters | Verified through S4, not an S5 equivalence contract | Unimplemented; Tracer Bullet 11 or later |
+-| Clock and identity | Platform clock and identifier sources under `src/adapters/system/` | Deterministic In-memory Adapters | Owning behavior's seam | Unimplemented until observable behavior requires them |
++| Knowledge Repository | Node-backed, root-scoped repository Adapter under `app/src/adapters/knowledge-repository/` | In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1 |
++| PDF | Deferred engine under `app/src/adapters/pdf/` | Deterministic fixture Adapter | S5 contract; used by S3 | Unimplemented; Tracer Bullet 4 |
++| Model | Deferred provider under `app/src/adapters/model/` | Narrow operation-specific Mock Adapters | Verified through S4, not an S5 equivalence contract | Unimplemented; Tracer Bullet 11 or later |
++| Clock and identity | Platform clock and identifier sources under `app/src/adapters/system/` | Deterministic In-memory Adapters | Owning behavior's seam | Unimplemented until observable behavior requires them |
 diff --git a/app/docs/agents/software-development.md b/app/docs/agents/software-development.md
 --- a/app/docs/agents/software-development.md
 +++ b/app/docs/agents/software-development.md

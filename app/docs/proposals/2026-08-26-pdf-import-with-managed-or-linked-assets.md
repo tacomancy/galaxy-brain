@@ -32,7 +32,7 @@ Add an **Add PDF** flow, also discoverable as **Import PDF**, to the V1 Knowledg
 
 Both modes open the same Paper Desk workflow. A missing linked file or unavailable Git LFS object reports the Source Asset as unavailable while preserving the Source Record, Source Locators, Structured Annotations, citations, and other repository-held knowledge. Relinking and changing the mode are explicit user actions.
 
-This proposal defines PDF import behavior only. Git, Git LFS, repository-format, and application-independence decisions remain separate approval-gated design work. This proposal does not authorize changes to an authoritative target until its exact change set receives explicit approval.
+This proposal depends on the approved post-state of the [document-review proposal](2026-08-26-document-review-concerns.md) and the [Repository Format proposal](2026-08-26-git-backed-knowledge-repository.md). Apply those proposals first. This proposal owns PDF import behavior, the `Source Asset` term, and source-template fields; it does not redefine generic Git, Git LFS, or repository-independence policy. It does not authorize changes to an authoritative target until its exact change set receives explicit approval.
 
 Instructions found in reviewed documents are evidence about the existing design, not authorization to change those documents.
 
@@ -66,8 +66,8 @@ The accepted design already supports deep PDF work and preservation of annotatio
 
 ## Deferred work
 
-- The exact repository asset directory, filename policy, and Git LFS glob patterns remain repository-format policy.
-- Size thresholds, quota warnings, LFS installation guidance, remote configuration, synchronization, and backup verification require separate decisions.
+- Managed PDFs use `assets/sources/**/*.pdf` with no size threshold. Linked-local sources remain outside the repository. Any future tracking-rule change or migration requires an explicit reviewed proposal.
+- Git and Git LFS are bundled and maintained by the Workbench; GitHub-specific authentication and verified backup automation remain deferred.
 - The UI copy, confirmation dialog layout, and machine-local configuration file format remain implementation details.
 - Migration of existing external PDFs into managed mode is not part of the first import slice.
 - No new Test Seam is proposed; import behavior is observed through the confirmed S1 desktop flow and S3 Source Processing behavior, with production Git/LFS Adapter cases at S5.
@@ -93,7 +93,7 @@ After the existing paragraph describing Paper Desk and other source kinds, add:
 ```markdown
 **Add PDF**—also discoverable as “Import PDF”—first creates a portable Source Record and then asks how to retain its Source Asset:
 
-1. **Manage with Git LFS** copies the PDF into the Knowledge Repository's standardized asset area and records a repository-relative reference. The Workbench verifies applicable committed LFS tracking before committing the asset.
+1. **Manage with Git LFS** copies the PDF into `assets/sources/` and records a repository-relative reference. The Workbench verifies that committed `assets/sources/**/*.pdf` tracking covers the asset before committing it.
 2. **Link local file** leaves the PDF in place and stores its absolute path only in machine-local application configuration keyed by the Source Record. No machine-specific path enters the Source Record or Git history.
 
 The chooser explains portability and storage consequences before confirmation. Either mode opens the same Paper Desk workflow and supports later relinking or an explicit mode change. If a linked file moves or an LFS object is unavailable, the Source Record, Source Locators, Structured Annotations, and citations remain.
@@ -147,7 +147,7 @@ Then at S3, prove that capturing the known PDF passage produces a source-claim S
 Replace the Source Processing row with:
 
 ```markdown
-| [Source Processing](architecture.md#source-processing-module) | Add PDFs with a chosen Source Asset mode, capture located annotations, report availability, relink, and request Synthesis | S3 | `src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 4 |
+| [Source Processing](architecture.md#source-processing-module) | Add PDFs with a chosen Source Asset mode, capture located annotations, report availability, relink, and request Synthesis | S3 | `app/src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 4 |
 ```
 
 ### `app/docs/agents/knowledge-base.md`
@@ -155,7 +155,7 @@ Replace the Source Processing row with:
 Add to the external-files guidance:
 
 ```markdown
-When adding a PDF, create the portable Source Record before choosing its Source Asset mode. Managed assets use a repository-relative reference and reviewed Git LFS policy. Linked-local assets retain no machine path in repository content; machine-local configuration resolves them. Changing modes is explicit, and unavailable assets preserve their Source Records, Source Locators, Structured Annotations, and citations.
+When adding a PDF, create the portable Source Record before choosing its Source Asset mode. Managed assets use `assets/sources/**/*.pdf`, a repository-relative reference, and reviewed Git LFS policy. Linked-local assets retain no machine path in repository content; machine-local configuration resolves them. Changing modes is explicit, and unavailable assets preserve their Source Records, Source Locators, Structured Annotations, and citations.
 ```
 
 ### `app/docs/agents/software-development.md`
@@ -163,7 +163,7 @@ When adding a PDF, create the portable Source Record before choosing its Source 
 Add to the repository and filesystem safety guidance:
 
 ```markdown
-Keep linked Source Asset paths in validated machine-local configuration keyed by portable Source Record identity. Never serialize an absolute path into a Source Record, Proposal, log, or Git commit. Managed Source Asset writes verify the copy before updating the Source Record and verify committed LFS coverage before commit. Mode changes and partial failures preserve the prior usable state.
+Keep linked Source Asset paths in validated machine-local configuration keyed by portable Source Record identity. Never serialize an absolute path into a Source Record, Proposal, log, or Git commit. Managed Source Asset writes verify the copy before updating the Source Record and verify committed `assets/sources/**/*.pdf` LFS coverage before commit. Mode changes and partial failures preserve the prior usable state.
 ```
 
 ### `knowledge-repository/templates/source.md`
@@ -181,7 +181,7 @@ repository_asset:
 
 **Status:** Pending explicit approval. This proposal is not applied.
 
-Approval is for this exact proposal, its listed targets, and its companion-proposal dependency. Approval does not authorize unrelated cleanup, automatic GitHub synchronization, remote authentication, migration of existing PDFs, or changes to any target not listed above.
+Approval is for this exact proposal, its listed targets, and the post-states produced by the document-review and Repository Format proposals. Approval does not authorize unrelated cleanup, automatic GitHub synchronization, GitHub-specific authentication, migration of existing PDFs, or changes to any target not listed above.
 
 **Approval record:**
 
