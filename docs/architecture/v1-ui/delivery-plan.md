@@ -21,7 +21,7 @@ Do not refactor during the red-to-green loop. Refactoring belongs to a separate 
 
 At S1, prove that a fresh desktop session opens Atlas with the authentic empty-state path and no demonstration data mixed into it. Implement the smallest vertical path from UI adapter through Workbench Session to an in-memory Knowledge Repository adapter.
 
-This slice forces the initial desktop framework and application composition decision. Record an ADR only if that choice meets the repository's ADR threshold.
+This slice validates the Electron foundation selected in ADR 0004 and forces the first concrete application composition. If the real S1 path contradicts the stack rationale, stop and revisit the ADR rather than hiding the mismatch behind the test harness.
 
 ### 2. Resume meaningful work
 

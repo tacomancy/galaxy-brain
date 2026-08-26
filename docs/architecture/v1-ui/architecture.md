@@ -37,6 +37,25 @@ flowchart LR
 
 Arrows indicate interface use, not required process or package boundaries.
 
+## Desktop process architecture
+
+[ADR 0004](../../adr/0004-use-electron-typescript-for-v1.md) selects Electron and strict TypeScript. The Electron process model maps onto the architecture without becoming the domain design:
+
+```mermaid
+flowchart LR
+  UI[Sandboxed renderer: React UI Adapters]
+  BR[Preload: typed Workbench bridge]
+  MAIN[Main: composition root and privileged operations]
+  MOD[Application Modules]
+  AD[Repository and external Adapters]
+
+  UI --> BR --> MAIN --> MOD --> AD
+```
+
+The renderer owns presentation and unprivileged interaction state. It receives only small operation-specific capabilities from preload. The main process owns the selected repository root, validates privileged requests, and composes framework-independent application Modules with production Adapters. Domain rules do not live in React views, preload, or IPC handlers.
+
+The live correspondence between these responsibilities and source files belongs in the [code map](code-map.md), which is updated whenever production Modules or Adapters move.
+
 ## Deep modules and interfaces
 
 ### Workbench Session module
@@ -109,6 +128,8 @@ Do not introduce interfaces around internal parsers, reducers, view models, or w
 9. Global and contextual workspace transitions preserve relevant context without merging workspace responsibilities.
 10. Accessibility semantics belong to the public desktop interface, not a later visual-polish phase.
 
-## Technology decisions intentionally withheld
+## Selected foundation and deferred technology
 
-The package does not choose a UI framework, process model, packaging system, local database, search engine, editor engine, or PDF library. A choice is justified only when a vertical slice encounters a behavior or system seam that cannot be implemented responsibly without it. When a choice is hard to reverse, surprising, and a genuine trade-off, record it in a new ADR before allowing it to leak across module interfaces.
+The selected foundation is Electron, React, strict TypeScript, Electron Forge with Webpack, npm, Vitest, WebdriverIO, ESLint, and Prettier. The rationale and version-sensitive evidence live in the [stack decision brief](stack-research.md).
+
+The package still does not choose an editor engine, PDF engine, index, model provider, updater, state-management library, router, or native database. A choice is justified only when a Vertical Slice encounters behavior that cannot be implemented responsibly without it. When a choice is hard to reverse, surprising, and a genuine trade-off, record it in a new ADR before allowing it to spread across Module Interfaces.

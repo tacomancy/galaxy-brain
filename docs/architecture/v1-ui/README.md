@@ -2,22 +2,26 @@
 
 Status: architectural direction and S1–S5 Test Seams accepted.
 
-This package translates the accepted V1 UI direction into a technology-neutral architecture and a test-driven delivery strategy. It does not choose a desktop framework, editor engine, PDF library, indexing engine, or model provider. Those choices should follow from the first behavior slice that makes them necessary.
+This package translates the accepted V1 UI direction into an Electron and strict-TypeScript desktop architecture with a test-driven delivery strategy. The foundation is selected; editor, PDF, index, model, updater, routing, state-management, and native-database choices remain deferred until a behavior slice makes them necessary.
 
 ## Package
 
 - [Product decisions](product-decisions.md) records the accepted experience, scope, and deferrals.
 - [Architecture](architecture.md) defines modules, interfaces, state ownership, and system seams.
-- [Test strategy](test-strategy.md) proposes the public seams through which behavior should be verified.
+- [Code map](code-map.md) maps architectural responsibilities to live or explicitly planned source locations.
+- [Test strategy](test-strategy.md) defines the confirmed public seams through which behavior is verified.
 - [Delivery plan](delivery-plan.md) orders vertical tracer bullets for red-to-green implementation.
+- [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
 - [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
 - [Engineering glossary](../../engineering/glossary.md) defines the codebase-design and test-driven-development vocabulary used by this package.
+- [Agent implementation guide](../../agents/workbench.md) defines the required Red-to-Green execution and handoff procedure for Workbench changes.
 
 The hard-to-reverse decisions are recorded separately:
 
 - [ADR 0001](../../adr/0001-use-task-specific-workspaces.md): use task-specific workspaces.
 - [ADR 0002](../../adr/0002-govern-changes-through-proposals.md): govern changes through proposals.
 - [ADR 0003](../../adr/0003-keep-rich-and-source-editing-equivalent.md): keep rich and source editing equivalent.
+- [ADR 0004](../../adr/0004-use-electron-typescript-for-v1.md): use Electron and TypeScript for V1.
 
 ## TDD gate
 

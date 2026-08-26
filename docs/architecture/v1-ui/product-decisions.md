@@ -10,7 +10,7 @@ The Knowledge Workbench is a desktop-only V1 with three task-specific workspaces
 
 Atlas is home without becoming a tollbooth. Opening the Workbench resumes meaningful active work; otherwise it opens Atlas. A compact labeled workspace switcher remains visible, while contextual transitions carry the current topic, Source Record, annotations, or Proposal to the relevant destination.
 
-V1 supports desktop only. Tablet and phone adaptations are deferred rather than approximated with layouts that hide essential context.
+V1 officially supports macOS only while using a cross-platform-capable desktop foundation. It opens an arbitrary user-selected Galaxy Brain repository; this repository is the development Fixture, not a hard-coded production location. Tablet and phone adaptations are deferred rather than approximated with layouts that hide essential context.
 
 ## Atlas
 
@@ -76,4 +76,4 @@ Applying an accepted Proposal creates a reversible new version and an immutable 
 - User-constructed Atlas dashboards.
 - Unrestricted internal tabs.
 - Automatic Synthesis or automatic application of agent changes.
-- A production framework, editor engine, PDF engine, index, model provider, and storage technology beyond the repository's existing portable-source requirements.
+- An editor engine, PDF engine, index, model provider, updater, router, state-management library, native database, and storage technology beyond the repository's existing portable-source requirements.
