@@ -18,6 +18,8 @@ Software design: When creating or changing Module Interfaces, dependency directi
 
 TDD: When changing code or tests, read `app/docs/agents/code.md`.
 
+Before software, design, or review work, check for applicable Matt Pocock skills and follow the human-approval rule in `app/docs/agents/collaboration.md` before installing any missing skill.
+
 Software development: When changing production code, dependencies, tooling, packaging, or CI, read `app/docs/agents/software-development.md` after the code guidance.
 
 Knowledge Workbench V1: When planning, implementing, testing, or reviewing the desktop Workbench, read `app/docs/agents/workbench.md` after the code guidance.
