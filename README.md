@@ -5,9 +5,11 @@ A human-owned knowledge base for personal research and continuing education. Age
 ## Start here
 
 - [Knowledge map](knowledge/README.md)
+- [V1 Knowledge Workbench architecture](docs/architecture/v1-ui/README.md)
 - [Knowledge-base guidance](docs/agents/knowledge-base.md)
 - [Research guidance](docs/agents/research.md)
 - [Code guidance](docs/agents/code.md)
+- [Engineering glossary](docs/engineering/glossary.md)
 
 ## Structure
 
