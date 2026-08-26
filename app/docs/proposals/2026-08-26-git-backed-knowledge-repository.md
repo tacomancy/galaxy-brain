@@ -48,11 +48,11 @@ Repository creation copies the bundled skeleton into a new or explicitly empty d
 
 ## Future work
 
-Multi-repository switching, GitHub authentication, remote synchronization, verified off-device backup, demo mode, Repository Housekeeping, and irreversible Git/LFS history reclamation remain deferred.
+Future repository capabilities are maintained in the canonical [Product Decisions future-work list](../architecture/v1-ui/product-decisions.md#future-work).
 
 ## Approval record
 
 - Decision: approved by the user in the grilling review
 - Approved on: 2026-08-26
 - Applied on: 2026-08-26
-- Applied commit: pending repository commit
+- Applied commit: d6a403c

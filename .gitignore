@@ -92,7 +92,7 @@ rabbitmq-data/
 activemq-data/
 *.sage.py
 
-# Environments
+# Environments and local Agent Provider secrets
 .env
 .envrc
 .venv

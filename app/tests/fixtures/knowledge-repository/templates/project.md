@@ -13,7 +13,7 @@ aliases: []
 
 ## Outcome
 
-State the concrete result this knowledge-base project should produce. Galaxy Brain application planning belongs under `app/docs/`, not in a note created from this template.
+State the concrete result this knowledge-base project should produce.
 
 ## Completion criteria
 
@@ -22,11 +22,3 @@ List checkable conditions that distinguish complete from incomplete.
 ## Knowledge in use
 
 Link relevant core topics and explain how the project applies or tests them.
-
-## Working decisions
-
-Record project-local decisions and their rationale.
-
-## Open work
-
-Track remaining questions and tasks without duplicating the issue tracker.

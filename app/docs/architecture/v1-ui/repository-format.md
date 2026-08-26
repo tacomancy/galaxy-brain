@@ -29,6 +29,8 @@ Managed Source Assets are verified bytes under `assets/sources/` with repository
 
 Conforming writers preserve unrecognized files, frontmatter fields, and Markdown extensions unless an explicit operation targets them. Derived and machine-local state can be rebuilt without losing knowledge.
 
+The format is intentionally narrow at this stage. It specifies the stable interoperability boundary and safety rules without freezing every note, audit, or rollback schema before the owning behavior exists. Concrete file schemas become part of the contract when the first file-backed Adapter needs them; each must preserve unknown content where practical and be covered by S5 contract tests.
+
 ## Compatibility and safe writes
 
 A Workbench checks `format` and `format_version` before enabling writes:
@@ -46,4 +48,4 @@ The public starter skeleton is empty of subject-matter knowledge and is stored u
 
 ## Future work
 
-Multi-repository switching, GitHub authentication, remote synchronization, verified off-device backup, and irreversible Git/LFS history reclamation are separate future capabilities.
+Repository-format-related future work is maintained in the canonical [Product Decisions future-work list](product-decisions.md#future-work), rather than duplicated here.

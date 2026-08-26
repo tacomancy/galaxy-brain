@@ -24,6 +24,8 @@ logical_locator:
 
 # Git-backed knowledge repositories with Git LFS and GitHub
 
+> **Historical design research:** This note preserves source evidence gathered while considering a Git-backed repository. Its product recommendation is superseded by the current VCS-neutral, local-first design. Use the [Repository Format](../../../../../docs/architecture/v1-ui/repository-format.md) and [Product Decisions](../../../../../docs/architecture/v1-ui/product-decisions.md) as the current project authority. The source claims below remain historical evidence, not requirements for Galaxy Brain.
+
 ## Citation
 
 Official documentation from the Git project, Git LFS project, and GitHub, accessed 2026-08-26. Material claims link directly to the controlling page or specification beside the claim.
@@ -92,15 +94,15 @@ Determine the current constraints and design implications for a desktop applicat
 
 The sources are direct, current first-party specifications, manuals, product documentation, billing rules, and security advisories. Git/LFS protocol behavior is relatively portable; GitHub quotas, archive behavior, authentication products, and billing are mutable provider policies and must be treated as runtime capabilities. GitHub's documentation sometimes describes plan limits in decimal GB while billing allowances use GiB; this note preserves the units used by each controlling page.
 
-## Connections
+## Historical product connection
 
-This evidence supports a Git-backed desktop repository design in which Markdown and metadata remain ordinary Git content, selected large binary assets use standard Git LFS, and GitHub hosting is optional rather than embedded in the knowledge model.
+**Historical inference — agent:** This evidence supported a Git-backed desktop repository design in which Markdown and metadata remained ordinary Git content, selected large binary assets used standard Git LFS, and GitHub hosting was optional rather than embedded in the knowledge model. This product inference is superseded; Galaxy Brain currently treats Git and Git LFS as optional external tools.
 
 ## Evolution
 
 This source note records the earlier research question and its evidence. The later product decision is VCS-neutral and local-first: Galaxy Brain does not require or invoke Git, Git LFS, GitHub, credentials, remotes, or network connectivity. Users may still use the documented Git/LFS practices externally for version control and backups.
 
-## Open questions
+## Historical research questions
 
 - Which asset directories or file types should be eligible for LFS, and should users explicitly approve each tracking-rule change?
 - Will the app bundle Git and Git LFS or validate system installations?

@@ -2,6 +2,8 @@
 
 Status: S1–S5 Test Seams confirmed; implementation has not started.
 
+Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
+
 ## Operating rule
 
 This is an ordered sequence of candidate tracer bullets, not a backlog of tests to write in advance. Start a slice only after the preceding cycle is green and its evidence has been reviewed. For each slice:
@@ -29,7 +31,7 @@ At S1, prove that the user can explicitly open an existing valid repository or c
 
 ### 3. Resume meaningful work
 
-At S1, prove that reopening a known session resumes its active workspace and context, while an empty or obsolete session opens Atlas. Add only the session persistence needed for the worked fixture.
+At S1, prove that reopening a known session validates and resumes the last explicitly selected repository, active workspace, and context, while a first launch opens without a repository and an unavailable or invalid remembered path presents explicit Open/Create choices. Do not scan for sibling repositories. Add only the machine-local session persistence needed for the worked fixture.
 
 ### 4. Carry context between workspaces
 
@@ -45,11 +47,11 @@ At S1, prove that the saved annotation and reading position are restored through
 
 ### 7. Synthesize selected evidence explicitly
 
-At S3, prove that **Synthesize into topic** uses only the selected annotations and returns the literal draft Proposal fixture. Then add a separate cycle proving that capture or source completion alone produces no Proposal.
+At S3, prove that **Synthesize into topic** shows a concise summary and inspectable exact payload for the selected annotations and target context, allows removal of whole context items with regenerated previews, requires explicit confirmation before sending that final payload to OpenAI, and returns the literal draft Proposal fixture when the confirmed request succeeds. Add separate cycles proving that capture or source completion alone produces no Proposal, that declining makes no request and preserves the annotations, that arbitrary inline redaction is unavailable, that the Model Adapter cannot add context after confirmation, that request and response payloads are not retained unless explicitly saved, that the default save retains the result plus agent provenance but not the prompt/context, that an explicit save-with-prompt/context choice retains the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot but not full source excerpts or the hidden full payload, that a mismatch in saved versus current source identity or content identity does not rewrite the saved snapshot and produces a non-blocking stale-context warning, that the saved result remains Working Material, and that agent-assisted Synthesis returns `agent-provider-unavailable` without one while preserving the annotations.
 
 ### 8. Apply one governed change
 
-At S2, start with a literal target version and Proposal. Prove that explicit acceptance and application create the expected new version while the previous version remains retrievable. Implement the smallest Governance path that can pass.
+At S2, start with a literal existing governed version and a manually authored Proposal from an edited Working Material draft. Prove that explicit acceptance and application create the expected new version while the current version remains unchanged until application and the previous version remains retrievable, all without an Agent Provider. Agent-assisted Proposal drafting can be added at the model seam without changing Governance authority.
 
 ### 9. Reject stale and incoherent applications
 
@@ -65,7 +67,7 @@ At S1, prove one worked extended-Markdown construct can be edited in rich view, 
 
 ### 12. Separate Search, Ask, and Jump
 
-At S4, prove one mode at a time. Start with a literal Search result, add a cited Ask answer from the known corpus, then add an unsupported Ask outcome, an unavailable-provider Ask outcome without an API key, and finally add a known Jump command. Follow with one S1 cycle proving the selected mode is visible before execution and that local workflows remain usable without Agent Provider configuration.
+At S4, prove one mode at a time. Start with a literal Search result, add a cited Ask answer from the known corpus after explicit confirmation of its concise summary and inspectable exact OpenAI payload, including removing a whole context item and observing the regenerated payload, then prove the default save excludes the prompt/context while the explicit save-with-prompt/context choice retains the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot—but not full source excerpts—and preserves agent provenance without becoming Governed Knowledge. Change a referenced source afterward so its identity or content identity differs, and verify that the saved snapshot is not silently rewritten, that navigation may resolve the current source, and that opening the saved artifact shows a non-blocking stale-context warning. Add an unsupported Ask outcome, an unavailable-provider Ask outcome without an API key, and finally a known Jump command. Follow with one S1 cycle proving the selected mode and outbound payload are visible before execution, that declining makes no request, and that local workflows remain usable without Agent Provider configuration.
 
 ### 13. Make Atlas actionable
 
@@ -82,6 +84,16 @@ At S3, prove that an unavailable or hash-changed linked PDF preserves the Source
 ### 16. Complete the desktop quality contract
 
 At S1, add one behavior per cycle for keyboard-only completion of a critical workflow, visible focus, semantic landmarks and names, reduced motion, scalable text, theme persistence, undo, and version-history recovery. Use automated accessibility tooling as supporting evidence, never as a substitute for observable workflow assertions and manual review.
+
+Saved agent context must retain its point-in-time snapshot when the current source cannot be checked or lacks a comparable identity. The Workbench reports `source status unavailable` without blocking access or claiming that the snapshot is current. An explicit refresh must create a new snapshot/version while preserving the original and must never silently replace it in place. Refresh updates only the saved context representation; a separate result-regeneration action requires fresh confirmation before any new OpenAI request.
+
+Result regeneration must create a new result version and preserve the previous result rather than silently overwriting it.
+
+The Workbench should present the newest result as current and make prior versions retrievable through ordinary artifact history without creating separate top-level items for each regeneration.
+
+An explicit restore of an older result must create a new current version derived from that result, preserve all intervening versions, and make no OpenAI request.
+
+Prior result versions remain retained by default. Automatic cleanup is prohibited; future deletion or history pruning requires explicit approval and a warning about lost recovery and provenance.
 
 ## Review checkpoints
 

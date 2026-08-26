@@ -26,6 +26,14 @@ S1 proves that the assembled product works. S2 through S4 provide economical, pr
 
 ## S1 — Desktop workflow seam
 
+- Opening a saved context snapshot whose current source cannot be checked or lacks a comparable identity shows `source status unavailable`, preserves the snapshot, and does not claim that it is current.
+- Explicitly refreshing a saved context snapshot creates a new snapshot/version and preserves the original; no silent in-place replacement occurs.
+- Refreshing a snapshot updates only its saved context representation; regenerating the agent result is a separate action, and any resulting OpenAI request requires fresh confirmation.
+- Explicitly regenerating an agent result creates a new result version and preserves the previous result; it does not silently overwrite earlier output.
+- The Workbench presents the newest result as current and exposes prior result versions through ordinary artifact history without creating separate top-level items for each regeneration.
+- Explicitly restoring an older result creates a new current version, preserves all intervening versions, and makes no OpenAI request.
+- Prior agent-result versions are retained by default with no automatic cleanup; any future deletion or history-pruning action requires explicit approval and explains the lost recovery and provenance.
+
 **Public interface:** the rendered desktop Knowledge Workbench operated through accessible user actions and observed through visible content, focus, navigation state, and durable outcomes returned by the Workbench.
 
 **Decision rationale:** this is the only seam that proves Atlas, Studio, Paper Desk, and Proposal Review form one coherent product. It covers the composition of UI adapters and real in-process application Modules through the Interface closest to the person using the Workbench.
@@ -35,6 +43,7 @@ Lower seams can prove that a Proposal is eligible or that a Structured Annotatio
 Critical behaviors:
 
 - A fresh Workbench opens Atlas; a meaningful prior activity resumes with its context.
+- An explicitly selected repository may resume from machine-local session state; an unavailable or invalid remembered path does not trigger repository discovery and instead presents explicit recovery choices.
 - Global switching and contextual transitions preserve the relevant topic, Source Record, annotations, or Proposal.
 - Atlas separates continuation from pending Judgment and links every metric to the items it counts.
 - Studio preserves supported meaning across rich and source editing.
@@ -44,6 +53,10 @@ Critical behaviors:
 - Keyboard-only operation, focus behavior, semantic structure, theme selection, and reduced motion are observable desktop behaviors.
 - Local repository creation and editing remain usable without Git, Git LFS, GitHub, credentials, or network connectivity, and saved-local status never claims commit or backup.
 - The Workbench remains usable without Agent Provider configuration or an API key; Agentic Capabilities show a clear unavailable outcome rather than blocking startup or local workflows.
+- Every OpenAI request from an Agentic Capability, including a user-only prompt, presents a concise summary and an inspectable exact payload for explicit confirmation; users may remove whole context items and observe the regenerated payload, but arbitrary inline redaction is not available. Small requests may expand by default, but no content is hidden or silently added after approval. Cancellation makes no request and leaves local state unchanged.
+- OpenAI request and response payloads are not retained in automatic history, caches, logs, audit records, or support files; a result persists only when the user explicitly saves it as a repository artifact.
+- An explicitly saved OpenAI result is labeled agent-generated and preserves provider, pinned model, generation timestamp, operation, and applicable Source Record or Source Locator references; the metadata does not make it Governed Knowledge.
+- The default save omits the human-facing prompt and context; a separate explicit save-with-prompt/context action includes the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot, but not full source excerpts or the hidden full API payload. A mismatch in saved versus current source identity or content identity may affect navigation targets but does not rewrite the saved snapshot; the Workbench shows a non-blocking warning that the source changed.
 
 Tests at this seam use real application modules and local in-memory adapters. They do not mock workspace modules, inspect UI implementation state, select editor-engine nodes, or query storage as a side channel.
 
@@ -62,6 +75,8 @@ Critical behaviors:
 - Governance cannot promote Working Material without an eligible Proposal.
 - An unapplied or partially ineligible Proposal cannot alter Governed Knowledge.
 - Judgment can accept, edit, defer, or reject independently reviewable changes.
+- A user can manually create a Proposal from Working Material without an Agent Provider; agent assistance is optional.
+- A user can edit an existing Governed Knowledge item through a Working Material draft, apply a reviewed Proposal, observe the new version, and retrieve the prior version.
 - Dependencies prevent an incoherent subset from being applied.
 - A changed Proposal or target makes prior Judgment stale.
 - Applying an eligible Proposal creates the specified new version, preserves the prior version, and records the exact decision.
@@ -83,7 +98,11 @@ Critical behaviors:
 - Capture preserves a known source identity and Source Locator.
 - Classification and attribution remain visible after autosave and reopen.
 - Synthesis considers only the selected Structured Annotations.
+- Agent-assisted Synthesis previews its selected annotations and target context, lets the user remove whole context items, regenerates the exact outbound payload, and sends nothing before explicit confirmation. It preserves captures when the user declines. The same confirmation rule applies when an Agentic Capability has no repository-derived context.
+- Agent-assisted Synthesis does not persist the request or response automatically; only an explicitly saved draft Proposal or Working Material retains the result.
+- Explicitly saved agent results retain agent provenance through later human edits and remain Working Material until governed.
 - Synthesis may produce a draft Proposal, a source link without a knowledge change, or an explicit no-action result. An open question may be proposed inside a draft Proposal; it is not a separate direct outcome.
+- Agent-assisted Synthesis returns `agent-provider-unavailable` without a configured provider and preserves the captured annotations; provider-independent source review remains usable.
 - Finishing a source never triggers Synthesis automatically.
 - When a PDF is unavailable, existing annotations remain usable and relinking preserves their logical locators.
 
@@ -107,6 +126,11 @@ Critical behaviors:
 - Jump returns only known navigation or command targets and never interprets a command as an Ask request.
 - No Discovery operation changes Working Material or Governed Knowledge.
 - Ask reports an unavailable-provider outcome without an API key or configured Agent Provider, while Search and Jump remain usable.
+- Ask presents its concise request summary, exact expandable payload, and OpenAI destination for explicit confirmation before sending; removing a context item regenerates both views, and declining makes no request and changes no knowledge, including when the prompt contains no repository context.
+- Ask displays a successful response transiently and does not retain its prompt, context, or response unless the user explicitly saves it.
+- When Ask output is explicitly saved, the saved artifact carries agent-generated attribution and its provider, model, timestamp, operation, and applicable source-context metadata.
+- Ask's default save excludes the prompt and context, while the explicit save-with-prompt/context choice preserves the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot, but not full source excerpts. A mismatch in saved versus current source identity or content identity does not rewrite that saved snapshot; opening it shows a non-blocking stale-context warning.
+- Generated Relationship and learning-progress suggestions report `agent-provider-unavailable` without mutating repository content or learning state.
 
 The model is mocked only at its true external seam with a narrow Ask response. Repository search and authority rules remain real.
 

@@ -40,4 +40,4 @@ The same review record now incorporates the later local-first repository decisio
 - Decision: approved by the user in the grilling review
 - Approved on: 2026-08-26
 - Applied on: 2026-08-26
-- Applied commit: pending repository commit
+- Applied commit: d6a403c

@@ -157,8 +157,30 @@ Files intentionally kept elsewhere remain external and are referenced through po
 
 ## Local-first repository operations
 
+When a saved agent context snapshot's current source cannot be checked or lacks a comparable identity, preserve the snapshot and show `source status unavailable`. Do not claim that the snapshot is current or silently replace it.
+
+An explicit refresh of a saved context snapshot creates a new snapshot/version and preserves the original. Never silently replace the historical context in place.
+
+Refreshing a snapshot updates only its saved context representation. Regenerating the agent result is a separate explicit action and any new OpenAI request requires fresh confirmation.
+
+Explicit result regeneration creates a new result version and preserves the previous result. Never silently overwrite earlier agent output.
+
+Present the newest result as current and expose prior versions through ordinary artifact history. Do not create a separate top-level item for every regeneration.
+
+An explicit restore of an older result creates a new current version derived from it, preserves all intervening versions, and makes no OpenAI request.
+
+Retain prior agent-result versions by default through ordinary artifact history. Do not clean them up automatically. Any future deletion or history pruning requires explicit user approval and a clear explanation of lost recovery and provenance.
+
 Galaxy Brain may create repository files, audit records under `proposals/applied/`, and targeted rollback data through recoverable filesystem transactions. It never requires or invokes Git, Git LFS, GitHub, credentials, remotes, or network connectivity. Users manage initialization, commits, branching, synchronization, and backups externally. After a local save, the Workbench reports that the change is saved locally without claiming it is committed or backed up.
 
-Agent Provider configuration is not Knowledge Repository content. Missing API keys or provider configuration must not prevent local reading, editing, source, annotation, governance, or repository work. Agentic Capabilities may be unavailable and should say so clearly; never write provider credentials, prompts, or machine-local provider paths into repository content, audit records, or ordinary knowledge notes.
+Agent Provider configuration is not Knowledge Repository content. For the initial V1 provider path, the user declares recognized variables in the machine-local application `.env` described by [`app/.env.example`](../../.env.example); the real file must never be placed in a Knowledge Repository or committed. Missing API keys or provider configuration must not prevent local reading, editing, source, annotation, governance, or repository work. Agentic Capabilities may be unavailable and should say so clearly; never write provider credentials, prompts, or machine-local provider paths into repository content, audit records, or ordinary knowledge notes.
+
+Before any Agentic Capability sends any request to OpenAI, including a user-entered prompt without repository-derived material, the Workbench must show a concise summary plus an inspectable exact outbound payload and obtain explicit confirmation. Users may remove whole context items before approval, after which the Workbench regenerates both views; arbitrary inline redaction is not available in V1. Small requests may show the payload expanded by default; large requests may collapse it only if every part remains available for inspection. The confirmed payload is final: do not add context afterward. V1 does not use blanket or remembered consent, send whole repositories, or make silent background requests. A declined request makes no network call and leaves local knowledge and Working Material unchanged; Search, Jump, reading, annotation, editing, and governance remain local and do not require this confirmation. Configurable confirmation settings are future work.
+
+Do not retain OpenAI prompts, selected context, or responses in automatic history, caches, logs, audit records, or support files. Display results transiently and retain them only when the person deliberately saves them as Working Material, a Proposal, or another repository artifact. Future diagnostic capture requires explicit privacy approval.
+
+When a person explicitly saves an OpenAI result, the default save retains the result plus agent-generated attribution and the provider, pinned model, generation timestamp, operation, and applicable Source Record or Source Locator references. A separate explicit save-with-prompt/context choice may retain the human-facing prompt, selected source references or locators, and concise context summaries, but not full source excerpts. Those references, locators, and summaries are a point-in-time snapshot of the confirmed context. They may support navigation to the current source, but later source changes must not silently rewrite the saved artifact. When the Workbench detects that a referenced source's saved identity or content identity differs from the current source, it shows a non-blocking warning distinguishing the saved snapshot from the current source; it does not silently refresh the snapshot or block access. Neither path automatically retains the hidden full API payload. Human edits may add authorship but must not erase agent provenance. These metadata do not make the result authoritative; it remains Working Material until governed.
+
+Governed Knowledge is authoritative but not read-only. A person may open it into a Working Material draft, revise it at their own pace, and create a human-authored Proposal when ready. Only an eligible applied Proposal replaces the current governed version; the prior version remains retrievable, and direct edits must never bypass Governance.
 
 Before a mutation, recheck fingerprints for targeted files. Preserve external edits, abort stale operations, and require explicit review. Never automatically delete audit records or rollback history; future Repository Housekeeping reports require explicit approval.

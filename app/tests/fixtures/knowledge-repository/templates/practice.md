@@ -20,10 +20,6 @@ Present the task before revealing guidance or a solution.
 
 State the observable qualities of a successful response.
 
-## Hints
-
-Provide graduated hints that preserve productive effort. Remove this section when unnecessary.
-
 ## Solution and feedback
 
 Explain the result, common errors, and which next activity follows from each error.

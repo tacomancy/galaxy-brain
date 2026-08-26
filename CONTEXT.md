@@ -21,15 +21,15 @@ The Knowledge Workbench workspace for reading a source and creating source-bound
 _Avoid_: PDF viewer, reader
 
 **Core Knowledge**:
-Reviewed knowledge that the user has accepted as authoritative enough to guide future understanding and work.
+Reviewed knowledge that the user has accepted as authoritative enough to guide future understanding and work. Core Knowledge remains revisable through governed evolution; acceptance does not make it read-only.
 _Avoid_: Notes, wiki
 
 **Governed Knowledge**:
-Core Knowledge and the rules, registries, guidance, and templates whose changes require explicit human approval.
+Core Knowledge and the rules, registries, guidance, and templates whose changes require explicit human approval. Governed Knowledge is authoritative but not immutable: later edits become new reviewed versions while prior versions remain retrievable.
 _Avoid_: Production data, locked content
 
 **Working Material**:
-Provisional research, annotations, drafts, captures, and proposals that have not become Governed Knowledge.
+Provisional research, annotations, drafts, captures, and proposals that have not become Governed Knowledge. Explicitly saved agent results remain Working Material and retain their agent attribution and provenance.
 _Avoid_: Unsaved work, temporary data
 
 **Knowledge Repository**:

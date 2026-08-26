@@ -19,8 +19,8 @@ targets:
   - app/docs/architecture/v1-ui/code-map.md
   - app/docs/agents/knowledge-base.md
   - app/docs/agents/software-development.md
-  - app/templates/knowledge-repository/templates/source.md
-  - app/tests/fixtures/knowledge-repository/templates/source.md
+  - app/templates/knowledge-repository/templates/paper.md
+  - app/tests/fixtures/knowledge-repository/templates/paper.md
 ---
 
 # Add PDF import with managed or linked source assets
@@ -43,4 +43,4 @@ The Workbench verifies managed bytes before writing, does not claim LFS tracking
 - Decision: approved by the user in the grilling review
 - Approved on: 2026-08-26
 - Applied on: 2026-08-26
-- Applied commit: pending repository commit
+- Applied commit: d6a403c

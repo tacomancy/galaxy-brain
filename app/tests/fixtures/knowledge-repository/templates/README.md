@@ -1,5 +1,5 @@
 # Templates
 
-Store approved templates and reusable snippets for creating knowledge-base files here. Templates define starting shapes for notes, sources, projects, proposals, decisions, practices, and other knowledge artifacts without replacing human judgment about their contents.
+Store approved templates for Knowledge Repository notes here.
 
-Application scaffolds, source-code generators, and UI component templates belong with application tooling or code, not in this directory.
+Available source templates: `book.md`, `course.md`, `paper.md`, `web.md`, and `other.md`. The remaining templates cover topics, practices, projects, proposals, and scratch material.

@@ -1,7 +1,8 @@
 ---
 title: ""
 type: source
-source_type: paper
+source_type: other
+source_subtype:
 status: queued
 created: YYYY-MM-DD
 reviewed: YYYY-MM-DD
@@ -10,7 +11,6 @@ candidate_tags: []
 aliases: []
 authors: []
 year:
-doi:
 url:
 citekey:
 asset_mode:
@@ -22,7 +22,7 @@ logical_locator:
 
 ## Citation
 
-Record the stable bibliographic identity and edition or version.
+Record the stable identity, creator, edition or version, date, and any canonical URL.
 
 ## Purpose
 
@@ -30,7 +30,7 @@ State why this source is being read and which question it may inform.
 
 ## Source claims and annotations
 
-Keep claims attributable to the source. For PDFs, use page-linked headings and preserve relevant quotations within copyright limits.
+Keep claims attributable to the source and use the most precise available logical locator.
 
 ## Critical assessment
 
@@ -38,7 +38,7 @@ Evaluate directness, methodology, transparency, authority, corroboration, curren
 
 ## Connections
 
-Link relevant topics, projects, definitions, equations, and conflicting sources with relationship context.
+Link relevant topics, projects, definitions, and conflicting sources with relationship context.
 
 ## Open questions
 
