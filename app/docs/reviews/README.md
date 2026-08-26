@@ -1,0 +1,5 @@
+# Galaxy Brain project reviews
+
+Store durable reviews of Galaxy Brain application and project documentation here, including cross-session review ledgers and audit records. These files document the project; they are not working knowledge notes and do not belong under `knowledge-repository/projects/` or `knowledge-repository/scratch/`.
+
+A review may link to application proposals under `app/docs/proposals/`, but it does not approve or apply them.
