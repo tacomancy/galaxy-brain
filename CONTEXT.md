@@ -32,13 +32,33 @@ _Avoid_: Production data, locked content
 Provisional research, annotations, drafts, captures, and proposals that have not become Governed Knowledge.
 _Avoid_: Unsaved work, temporary data
 
+**Knowledge Repository**:
+An application-independent collection of Governed Knowledge, Working Material, portable supporting assets, audit records, and rollback history that conforms to the Repository Format.
+_Avoid_: App data, application database
+
+**Repository Format**:
+The documented, versioned contract for the portable files and directory structure of a Knowledge Repository. It does not require a version-control system.
+_Avoid_: Internal schema, application storage layout
+
 **Source Record**:
 A portable description of an external source, including its stable identity and the information needed to locate it.
 _Avoid_: File, attachment
 
+**Source Asset**:
+The bytes associated with a Source Record, either managed inside the Knowledge Repository or linked from the broader operating-system filesystem.
+_Avoid_: Attachment, repository file
+
 **Source Locator**:
 A durable logical reference to a specific place within a Source Record, such as a page and highlight.
 _Avoid_: File path, bookmark
+
+**Agent Provider**:
+An optional external service or local runtime that supplies generative behavior for agentic capabilities. Its configuration is machine-local and is not required to open or use the Knowledge Workbench.
+_Avoid_: Knowledge Repository dependency
+
+**Agentic Capability**:
+A Workbench operation whose behavior depends on an Agent Provider, such as an Ask answer, Synthesis suggestion, Generated Relationship, or progress suggestion. Without provider configuration, the capability is unavailable while non-agentic Workbench behavior remains usable.
+_Avoid_: Core Workbench capability
 
 **Structured Annotation**:
 Working Material bound to a Source Locator and classified as a source claim, personal interpretation, agent inference, question, or relationship.

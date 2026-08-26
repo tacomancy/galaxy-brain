@@ -19,7 +19,7 @@ year: 2026
 doi:
 url: https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-git-large-file-storage
 citekey: git-lfs-github-guidance-2026
-external_locator:
+logical_locator:
 ---
 
 # Git-backed knowledge repositories with Git LFS and GitHub
@@ -95,6 +95,10 @@ The sources are direct, current first-party specifications, manuals, product doc
 ## Connections
 
 This evidence supports a Git-backed desktop repository design in which Markdown and metadata remain ordinary Git content, selected large binary assets use standard Git LFS, and GitHub hosting is optional rather than embedded in the knowledge model.
+
+## Evolution
+
+This source note records the earlier research question and its evidence. The later product decision is VCS-neutral and local-first: Galaxy Brain does not require or invoke Git, Git LFS, GitHub, credentials, remotes, or network connectivity. Users may still use the documented Git/LFS practices externally for version control and backups.
 
 ## Open questions
 

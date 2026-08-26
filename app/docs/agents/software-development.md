@@ -8,7 +8,7 @@ The accepted V1 foundation is defined by [ADR 0004](../adr/0004-use-electron-typ
 
 Configuration files and `package.json` scripts are the mechanical source of truth once they exist. Keep rationale and conventions here; keep versions, flags, file patterns, and command composition in the tool that enforces them.
 
-The implementation establishes these package scripts:
+The initial implementation must establish these package scripts:
 
 - `format` and `format:check` for Prettier;
 - `lint` for ESLint flat configuration;
@@ -22,7 +22,7 @@ Agents use the package scripts rather than duplicating their underlying flags. C
 
 ## Process architecture
 
-- **Main process:** composition root, application lifecycle, privileged Electron operations, selected repository root, production Adapters, and validated IPC handlers.
+- **Main process:** composition root, application lifecycle, privileged Electron operations, selected repository root, production Adapters, and validated IPC handlers. It does not invoke Git, Git LFS, GitHub, or remote services for local repository behavior.
 - **Preload:** a narrow typed bridge from the renderer to operation-specific main-process capabilities. It contains translation and validation wiring, not application rules.
 - **Renderer:** React UI Adapters, semantic HTML, styling, and unprivileged interaction state. It has no Node.js, filesystem, raw IPC, or Electron authority.
 - **Application Modules:** framework-independent TypeScript behind the Interfaces described by the architecture package. They import neither React nor Electron.
@@ -46,14 +46,21 @@ Imports follow that direction. Callers import a Module only through its public e
 - Expose small operation-specific methods through `contextBridge`. Never expose `ipcRenderer`, filesystem primitives, arbitrary paths, or a generic command channel.
 - Validate every bridge payload and IPC sender in the main process before invoking a Module.
 - Canonicalize the user-selected repository root. Production repository Adapters constrain reads and writes to that root and define symlink behavior before enabling writes.
-- Keep machine paths, credentials, signing material, and session configuration outside the selected repository.
+- Keep machine paths, credentials, signing material, session configuration, linked-local paths and hashes, and machine-local indexes outside the selected repository's portable format.
+- Keep Agent Provider configuration, API keys, provider endpoints, and other agent credentials machine-local and outside the selected repository's portable format, audit records, logs, proposals, and source content.
+- Create a new repository only by copying and validating the bundled skeleton into a new or explicitly empty directory. Never run `git init`, create a commit, scan for sibling repositories, or overwrite a nonempty invalid directory.
+- Treat Git, Git LFS, GitHub, remotes, credentials, and network connectivity as optional external user-managed tooling. Local features must remain usable without them, and the UI must never imply that local saves are committed or backed up.
+- Treat Agent Provider configuration as an optional runtime capability. Missing configuration must not block startup or local Workbench workflows; Agentic Capabilities return explicit unavailable outcomes and the UI explains how configuration would enable them without requiring it.
+- Before a repository mutation, fingerprint only the targeted files and recheck them immediately before writing. Abort on external changes, preserve those changes, and require an explicit refresh or review.
+- Write approved files, `proposals/applied/` audit records, and targeted rollback data through a recoverable filesystem transaction. A failed or interrupted transaction must not be reported as applied or leave a silent partial state.
+- Store linked-local Source Asset paths and SHA-256 identities only in validated machine-local configuration keyed by portable Source Record identity. A changed hash is unavailable or changed until explicitly relinked or accepted.
 - Treat repository Markdown, source excerpts, prompts, and rendered HTML as untrusted content. Preserve text without executing embedded scripts or event handlers.
 
 Security-sensitive conventions derive from the official evidence linked in the [stack decision brief](../architecture/v1-ui/stack-research.md). A change that weakens them requires an ADR with an explicit threat analysis.
 
 ## Dependencies and external systems
 
-Add a dependency only when it removes demonstrated implementation complexity at the current Tracer Bullet. Record why the platform or standard library is insufficient, verify current official documentation and maintenance, and keep the dependency behind the Module that owns the behavior.
+Add a dependency only when it removes demonstrated implementation complexity at the current Tracer Bullet. Record why the platform or standard library is insufficient, verify current official documentation and maintenance, and keep the dependency behind the Module that owns the behavior. Do not add Git or Git LFS dependencies merely to provide optional external version control.
 
 Keep Electron within its supported stable-release window and Node.js on a repository-pinned Active LTS line. Upgrades run the full `check` gate and the relevant packaged-app smoke test. Editor, PDF, index, model, updater, database, state-management, and routing libraries remain unselected until behavior requires them.
 

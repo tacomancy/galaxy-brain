@@ -53,6 +53,9 @@ Review is complete when the suite remains Green, the test would survive an inter
 - Preserve the distinction among Working Material, Governed Knowledge, capture, Synthesis, Judgment, and application in names, tests, and Interfaces.
 - Test through S1–S5 as defined in the accepted test strategy. Treat editor nodes, view models, reducers, parser phases, cache keys, filenames, and storage layout as Implementation details unless an accepted Interface explicitly exposes them.
 - Preserve rich/source semantic equivalence and portable repository text; a chosen editor engine remains replaceable behind the Knowledge Authoring Interface.
+- Treat repository access as local file access. Galaxy Brain may scaffold and mutate a validated repository, but never requires or invokes Git, Git LFS, GitHub, credentials, or network connectivity. Users manage version control and backups externally.
+- Treat Agent Provider configuration as optional. The Workbench must remain usable without an API key or configured provider; Agentic Capabilities should explain their unavailable state without blocking non-agentic workflows or prompting for credentials at startup.
+- Keep the public starter skeleton separate from synthetic test fixtures, and never open a fixture as a user's repository without an explicit development or test setup.
 - Keep the throwaway prototype out of the production dependency graph.
 - Update the code map in the same change that creates, moves, renames, combines, splits, or removes a production Module or Adapter.
 

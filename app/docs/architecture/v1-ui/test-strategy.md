@@ -42,6 +42,8 @@ Critical behaviors:
 - Proposal review shows exact changes and applies only eligible decisions.
 - Search, Ask, and Jump visibly execute the selected mode.
 - Keyboard-only operation, focus behavior, semantic structure, theme selection, and reduced motion are observable desktop behaviors.
+- Local repository creation and editing remain usable without Git, Git LFS, GitHub, credentials, or network connectivity, and saved-local status never claims commit or backup.
+- The Workbench remains usable without Agent Provider configuration or an API key; Agentic Capabilities show a clear unavailable outcome rather than blocking startup or local workflows.
 
 Tests at this seam use real application modules and local in-memory adapters. They do not mock workspace modules, inspect UI implementation state, select editor-engine nodes, or query storage as a side channel.
 
@@ -57,7 +59,7 @@ Governance also has enough depth to justify its own Test Seam: a small Interface
 
 Critical behaviors:
 
-- Working Material can be saved without becoming Governed Knowledge.
+- Governance cannot promote Working Material without an eligible Proposal.
 - An unapplied or partially ineligible Proposal cannot alter Governed Knowledge.
 - Judgment can accept, edit, defer, or reject independently reviewable changes.
 - Dependencies prevent an incoherent subset from being applied.
@@ -81,7 +83,7 @@ Critical behaviors:
 - Capture preserves a known source identity and Source Locator.
 - Classification and attribution remain visible after autosave and reopen.
 - Synthesis considers only the selected Structured Annotations.
-- Synthesis may produce a draft Proposal, a source link, an open question, or no knowledge change.
+- Synthesis may produce a draft Proposal, a source link without a knowledge change, or an explicit no-action result. An open question may be proposed inside a draft Proposal; it is not a separate direct outcome.
 - Finishing a source never triggers Synthesis automatically.
 - When a PDF is unavailable, existing annotations remain usable and relinking preserves their logical locators.
 
@@ -104,6 +106,7 @@ Critical behaviors:
 - Ask distinguishes Core Knowledge from Working Material, surfaces fixture conflicts, and returns an unsupported outcome when evidence is insufficient.
 - Jump returns only known navigation or command targets and never interprets a command as an Ask request.
 - No Discovery operation changes Working Material or Governed Knowledge.
+- Ask reports an unavailable-provider outcome without an API key or configured Agent Provider, while Search and Jump remain usable.
 
 The model is mocked only at its true external seam with a narrow Ask response. Repository search and authority rules remain real.
 
@@ -117,10 +120,16 @@ The model is mocked only at its true external seam with a narrow Ask response. R
 
 Contract behaviors:
 
-- Each Knowledge Repository adapter preserves versions, attribution, Source Records, Source Locators, and the distinction between Working Material and Governed Knowledge.
+- Each Knowledge Repository adapter preserves attribution, Source Records, Source Locators, the distinction between Working Material and Governed Knowledge, repository-held audit records, and targeted rollback data.
+- The file-backed Adapter preserves unknown content, rejects unsafe writes to unsupported formats, detects external changes, and recovers interrupted transactions without requiring Git.
+- The in-memory and file-backed Adapters expose the same repository behavior; neither invokes Git or Git LFS.
 - Each PDF adapter resolves the same fixture page and locator semantics or reports unavailability without discarding the Source Record.
 
 Contract tests are shared across adapters. They do not assert filenames, SQL, parser calls, cache keys, or other implementation details unless such a detail is explicitly part of the adapter interface.
+
+## V1 release criteria
+
+Before V1 is considered complete, the assembled packaged application must prove through the public desktop workflow that it can open an existing repository or create one from the bundled skeleton, operate without Git, GitHub credentials, or Agent Provider configuration, and persist critical workflows through the file-backed Adapter. The release suite must cover an externally modified target, an interrupted file transaction, rollback, an unavailable or changed linked PDF, the unavailable-provider outcome, and the local-save notice that does not claim commit or backup status.
 
 **Why S5 is separate from application behavior:** S1 through S4 legitimately use deterministic Adapters for speed and control. Shared contract tests provide the missing evidence that those Adapters and production Adapters preserve the same observable semantics. S5 tests conformance, not application rules.
 

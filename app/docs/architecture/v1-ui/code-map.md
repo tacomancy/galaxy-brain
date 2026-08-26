@@ -22,7 +22,7 @@ flowchart LR
   MAIN[Main: composition root and validated IPC]
   MOD[Framework-independent application Modules]
   AD[Production and test Adapters]
-  EXT[Repository, PDF engine, model provider, clock]
+  EXT[Repository files, PDF engine, model provider, clock]
 
   UI --> BR --> MAIN --> MOD --> AD --> EXT
 ```
@@ -33,45 +33,46 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 
 | Planned home | Responsibility | First expected use |
 | --- | --- | --- |
-| `src/main/` | Electron lifecycle, composition root, windows, validated IPC handlers | Tracer Bullet 1 |
-| `src/preload/` | Typed operation-specific Workbench bridge | Tracer Bullet 1 |
-| `src/renderer/` | Shell and workspace UI Adapters | Tracer Bullet 1 |
-| `src/modules/<module>/` | Framework-independent application Module; public Interface at its entry file | As the owning behavior appears |
-| `src/adapters/<seam>/` | Production, In-memory, fixture, or Mock Adapters at real Seams | As the Seam appears |
-| `tests/workflows/` | S1 WebdriverIO desktop Behavior Tests | Tracer Bullet 1 |
-| `tests/contracts/` | S5 shared Adapter contract tests | First production Adapter |
-| `tests/fixtures/` | Small fixed inputs with Independent Expected Values | Tracer Bullet 1 |
+| `app/src/main/` | Electron lifecycle, composition root, windows, validated IPC handlers | Tracer Bullet 1 |
+| `app/src/preload/` | Typed operation-specific Workbench bridge | Tracer Bullet 1 |
+| `app/src/renderer/` | Shell and workspace UI Adapters | Tracer Bullet 1 |
+| `app/src/modules/<module>/` | Framework-independent application Module; public Interface at its entry file | As the owning behavior appears |
+| `app/src/adapters/<seam>/` | Production, In-memory, fixture, or Mock Adapters at real Seams | As the Seam appears |
+| `app/tests/workflows/` | S1 WebdriverIO desktop Behavior Tests | Tracer Bullet 1 |
+| `app/tests/contracts/` | S5 shared Adapter contract tests | First production Adapter |
+| `app/tests/fixtures/` | Small fixed inputs with Independent Expected Values | Tracer Bullet 1 |
+| `app/templates/knowledge-repository/` | Empty public starter skeleton for new repositories | Tracer Bullet 1 |
 
 ## Application Modules
 
 | Module | Public responsibility | Test Seam | Planned public entry | Status |
 | --- | --- | --- | --- | --- |
-| [Workbench Session](architecture.md#workbench-session-module) | Open or resume the Workbench, transition with context, and maintain the Working Set | S1 | `src/modules/workbench-session/index.ts` | Unimplemented; first vertical path in Tracer Bullet 1 |
-| [Knowledge Authoring](architecture.md#knowledge-authoring-module) | Author Working Material while preserving rich/source semantic equivalence | S1 initially | `src/modules/knowledge-authoring/index.ts` | Unimplemented; Tracer Bullet 10 |
-| [Governance](architecture.md#governance-module) | Draft Proposals, record Judgment, and apply eligible exact-version changes | S2 | `src/modules/governance/index.ts` | Unimplemented; Tracer Bullet 7 |
-| [Source Processing](architecture.md#source-processing-module) | Capture located annotations, report source availability, relink, and request Synthesis | S3 | `src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 4 |
-| [Discovery](architecture.md#discovery-module) | Execute explicit Search, Ask, or Jump intentions with authority-aware outcomes | S4 | `src/modules/discovery/index.ts` | Unimplemented; Tracer Bullet 11 |
-| [Learning](architecture.md#learning-module) | Keep learning goals human-owned and explain progress suggestions | S1 initially | `src/modules/learning/index.ts` | Unimplemented; Tracer Bullet 13 |
+| [Workbench Session](architecture.md#workbench-session-module) | Open, create, or resume the Workbench, transition with context, and maintain the Working Set | S1 | `app/src/modules/workbench-session/index.ts` | Unimplemented; first vertical path in Tracer Bullet 1 |
+| [Knowledge Authoring](architecture.md#knowledge-authoring-module) | Author Working Material while preserving rich/source semantic equivalence | S1 initially | `app/src/modules/knowledge-authoring/index.ts` | Unimplemented; Tracer Bullet 11 |
+| [Governance](architecture.md#governance-module) | Draft Proposals, record Judgment, and apply eligible exact-version changes through file transactions | S2 | `app/src/modules/governance/index.ts` | Unimplemented; Tracer Bullet 8 |
+| [Source Processing](architecture.md#source-processing-module) | Add PDFs with a chosen Source Asset mode, capture located annotations, report availability, relink, and request Synthesis | S3 | `app/src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 5 |
+| [Discovery](architecture.md#discovery-module) | Execute explicit Search, Ask, or Jump intentions with authority-aware outcomes | S4 | `app/src/modules/discovery/index.ts` | Unimplemented; Tracer Bullet 12 |
+| [Learning](architecture.md#learning-module) | Keep learning goals human-owned and explain progress suggestions | S1 initially | `app/src/modules/learning/index.ts` | Unimplemented; Tracer Bullet 14 |
 
 ## UI Adapters and desktop bridge
 
 | Adapter | Responsibility | Planned home | Status |
 | --- | --- | --- | --- |
-| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | `src/renderer/workbench/` | Unimplemented; Tracer Bullet 1 |
-| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | `src/renderer/atlas/` | Unimplemented; starts in Tracer Bullet 1 |
-| Studio | Knowledge Authoring Interface and inspector presentation | `src/renderer/studio/` | Unimplemented |
-| Paper Desk | Source Processing Interface and PDF interaction presentation | `src/renderer/paper-desk/` | Unimplemented |
-| Proposal Review | Governance Interface and exact-diff Judgment presentation | `src/renderer/proposal-review/` | Unimplemented |
-| Workbench bridge | Narrow renderer-to-main desktop operations exposed through `contextBridge` | `src/preload/workbench-bridge.ts` | Unimplemented; Tracer Bullet 1 |
+| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | `app/src/renderer/workbench/` | Unimplemented; Tracer Bullet 1 |
+| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | `app/src/renderer/atlas/` | Unimplemented; starts in Tracer Bullet 1 |
+| Studio | Knowledge Authoring Interface and inspector presentation | `app/src/renderer/studio/` | Unimplemented |
+| Paper Desk | Source Processing Interface and PDF interaction presentation | `app/src/renderer/paper-desk/` | Unimplemented |
+| Proposal Review | Governance Interface and exact-diff Judgment presentation | `app/src/renderer/proposal-review/` | Unimplemented |
+| Workbench bridge | Narrow renderer-to-main desktop operations exposed through `contextBridge` | `app/src/preload/workbench-bridge.ts` | Unimplemented; Tracer Bullet 1 |
 
 ## External Adapters
 
 | Seam | Production Adapter | Test Adapter | Test Seam | Status |
 | --- | --- | --- | --- | --- |
-| Knowledge Repository | Node-backed, root-scoped repository Adapter under `src/adapters/knowledge-repository/` | In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1 |
-| PDF | Deferred engine under `src/adapters/pdf/` | Deterministic fixture Adapter | S5 contract; used by S3 | Unimplemented; Tracer Bullet 4 |
-| Model | Deferred provider under `src/adapters/model/` | Narrow operation-specific Mock Adapters | Verified through S4, not an S5 equivalence contract | Unimplemented; Tracer Bullet 11 or later |
-| Clock and identity | Platform clock and identifier sources under `src/adapters/system/` | Deterministic In-memory Adapters | Owning behavior's seam | Unimplemented until observable behavior requires them |
+| Knowledge Repository | Root-scoped file-backed repository Adapter under `app/src/adapters/knowledge-repository/` | In-memory Adapter beside the Interface implementation | S5 contract; used by S1–S4 | Unimplemented; in-memory path begins in Tracer Bullet 1; file-backed path before V1 release |
+| PDF | Deferred engine under `app/src/adapters/pdf/` | Deterministic fixture Adapter | S5 contract; used by S3 | Unimplemented; Tracer Bullet 5 |
+| Model | Optional provider under `app/src/adapters/model/`; absent configuration is an explicit unavailable outcome | Narrow operation-specific Mock Adapters, including unavailable-provider behavior | Verified through S4, not an S5 equivalence contract | Unimplemented; Tracer Bullet 12 or later |
+| Clock and identity | Platform clock and identifier sources under `app/src/adapters/system/` | Deterministic In-memory Adapters | Owning behavior's seam | Unimplemented until observable behavior requires them |
 
 ## Map maintenance
 

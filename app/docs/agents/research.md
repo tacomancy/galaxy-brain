@@ -36,7 +36,7 @@ Use explicit markers where provenance or certainty could be confused:
 
 A hypothesis states what evidence would strengthen or weaken it. An agent inference remains attributable even when well supported.
 
-For external PDFs, keep the portable source record and page-linked annotations in `knowledge-repository/sources/papers/`. Use DOI or another persistent identifier, citation key, canonical URL, edition or version, and an optional logical locator. Preserve what the source claimed even if later evidence rejects it; annotate retractions or reliability changes separately.
+For external PDFs, keep the portable Source Record and page-linked annotations in the selected repository's `sources/papers/`. Use DOI or another persistent identifier, citation key, canonical URL, edition or version, and an optional logical locator. Preserve what the source claimed even if later evidence rejects it; annotate retractions or reliability changes separately.
 
 ## 4. Synthesize and challenge
 

@@ -1,6 +1,6 @@
 # Engineering glossary
 
-This glossary defines the vocabulary used to design, test, review, and maintain the Galaxy Brain codebase. It is deliberately separate from the [product-domain glossary](../../../CONTEXT.md) and the [knowledge-base glossary](../../../knowledge-repository/knowledge/registries/glossary.yaml). Engineering terms must not be added to either of those glossaries merely because the implementation uses them.
+This glossary defines the vocabulary used to design, test, review, and maintain the Galaxy Brain codebase. It is deliberately separate from the [product-domain glossary](../../../CONTEXT.md) and the knowledge-base glossary in the selected repository at `knowledge/registries/glossary.yaml`. Engineering terms must not be added to either of those glossaries merely because the implementation uses them.
 
 ## Codebase design
 

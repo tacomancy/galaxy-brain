@@ -1,10 +1,12 @@
 # galaxy-brain
 
+Galaxy Brain's public application project is MIT-licensed. The user's actual Knowledge Repository is a separate private repository and is never part of this project.
+
 Galaxy Brain combines a human-owned knowledge base for personal research and continuing education with the project files used to develop its desktop Knowledge Workbench. Agents are helpers: they may research, organize, test, and propose, while the user remains the primary author, learner, and authority over core knowledge.
 
 ## Start here
 
-- [Knowledge map](knowledge-repository/knowledge/README.md)
+- [Synthetic repository fixture](app/tests/fixtures/knowledge-repository/knowledge/README.md)
 - [Project documentation](app/docs/README.md)
 - [V1 Knowledge Workbench architecture](app/docs/architecture/v1-ui/README.md)
 - [Human-agent collaboration](app/docs/agents/collaboration.md)
@@ -17,18 +19,14 @@ Galaxy Brain combines a human-owned knowledge base for personal research and con
 
 ## Structure
 
-This development repository deliberately contains both application-project material and a working Knowledge Repository. Keep their roles distinct:
+This public development repository contains application-project material, a synthetic repository fixture, and a starter skeleton. Keep their roles distinct:
 
 - `app/`: the Galaxy Brain application project
   - `app/docs/`: application architecture, ADRs, guidance, proposals, and review records
   - `app/prototype/`: temporary, disposable GUI explorations
-- `knowledge-repository/`: the local, portable Knowledge Repository
-  - `knowledge-repository/assets/`: local images, reference documents, and other files supporting the knowledge base
-  - `knowledge-repository/knowledge/`: finalized, reviewed, approval-gated knowledge
-  - `knowledge-repository/projects/`: working knowledge notes organized around a specific project or outcome
-  - `knowledge-repository/proposals/`: proposals to change governed knowledge-base content
-  - `knowledge-repository/scratch/`: miscellaneous working knowledge notes that do not yet belong under a source or project
-  - `knowledge-repository/sources/`: working notes and annotations organized around a specific source, such as a book, PDF, class, paper, or website
-  - `knowledge-repository/templates/`: templates and snippets used to create knowledge-base files
+  - `app/templates/knowledge-repository/`: empty starter skeleton for a new user repository
+  - `app/tests/fixtures/knowledge-repository/`: synthetic fixture for tests and development; it is not user knowledge
 
-The application namespace and Knowledge Repository namespace are physically and logically distinct. Application source, dependencies, build output, and application-owned assets remain under `app/`; knowledge-base files remain under `knowledge-repository/`. A user can update the application while keeping the same Knowledge Repository, and can move or back up the Knowledge Repository without carrying application files with it.
+The application project, starter skeleton, and synthetic fixture are public. A user's Knowledge Repository lives in an independent sibling or otherwise user-selected directory with its own lifecycle. Galaxy Brain can create the files for a new repository, but does not initialize Git or perform commits. Git, Git LFS, remotes, credentials, and backups are optional external user-managed tooling.
+
+Agent Provider configuration is optional. Galaxy Brain remains usable for local repository, reading, editing, source, and governance workflows without an API key or configured provider; only Agentic Capabilities are unavailable until a provider is configured.

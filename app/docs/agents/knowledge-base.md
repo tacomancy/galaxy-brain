@@ -7,10 +7,10 @@ The user is the primary reader, writer, learner, and authority. Optimize the rep
 Classify the request before writing:
 
 - **Conversational research**: answer without durable repository changes unless the user asks to save the work.
-- **Knowledge-base research**: create and update relevant non-core working notes under `knowledge-repository/sources/`, `knowledge-repository/projects/`, or `knowledge-repository/scratch/`, and place repository-held supporting files under `knowledge-repository/assets/`. State the working paths and report every changed file.
-- **Core integration**: investigate and prepare an exact knowledge-base proposal under `knowledge-repository/proposals/`, then stop for final sign-off. An instruction to integrate establishes intent, not approval of an unseen change.
+- **Knowledge-base research**: create and update relevant non-core working notes under the selected repository's `sources/`, `projects/`, or `scratch/` roots, and place repository-held supporting files under its `assets/` root. State the working paths and report every changed file.
+- **Core integration**: investigate and prepare an exact knowledge-base proposal under the selected repository's `proposals/`, then stop for final sign-off. An instruction to integrate establishes intent, not approval of an unseen change.
 
-Documentation about the Galaxy Brain application belongs under `app/docs/`, with application proposals under `app/docs/proposals/` and durable reviews under `app/docs/reviews/`; none belongs under `knowledge-repository/projects/` or `knowledge-repository/proposals/`. Disposable GUI exploration belongs under `app/prototype/`.
+Documentation about the Galaxy Brain application belongs under `app/docs/`, with application proposals under `app/docs/proposals/` and durable reviews under `app/docs/reviews/`; none belongs under a selected repository's `projects/` or `proposals/` roots. Disposable GUI exploration belongs under `app/prototype/`.
 
 Edit existing human-authored working notes only when the task clearly calls for it. Preserve prior content. Use a companion note or proposal when ownership or intent is unclear. Deletion and broad restructuring require explicit authorization.
 
@@ -22,18 +22,18 @@ app/docs/     Galaxy Brain application and project documentation; never knowledg
 app/prototype/ temporary, disposable GUI exploration
 
 Knowledge base
-knowledge-repository/assets/      local images, reference documents, and other knowledge-supporting files
-knowledge-repository/knowledge/   finalized, reviewed core knowledge; every change requires final sign-off
-knowledge-repository/projects/    working knowledge notes organized around a specific project or outcome
-knowledge-repository/proposals/   candidate changes to governed knowledge-base content, registries, or templates
-knowledge-repository/scratch/     miscellaneous provisional knowledge notes with no durability promise
-knowledge-repository/sources/     working notes and annotations attributable to a specific source
-knowledge-repository/templates/   approved templates and snippets for knowledge-base files
+<repository-root>/assets/          local images, reference documents, and other knowledge-supporting files
+<repository-root>/knowledge/       finalized, reviewed core knowledge; every change requires final sign-off
+<repository-root>/projects/        working knowledge notes organized around a specific project or outcome
+<repository-root>/proposals/       candidate changes to governed knowledge-base content, registries, or templates
+<repository-root>/scratch/         miscellaneous provisional knowledge notes with no durability promise
+<repository-root>/sources/         working notes and annotations attributable to a specific source
+<repository-root>/templates/       approved templates and snippets for knowledge-base files
 ```
 
-This repository co-locates application-development material and a working knowledge base for development convenience. The boundary is semantic as well as physical: do not place application plans, design proposals, review ledgers, or GUI experiments in knowledge-base directories merely because those directories already exist. Application source, build output, dependencies, and application-owned assets also remain outside the knowledge-base roots.
+The public application project contains only a synthetic fixture and starter skeleton. A user's actual Knowledge Repository is an independent private repository, conventionally a sibling, and is selected explicitly. Do not place application plans, design proposals, review ledgers, or GUI experiments in a user's knowledge-base directories. Application source, build output, dependencies, and application-owned assets remain outside the Repository Format.
 
-Use `knowledge-repository/knowledge/README.md` as the manually curated knowledge map. Create subfolders when demonstrated use makes the filesystem easier to navigate.
+Use the selected repository's `knowledge/README.md` as the manually curated knowledge map. Create subfolders when demonstrated use makes the filesystem easier to navigate.
 
 ## Search before creating
 
@@ -43,7 +43,7 @@ Prefer an existing topic when it can absorb the material without losing cohesion
 
 ## Core gate
 
-Everything under `knowledge-repository/knowledge/` is core. Governed knowledge-base registries and templates use the same gate. Project guidance remains under `app/docs/`; when it requires an exact proposal, that proposal also remains under `app/docs/`. Before changing any governed file, present:
+Everything under the selected repository's `knowledge/` is core. Governed registries and templates use the same gate. Project guidance remains under `app/docs/`; when it requires an exact proposal, that proposal also remains under `app/docs/`. Before changing any governed file, present:
 
 1. Exact target files and diff.
 2. Rationale for the change.
@@ -99,11 +99,11 @@ Lifecycle is distinct from certainty, evidence quality, and conflict. Agents mai
 
 ## Tags, aliases, and glossary
 
-`knowledge-repository/knowledge/registries/tags.yaml` is the source of truth for approved tags and tag aliases. Use tags only for demonstrated, cross-cutting queries; use folders for location, links for semantic relationships, and metadata for type and lifecycle.
+The selected repository's `knowledge/registries/tags.yaml` is the source of truth for approved tags and tag aliases. Use tags only for demonstrated, cross-cutting queries; use folders for location, links for semantic relationships, and metadata for type and lifecycle.
 
 Search the registry before tagging. Put unapproved working tags in `candidate_tags`. Adding, merging, renaming, or deprecating a tag requires an exact proposal. Keep note-title aliases in the canonical note's frontmatter.
 
-`knowledge-repository/knowledge/registries/glossary.yaml` maps terms and acronyms to canonical definitions. It points to definitions rather than copying them. Renderers may auto-link unambiguous glossary terms and show the canonical definition on hover.
+The selected repository's `knowledge/registries/glossary.yaml` maps terms and acronyms to canonical definitions. It points to definitions rather than copying them. Renderers may auto-link unambiguous glossary terms and show the canonical definition on hover.
 
 ## Links and addressable objects
 
@@ -130,7 +130,7 @@ Raw files remain intelligible without the future workbench. Supported source con
 - semantic callouts such as `> [!EVIDENCE]` and `> [!CONFLICT]`;
 - `==highlighting==` and allowlisted semantic HTML spans;
 - inline `$...$` and display `$$...$$` LaTeX-style mathematics;
-- reusable macros registered in `knowledge-repository/knowledge/registries/math-macros.yaml`;
+- reusable macros registered in the selected repository's `knowledge/registries/math-macros.yaml`;
 - fenced Mermaid diagrams;
 - ordinary Markdown image links to lightweight assets; and
 - addressable directives such as `::: equation {#anchor title="..."}`.
@@ -147,10 +147,18 @@ Editorial changes need no history. Record a refinement only when a future reader
 - the responsible evidence; and
 - the approval date.
 
-Use an in-topic `Evolution` section for local changes and a linked core decision note for cross-cutting changes. Git records what changed; the evolution record explains why.
+Use an in-topic `Evolution` section for local changes and a linked core decision note for cross-cutting changes. External version-control tools may record what changed; the evolution record explains why. Galaxy Brain does not require or invoke those tools.
 
 ## External files
 
-Place files managed inside the knowledge base under `knowledge-repository/assets/`, including images, diagrams, reference documents, and other knowledge-supporting files. Keep source notes and annotations under `knowledge-repository/sources/`; they describe and locate sources but do not need to contain the source bytes.
+Place files managed inside the knowledge base under the selected repository's `assets/`, including images, diagrams, reference documents, and other knowledge-supporting files. Keep source notes and annotations under its `sources/`; they describe and locate sources but do not need to contain the source bytes.
 
-Files intentionally kept elsewhere remain external and are referenced through portable Source Records with stable identifiers, canonical URLs, logical locators, and repository-held annotations. Follow the accepted storage policy before adding large files. Never invent or commit a machine-specific path.
+Files intentionally kept elsewhere remain external and are referenced through portable Source Records with stable identifiers, canonical URLs, logical locators, and repository-held annotations. Managed PDFs use `assets/sources/**/*.pdf` and the `managed` Source Asset mode; linked-local assets retain their absolute path and SHA-256 identity only in machine-local configuration. Never invent or write a machine-specific path into repository content, proposals, logs, or audit records.
+
+## Local-first repository operations
+
+Galaxy Brain may create repository files, audit records under `proposals/applied/`, and targeted rollback data through recoverable filesystem transactions. It never requires or invokes Git, Git LFS, GitHub, credentials, remotes, or network connectivity. Users manage initialization, commits, branching, synchronization, and backups externally. After a local save, the Workbench reports that the change is saved locally without claiming it is committed or backed up.
+
+Agent Provider configuration is not Knowledge Repository content. Missing API keys or provider configuration must not prevent local reading, editing, source, annotation, governance, or repository work. Agentic Capabilities may be unavailable and should say so clearly; never write provider credentials, prompts, or machine-local provider paths into repository content, audit records, or ordinary knowledge notes.
+
+Before a mutation, recheck fingerprints for targeted files. Preserve external edits, abort stale operations, and require explicit review. Never automatically delete audit records or rollback history; future Repository Housekeeping reports require explicit approval.

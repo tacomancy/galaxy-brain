@@ -6,7 +6,7 @@ Evidence policy: current first-party project documentation, accessed 2026-08-26
 
 ## Question and constraints
 
-Choose the smallest responsible stack for a macOS-only V1 Knowledge Workbench while preserving a credible path to Windows and Linux. The application must open an arbitrary user-selected Galaxy Brain repository, make the rendered desktop application automatable at the confirmed S1 Test Seam, and leave room for rich/source editing and deep PDF processing.
+Choose the smallest responsible stack for a macOS-only V1 Knowledge Workbench while preserving a credible path to Windows and Linux. The application must open or scaffold an arbitrary user-selected Galaxy Brain repository, make the rendered desktop application automatable at the confirmed S1 Test Seam, and leave room for rich/source editing and deep PDF processing without requiring Git or network services.
 
 The decision is about the production foundation, not the disposable prototype. It should preserve the accepted application Modules and Test Seams rather than turn framework objects, routes, editor nodes, or storage paths into Interfaces.
 
@@ -65,15 +65,15 @@ Electron's simpler filesystem access must not become renderer-wide authority:
 3. A **preload Adapter** exposes small, typed, operation-specific methods through `contextBridge`; it never exposes `ipcRenderer`, filesystem primitives, paths, or a generic command channel. Electron's preload guidance demonstrates wrapping individual IPC operations rather than exposing the IPC module. [Electron preload guidance](https://www.electronjs.org/docs/latest/tutorial/tutorial-preload) · [context isolation](https://www.electronjs.org/docs/latest/tutorial/context-isolation)
 4. Every privileged handler validates the IPC sender and validates requested logical paths against the canonical selected root, including symlink behavior. Electron explicitly requires sender validation. [Electron security](https://www.electronjs.org/docs/latest/tutorial/security)
 5. Serve application assets through a controlled custom scheme instead of granting `file://` privileges. Electron recommends custom protocols because `file://` can expose local files more broadly. [Electron security](https://www.electronjs.org/docs/latest/tutorial/security)
-6. Keep session configuration and machine paths outside the selected repository. The repository stores portable Source Records and logical Source Locators, consistent with the accepted architecture.
+6. Keep session configuration, linked-local paths, hashes, and machine-local rollback indexes outside the portable Repository Format. The repository stores portable Source Records and logical Source Locators, consistent with the accepted architecture.
 
 These are architectural constraints, not optional hardening tasks. The renderer-to-preload bridge is an Adapter around Electron desktop capabilities; it must not become the Knowledge Repository Interface or move application rules into IPC handlers.
 
 ## TDD consequences
 
-- **Tracer Bullet 1 / S1:** WebdriverIO launches the compiled Electron application and operates Atlas through accessible names and visible outcomes. It uses the real Workbench-owned Modules and the in-memory Knowledge Repository Adapter. It does not inspect React state, routes, or storage.
+- **Tracer Bullet 1 / S1:** WebdriverIO launches the compiled Electron application and operates Atlas through accessible names and visible outcomes. It uses the real Workbench-owned Modules and the in-memory file-semantics Adapter. It does not inspect React state, routes, or storage.
 - **S2-S4:** Vitest calls the confirmed Module Interfaces with literal fixtures and Independent Expected Values.
-- **S5:** the same Vitest contract suite runs against the in-memory and Node-backed Knowledge Repository Adapters; later, the PDF contract suite runs against its fixture and production Adapters.
+- **S5:** the same Vitest contract suite runs against the in-memory and file-backed Knowledge Repository Adapters; later, the PDF contract suite runs against its fixture and production Adapters. Git and Git LFS are outside the V1 application boundary.
 - **True desktop seams:** WebdriverIO may replace a native dialog response or another Electron API only when the behavior under test crosses that External System Seam. WebdriverIO documents Electron API mocking; Workbench-owned Modules remain real. [WebdriverIO Electron mocking](https://webdriver.io/docs/desktop-testing/electron/mocking/)
 - **Accessibility:** S1 selectors should prefer accessible names and assert visible focus and semantics where those are the Public Behavior. Static JSX lint and automated checks supplement but do not replace keyboard and assistive-technology review. [WebdriverIO best practices](https://webdriver.io/docs/bestpractices/) · [JSX accessibility lint limitations](https://github.com/jsx-eslint/eslint-plugin-jsx-a11y)
 
@@ -81,6 +81,6 @@ These are architectural constraints, not optional hardening tasks. The renderer-
 
 1. Run Tracer Bullet 1 against the compiled app with WebdriverIO before treating the harness as established; `@wdio/electron-service` is documented in the WebdriverIO ecosystem but its service reference identifies it as a third-party package. [WebdriverIO Electron service](https://webdriver.io/docs/wdio-electron-service/)
 2. Verify a packaged `.app` in addition to development launch before the first release checkpoint; packaging and development have different paths and security settings. Forge's `make` flow first packages the application and then creates the distributable. [Electron Forge packaging flow](https://www.electronjs.org/docs/latest/tutorial/tutorial-packaging)
-3. Add a repository-root threat model before enabling writes: path normalization, symlinks, atomic updates, external modifications, and partial failures are production Adapter concerns that S5 must make observable without freezing filenames or layout.
+3. Add a repository-root threat model before enabling writes: path normalization, symlinks, atomic updates, external modifications, fingerprints, rollback, and partial failures are production Adapter concerns that S5 must make observable without freezing filenames or layout.
 4. Budget continuous Electron upgrades. Electron supports only its latest three stable releases and explicitly recommends staying current for security. [Electron release policy](https://www.electronjs.org/docs/latest/tutorial/electron-timelines) · [Electron security](https://www.electronjs.org/docs/latest/tutorial/security)
 5. Treat signing credentials and notarization as CI secrets; do not delay a signed-package smoke test until the end of V1. Electron documents signing as part of trusted distribution. [Electron distribution](https://www.electronjs.org/docs/latest/tutorial/distribution-overview)

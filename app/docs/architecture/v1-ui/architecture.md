@@ -4,7 +4,7 @@
 
 The architecture should make the human trust boundary deep: UI callers request meaningful knowledge operations through small interfaces, while provenance, version checks, autosave, proposal dependencies, recovery, and audit behavior remain local to the modules that own those rules.
 
-The three workspaces are user-facing concepts, not three independent data silos. They are desktop UI adapters over shared application modules and the same repository state.
+The three workspaces are user-facing concepts, not three independent data silos. They are desktop UI adapters over shared application modules and the same repository state. That state conforms to the VCS-neutral [Repository Format](repository-format.md) and lives outside the installed Workbench.
 
 ```mermaid
 flowchart LR
@@ -30,7 +30,7 @@ flowchart LR
   C --> Q
   G --> Q
 
-  Q --> F[Repository adapter]
+  Q --> F[File-backed repository adapter]
   C --> PDF[PDF adapter]
   D --> M[Model adapter]
 ```
@@ -52,7 +52,9 @@ flowchart LR
   UI --> BR --> MAIN --> MOD --> AD
 ```
 
-The renderer owns presentation and unprivileged interaction state. It receives only small operation-specific capabilities from preload. The main process owns the selected repository root, validates privileged requests, and composes framework-independent application Modules with production Adapters. Domain rules do not live in React views, preload, or IPC handlers.
+The renderer owns presentation and unprivileged interaction state. It receives only small operation-specific capabilities from preload. The main process owns the selected repository root, validates privileged requests, and composes framework-independent application Modules with production Adapters. Domain rules do not live in React views, preload, or IPC handlers. The app does not invoke Git or Git LFS; the repository Adapter operates on validated files.
+
+Agent Provider configuration is machine-local and optional. Its absence is a normal capability state, not an application-startup failure: local repository and Workbench Modules remain available, while operations that require an Agent Provider return an explicit unavailable outcome. Provider credentials never enter the Repository Format, repository audit records, logs, or proposals.
 
 The live correspondence between these responsibilities and source files belongs in the [code map](code-map.md), which is updated whenever production Modules or Adapters move.
 
@@ -66,7 +68,7 @@ Callers do not manage route serialization, session persistence, or context recon
 
 ### Source Processing module
 
-Its interface captures a Structured Annotation, reports source availability, relinks a Source Record, and requests Synthesis from selected annotations. Its implementation owns locator integrity, attribution, capture classification, incomplete-capture tracking, target suggestions, and the distinction between capture and Synthesis.
+Its interface adds a PDF with an explicit Source Asset mode, captures a Structured Annotation, reports source availability, relinks or changes the mode of a Source Record, and requests Synthesis from selected annotations. Its implementation owns Source Record creation, storage-choice validation, linked-file identity, locator integrity, attribution, capture classification, incomplete-capture tracking, target suggestions, and the distinction between adding a source, capture, and Synthesis.
 
 The interface returns domain outcomes—including “no knowledge change”—rather than directly modifying Governed Knowledge.
 
@@ -78,7 +80,7 @@ Rendering and parsing mechanics stay behind the interface. Tests and callers sho
 
 ### Governance module
 
-Its interface drafts a Proposal, records Judgment on reviewable changes, and applies an eligible Proposal. Its implementation owns exact-version binding, evidence and epistemic requirements, dependency validation, stale-review detection, selective decisions, audit records, evolution requirements, and reversible version creation.
+Its interface drafts a Proposal, records Judgment on reviewable changes, and applies an eligible Proposal. Its implementation owns exact-version binding, evidence and epistemic requirements, dependency validation, stale-review detection, selective decisions, immutable repository-held audit records, targeted rollback history, filesystem transaction recovery, external-edit detection, evolution requirements, and reversible version creation. It never delegates authority to Git commit status.
 
 This is the primary trust module. UI adapters may explain or render its outcomes but may not duplicate or bypass its eligibility rules.
 
@@ -96,10 +98,10 @@ Its interface records user-owned goals, suggests progress with evidence, and acc
 
 | State class | Examples | Authority and persistence |
 | --- | --- | --- |
-| Governed Knowledge | reviewed topics, maps, registries, guidance, templates | Repository source of truth; changes only through eligible applied Proposals |
-| Working Material | drafts, annotations, captures, draft Proposals | Continuously autosaved; attributed; not authoritative merely because it is saved |
+| Governed Knowledge | reviewed topics, maps, registries, guidance, templates | Repository source of truth; changes only through eligible applied Proposals and recoverable file transactions |
+| Working Material | drafts, annotations, captures, draft Proposals | Continuously autosaved; attributed; neither saving nor external Git status makes it authoritative |
 | Session state | active workspace, Working Set, reading position, pane preferences | Restorable convenience state; must not redefine knowledge |
-| Derived state | search index, Generated Relationships, actionable counts | Rebuildable projection; must link back to authoritative or working items |
+| Derived state | search index, Generated Relationships, actionable counts | Rebuildable projection outside the Repository Format; must link back to authoritative or working items |
 | External source state | PDF availability and resolved local locator | Replaceable adapter state; Source Record and logical locators remain portable |
 
 No UI adapter owns durable domain state. Atlas cards, Studio inspectors, and Paper Desk tabs are projections or interaction surfaces over module interfaces.
@@ -108,9 +110,9 @@ No UI adapter owns durable domain state. Atlas cards, Studio inspectors, and Pap
 
 Introduce an adapter only where behavior genuinely varies:
 
-- **Knowledge Repository seam:** a production repository adapter and an in-memory adapter used by behavior tests justify the seam. It stores and retrieves both Working Material and versioned Governed Knowledge without exposing filesystem details to application modules.
+- **Knowledge Repository seam:** a production file-backed repository Adapter and an in-memory Adapter used by behavior tests justify the seam. It stores and retrieves Working Material, Governed Knowledge, audit records, and rollback data without exposing filesystem details to application modules. Git is optional external tooling, not an application dependency.
 - **PDF seam:** the chosen PDF engine is an external dependency. A deterministic fixture adapter supplies known pages, text, and locators in tests.
-- **Model seam:** any model used for Ask answers, relationship suggestions, or progress suggestions is a true external dependency. Tests provide a narrow mock adapter with one operation-specific response shape per capability; there is no generic conditional “model” mock.
+- **Model seam:** any model used for Ask answers, agent-assisted Synthesis, relationship suggestions, or progress suggestions is a true external dependency. Its configuration is optional and machine-local. Tests provide a narrow mock adapter with one operation-specific response shape per capability, including an unavailable-provider outcome; there is no generic conditional “model” mock.
 - **Time and identity seams:** clocks and identifier sources are injected where timestamps, staleness, or stable identities affect observable behavior.
 
 Do not introduce interfaces around internal parsers, reducers, view models, or workspace helpers merely to mock them. Those remain implementation details exercised through the module that owns their behavior.
@@ -127,9 +129,13 @@ Do not introduce interfaces around internal parsers, reducers, view models, or w
 8. Ask cannot claim support absent from the selected knowledge scope and cannot mutate knowledge.
 9. Global and contextual workspace transitions preserve relevant context without merging workspace responsibilities.
 10. Accessibility semantics belong to the public desktop interface, not a later visual-polish phase.
+11. Galaxy Brain never requires or invokes Git, Git LFS, GitHub, credentials, or network connectivity for local use.
+12. Applying a Proposal never overwrites external edits, leaves a partial transaction silently, or claims external backup.
+13. A linked Source Asset whose bytes change is not silently treated as the same source.
+14. Missing Agent Provider configuration never prevents local Workbench use; Agentic Capabilities report their unavailable state without mutating local knowledge.
 
 ## Selected foundation and deferred technology
 
 The selected foundation is Electron, React, strict TypeScript, Electron Forge with Webpack, npm, Vitest, WebdriverIO, ESLint, and Prettier. The rationale and version-sensitive evidence live in the [stack decision brief](stack-research.md).
 
-The package still does not choose an editor engine, PDF engine, index, model provider, updater, state-management library, router, or native database. A choice is justified only when a Vertical Slice encounters behavior that cannot be implemented responsibly without it. When a choice is hard to reverse, surprising, and a genuine trade-off, record it in a new ADR before allowing it to spread across Module Interfaces.
+The package still does not choose an editor engine, PDF engine, index, model provider, updater, state-management library, router, or native database. Agent Provider configuration and credentials remain optional runtime capabilities rather than package prerequisites. A choice is justified only when a Vertical Slice encounters behavior that cannot be implemented responsibly without it. When a choice is hard to reverse, surprising, and a genuine trade-off, record it in a new ADR before allowing it to spread across Module Interfaces.

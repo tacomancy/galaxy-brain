@@ -13,7 +13,9 @@ year:
 doi:
 url:
 citekey:
-external_locator:
+asset_mode:
+repository_asset:
+logical_locator:
 ---
 
 # Title

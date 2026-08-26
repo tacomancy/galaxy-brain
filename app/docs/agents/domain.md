@@ -19,8 +19,10 @@ This is a single-context repository:
     │   ├── docs/adr/
     │   │   ├── 0001-example-decision.md
     │   │   └── 0002-another-decision.md
-    │   └── src/
-    └── knowledge-repository/
+    │   ├── src/
+    │   ├── templates/knowledge-repository/
+    │   └── tests/fixtures/knowledge-repository/
+    └── <selected-private-repository>/
 
 ## Use the glossary's vocabulary
 
