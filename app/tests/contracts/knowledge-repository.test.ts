@@ -361,6 +361,32 @@ describe("file-backed Knowledge Repository contract", () => {
       [],
     );
   });
+
+  it("reports an unreadable workbench context without hiding the failure", async () => {
+    const repositoryPath = join(temporaryRoot, "unreadable-context-repository");
+    await cp(
+      resolve(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+    await rm(
+      join(repositoryPath, "sources", "papers", "bayesian-statistics.md"),
+    );
+
+    const result =
+      await createFileBackedKnowledgeRepository(
+        starterRoot,
+      ).readWorkbenchContext(repositoryPath);
+
+    assert.deepEqual(result.outcome, "unavailable");
+    if (result.outcome === "unavailable") {
+      assert.equal(
+        result.detail,
+        "The selected repository context could not be read.",
+      );
+      assert.equal(result.cause instanceof Error, true);
+    }
+  });
 });
 
 describe("Workbench Session selection contract", () => {
@@ -375,7 +401,10 @@ describe("Workbench Session selection contract", () => {
           outcome: "invalid-format",
           detail: "invalid",
         }),
-        readWorkbenchContext: async () => undefined,
+        readWorkbenchContext: async () => ({
+          outcome: "not-found",
+          detail: "No contextual topic is available.",
+        }),
       },
       {
         readSelectedRepository: async () => undefined,

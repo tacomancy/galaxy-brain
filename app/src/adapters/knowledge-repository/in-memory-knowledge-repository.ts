@@ -39,6 +39,9 @@ export const createInMemoryKnowledgeRepository = (): KnowledgeRepository => {
 
       return { outcome: "opened", repositoryPath: canonicalPath };
     },
-    readWorkbenchContext: async () => undefined,
+    readWorkbenchContext: async () => ({
+      outcome: "not-found",
+      detail: "No contextual topic is available.",
+    }),
   };
 };

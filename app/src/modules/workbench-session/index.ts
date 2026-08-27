@@ -1,22 +1,32 @@
+/** Workspace names exposed by the V1 Workbench shell. */
 export type WorkbenchWorkspace = "atlas" | "studio" | "paper-desk";
 
+/** Stable, visible identity used when a topic is carried between workspaces. */
 export interface WorkbenchTopic {
   id: string;
   title: string;
 }
 
+/** Stable, visible identity used when a Source Record is carried between workspaces. */
 export interface WorkbenchSourceRecord {
   id: string;
   title: string;
 }
 
-/** The bounded context carried between the V1 workspaces. */
+/**
+ * The bounded context carried between the V1 workspaces. A context is complete
+ * only when it contains one topic and its associated Source Record.
+ */
 export interface WorkbenchContext {
   topic: WorkbenchTopic;
   sourceRecord: WorkbenchSourceRecord;
 }
 
-/** Caller-visible state rendered by the desktop Workbench shell. */
+/**
+ * Caller-visible state rendered by the desktop Workbench shell. A selected
+ * state always has a canonical repository path and access mode; contextual
+ * state is omitted when the selected repository has no complete context.
+ */
 export interface WorkbenchState {
   activeWorkspace: WorkbenchWorkspace;
   repositoryStatus: "not-selected" | "selected";
@@ -33,6 +43,10 @@ export interface FreshWorkbench extends WorkbenchState {
   activeWorkspace: "atlas";
 }
 
+/**
+ * Caller-visible outcomes for repository selection. Failure outcomes preserve
+ * the current selection; successful outcomes identify the canonical root.
+ */
 export type RepositoryOperationOutcome =
   | { outcome: "canceled" }
   | { outcome: "created"; repositoryPath: string }
@@ -57,6 +71,19 @@ export type RepositoryResumeFailure = Extract<
   }
 >;
 
+/**
+ * Result of reading optional contextual metadata. `cause` is retained only in
+ * the main-process Module for diagnostics and is never sent to the renderer.
+ */
+export type WorkbenchContextReadOutcome =
+  | { outcome: "available"; context: WorkbenchContext }
+  | { outcome: "not-found"; detail: string }
+  | { outcome: "unavailable"; detail: string; cause: unknown };
+
+/**
+ * Caller-visible result of a contextual workspace transition. A failed
+ * transition leaves the current workspace and context unchanged.
+ */
 export type WorkspaceTransitionOutcome =
   | { outcome: "transitioned"; workbench: WorkbenchState }
   | { outcome: "context-unavailable"; detail: string };
@@ -64,14 +91,18 @@ export type WorkspaceTransitionOutcome =
 /**
  * The Knowledge Repository behavior required by the current Workbench
  * Session. The Adapter owns filesystem details; the Module owns selection
- * state and caller-facing outcomes.
+ * state and caller-facing outcomes. Selection methods return discriminated
+ * outcomes rather than throwing expected validation or availability failures.
  */
 export interface KnowledgeRepository {
+  /** Creates a repository only at a new or explicitly empty target. */
   createAt(repositoryPath: string): Promise<RepositoryOperationOutcome>;
+  /** Validates and opens an existing repository without changing its files. */
   openAt(repositoryPath: string): Promise<RepositoryOperationOutcome>;
+  /** Reads the optional complete topic-to-Source-Record context for a root. */
   readWorkbenchContext(
     repositoryPath: string,
-  ): Promise<WorkbenchContext | undefined>;
+  ): Promise<WorkbenchContextReadOutcome>;
 }
 
 /**
@@ -109,6 +140,11 @@ export interface WorkbenchSession {
   ): Promise<WorkspaceTransitionOutcome>;
 }
 
+/**
+ * Composes repository and machine-local session Adapters behind the
+ * Workbench Session Interface. It keeps selection and in-session context in
+ * memory and does not persist active workspace navigation.
+ */
 export const createWorkbenchSession = (
   knowledgeRepository: KnowledgeRepository,
   sessionState: WorkbenchSessionState,
@@ -119,6 +155,10 @@ export const createWorkbenchSession = (
         access: "read-write" | "read-only";
         selection: "created" | "opened" | "read-only-compatible";
         context?: WorkbenchContext;
+        contextReadFailure?: Extract<
+          WorkbenchContextReadOutcome,
+          { outcome: "unavailable" }
+        >;
       }
     | undefined;
 
@@ -127,11 +167,15 @@ export const createWorkbenchSession = (
 
   const readWorkbenchContext = async (
     repositoryPath: string,
-  ): Promise<WorkbenchContext | undefined> => {
+  ): Promise<WorkbenchContextReadOutcome> => {
     try {
       return await knowledgeRepository.readWorkbenchContext(repositoryPath);
-    } catch {
-      return undefined;
+    } catch (cause: unknown) {
+      return {
+        outcome: "unavailable",
+        detail: "The selected repository context could not be read.",
+        cause,
+      };
     }
   };
 
@@ -153,12 +197,19 @@ export const createWorkbenchSession = (
       outcome.outcome === "opened" ||
       outcome.outcome === "read-only-compatible"
     ) {
-      const context = await readWorkbenchContext(outcome.repositoryPath);
+      const contextReadOutcome = await readWorkbenchContext(
+        outcome.repositoryPath,
+      );
       selectedRepository = {
         path: outcome.repositoryPath,
         access: outcome.outcome === "opened" ? "read-write" : "read-only",
         selection: outcome.outcome,
-        ...(context === undefined ? {} : { context }),
+        ...(contextReadOutcome.outcome === "available"
+          ? { context: contextReadOutcome.context }
+          : {}),
+        ...(contextReadOutcome.outcome === "unavailable"
+          ? { contextReadFailure: contextReadOutcome }
+          : {}),
       };
       return;
     }
@@ -189,13 +240,20 @@ export const createWorkbenchSession = (
       };
     }
 
-    const context = await readWorkbenchContext(outcome.repositoryPath);
+    const contextReadOutcome = await readWorkbenchContext(
+      outcome.repositoryPath,
+    );
     selectedRepository = {
       path: outcome.repositoryPath,
       access:
         outcome.outcome === "read-only-compatible" ? "read-only" : "read-write",
       selection: outcome.outcome,
-      ...(context === undefined ? {} : { context }),
+      ...(contextReadOutcome.outcome === "available"
+        ? { context: contextReadOutcome.context }
+        : {}),
+      ...(contextReadOutcome.outcome === "unavailable"
+        ? { contextReadFailure: contextReadOutcome }
+        : {}),
     };
     repositoryResumeFailure = undefined;
 
@@ -229,7 +287,9 @@ export const createWorkbenchSession = (
     if (workspace !== "atlas" && workbench.context === undefined) {
       return {
         outcome: "context-unavailable",
-        detail: "The selected workspace context is not available.",
+        detail:
+          repository.contextReadFailure?.detail ??
+          "The selected workspace context is not available.",
       };
     }
 
