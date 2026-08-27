@@ -23,7 +23,19 @@ const result: SynthesisSavedResult = {
     model: "fixture-pinned-model",
     generatedAt: "2026-08-27T20:30:00.000Z",
     operation: "synthesize-into-topic",
-    sourceContext: [],
+    sourceContext: [
+      {
+        annotationId:
+          "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+        sourceRecord: {
+          id: "bayesian-statistics-fixture-source",
+          title: "Bayesian statistics fixture source",
+        },
+        sourceLocator: "page:2#chars=0-54",
+        attribution: "source-claim",
+        classification: "source-claim",
+      },
+    ],
   },
   prompt: "Explain how this evidence supports the topic.",
   contextSnapshotVersion: 2,
@@ -58,7 +70,19 @@ const result: SynthesisSavedResult = {
         model: "fixture-pinned-model",
         generatedAt: "2026-08-27T20:00:00.000Z",
         operation: "synthesize-into-topic",
-        sourceContext: [],
+        sourceContext: [
+          {
+            annotationId:
+              "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+            sourceRecord: {
+              id: "bayesian-statistics-fixture-source",
+              title: "Bayesian statistics fixture source",
+            },
+            sourceLocator: "page:2#chars=0-54",
+            attribution: "source-claim",
+            classification: "source-claim",
+          },
+        ],
       },
       resultVersion: 1,
     },

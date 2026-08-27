@@ -29,7 +29,9 @@ declare global {
         workspace: WorkbenchWorkspace,
       ): Promise<WorkspaceTransitionOutcome>;
       openSavedAnnotation(): Promise<ReadingPositionOutcome>;
-      prepareSynthesis(): Promise<PrepareSynthesisOutcome>;
+      prepareSynthesis(
+        includeAllContext: boolean,
+      ): Promise<PrepareSynthesisOutcome>;
       removeSynthesisContextItem(
         annotationId: string,
       ): Promise<PrepareSynthesisOutcome>;

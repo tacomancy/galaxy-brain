@@ -54,6 +54,14 @@ const isContextSnapshot = (value: unknown): value is SynthesisContextSnapshot =>
   isNonEmptyString(value.contentIdentity) &&
   isNonEmptyString(value.summary);
 
+const isSourceContextReference = (value: unknown): boolean =>
+  isRecord(value) &&
+  isNonEmptyString(value.annotationId) &&
+  isSourceRecord(value.sourceRecord) &&
+  isNonEmptyString(value.sourceLocator) &&
+  value.attribution === "source-claim" &&
+  value.classification === "source-claim";
+
 const isHumanEdit = (value: unknown): value is SynthesisHumanEdit =>
   isRecord(value) &&
   value.attribution === "human-authored" &&
@@ -65,6 +73,15 @@ const isHumanEdit = (value: unknown): value is SynthesisHumanEdit =>
 const isSynthesisSavedResult = (
   value: unknown,
 ): value is SynthesisSavedResult => {
+  const provenance =
+    isRecord(value) && isRecord(value.provenance)
+      ? value.provenance
+      : undefined;
+  const sourceContext =
+    provenance !== undefined && Array.isArray(provenance.sourceContext)
+      ? provenance.sourceContext
+      : undefined;
+
   if (
     !isRecord(value) ||
     !isNonEmptyString(value.id) ||
@@ -74,13 +91,14 @@ const isSynthesisSavedResult = (
     !isRecord(value.targetTopic) ||
     !isNonEmptyString(value.targetTopic.id) ||
     !isNonEmptyString(value.targetTopic.title) ||
-    !isRecord(value.provenance) ||
-    value.provenance.attribution !== "agent-generated" ||
-    !isNonEmptyString(value.provenance.provider) ||
-    !isNonEmptyString(value.provenance.model) ||
-    !isNonEmptyString(value.provenance.generatedAt) ||
-    value.provenance.operation !== "synthesize-into-topic" ||
-    !Array.isArray(value.provenance.sourceContext)
+    provenance === undefined ||
+    provenance.attribution !== "agent-generated" ||
+    !isNonEmptyString(provenance.provider) ||
+    !isNonEmptyString(provenance.model) ||
+    !isNonEmptyString(provenance.generatedAt) ||
+    provenance.operation !== "synthesize-into-topic" ||
+    sourceContext === undefined ||
+    !sourceContext.every(isSourceContextReference)
   ) {
     return false;
   }
@@ -95,7 +113,13 @@ const isSynthesisSavedResult = (
   if (
     value.contextSnapshot !== undefined &&
     (!Array.isArray(value.contextSnapshot) ||
-      !value.contextSnapshot.every(isContextSnapshot))
+      !value.contextSnapshot.every(isContextSnapshot) ||
+      !value.contextSnapshot.every((snapshot) =>
+        sourceContext.some(
+          (source: unknown) =>
+            isRecord(source) && source.annotationId === snapshot.annotationId,
+        ),
+      ))
   ) {
     return false;
   }

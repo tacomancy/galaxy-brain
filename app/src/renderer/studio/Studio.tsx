@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useState, type JSX } from "react";
 
 import type {
   ConfirmSynthesisOutcome,
@@ -11,7 +11,7 @@ import type { WorkbenchState } from "../../modules/workbench-session";
 interface StudioProps {
   workbench: WorkbenchState;
   onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
-  onPrepareSynthesis: () => Promise<void>;
+  onPrepareSynthesis: (includeAllContext: boolean) => Promise<void>;
   onRemoveSynthesisContextItem: (annotationId: string) => Promise<void>;
   onConfirmSynthesis: (
     confirmation: "confirmed" | "declined" | "canceled",
@@ -41,6 +41,8 @@ export const Studio = ({
   restoreOutcome,
   onRestoreSynthesisResult,
 }: StudioProps): JSX.Element => {
+  const [includeAllContext, setIncludeAllContext] = useState(false);
+
   if (workbench.activeWorkspace !== "studio") {
     throw new Error("Studio requires an active Studio workspace.");
   }
@@ -163,10 +165,21 @@ export const Studio = ({
                 id="studio-synthesis-prepare"
                 className="button button-secondary"
                 type="button"
-                onClick={onPrepareSynthesis}
+                onClick={() => onPrepareSynthesis(includeAllContext)}
               >
                 Review Synthesis request
               </button>
+              <label className="checkbox-row">
+                <input
+                  id="studio-synthesis-include-all-context"
+                  type="checkbox"
+                  checked={includeAllContext}
+                  onChange={(event) =>
+                    setIncludeAllContext(event.currentTarget.checked)
+                  }
+                />
+                Include all saved claims for this Source Record
+              </label>
               {synthesisPreview === undefined ? null : (
                 <div
                   id="studio-synthesis-preview"

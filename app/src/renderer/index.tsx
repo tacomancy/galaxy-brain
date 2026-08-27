@@ -142,8 +142,10 @@ const WorkbenchShell = ({
     }
   };
 
-  const prepareSynthesis = async (): Promise<void> => {
-    const outcome = await window.workbench.prepareSynthesis();
+  const prepareSynthesis = async (
+    includeAllContext: boolean,
+  ): Promise<void> => {
+    const outcome = await window.workbench.prepareSynthesis(includeAllContext);
 
     if (outcome.outcome === "preview-ready") {
       setSynthesisPreview(outcome.preview);

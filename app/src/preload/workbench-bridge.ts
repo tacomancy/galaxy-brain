@@ -44,8 +44,10 @@ contextBridge.exposeInMainWorld("workbench", {
     ipcRenderer.invoke("workbench:switch-workspace", workspace),
   openSavedAnnotation: (): Promise<ReadingPositionOutcome> =>
     ipcRenderer.invoke("workbench:open-saved-annotation"),
-  prepareSynthesis: (): Promise<PrepareSynthesisOutcome> =>
-    ipcRenderer.invoke("workbench:prepare-synthesis"),
+  prepareSynthesis: (
+    includeAllContext: boolean,
+  ): Promise<PrepareSynthesisOutcome> =>
+    ipcRenderer.invoke("workbench:prepare-synthesis", includeAllContext),
   removeSynthesisContextItem: (
     annotationId: string,
   ): Promise<PrepareSynthesisOutcome> =>

@@ -22,6 +22,7 @@ describe("Review a Synthesis request", () => {
 
     await $("#open-repository").click();
     await $("#atlas-topic-open-studio").click();
+    await $("#studio-synthesis-include-all-context").click();
     await $("#studio-synthesis-prepare").click();
     await $("#studio-synthesis-preview").waitForDisplayed();
 
