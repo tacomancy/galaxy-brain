@@ -6,11 +6,18 @@
  */
 import { contextBridge, ipcRenderer } from "electron";
 
-import type { FreshWorkbench } from "../modules/workbench-session";
+import type {
+  FreshWorkbench,
+  RepositoryOperationOutcome,
+} from "../modules/workbench-session";
 
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
   // serializable state needed to render Atlas.
   openFreshWorkbench: (): Promise<FreshWorkbench> =>
     ipcRenderer.invoke("workbench:open-fresh"),
+  createRepository: (): Promise<RepositoryOperationOutcome> =>
+    ipcRenderer.invoke("workbench:create-repository"),
+  openRepository: (): Promise<RepositoryOperationOutcome> =>
+    ipcRenderer.invoke("workbench:open-repository"),
 });

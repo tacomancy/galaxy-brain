@@ -3,15 +3,15 @@
  *
  * This process owns privileged operations and wires the renderer-facing
  * bridge to application Modules. The first tracer bullet uses an in-memory
- * repository so startup can prove the real desktop path without filesystem,
- * Git, network, or provider state.
+ * repository so startup and local creation can prove the real desktop path
+ * without Git, network, or provider state.
  */
-import { app, BrowserWindow, ipcMain, protocol } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import { readFile } from "node:fs/promises";
-import { basename, dirname, extname, resolve, sep } from "node:path";
+import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createInMemoryKnowledgeRepository } from "../adapters/knowledge-repository/in-memory-knowledge-repository";
+import { createFileBackedKnowledgeRepository } from "../adapters/knowledge-repository/file-backed-knowledge-repository";
 import { createWorkbenchSession } from "../modules/workbench-session";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -29,10 +29,6 @@ protocol.registerSchemesAsPrivileged([
     },
   },
 ]);
-
-const workbenchSession = createWorkbenchSession(
-  createInMemoryKnowledgeRepository(),
-);
 
 // Forge can recreate the main process during development. Registering the
 // handler only once prevents duplicate protocol registrations in that path.
@@ -97,6 +93,12 @@ const installRendererProtocol = (rendererEntry: string): void => {
 
 /** Creates the single BrowserWindow used by the current desktop shell. */
 const createWindow = async (): Promise<void> => {
+  const starterRoot = app.isPackaged
+    ? join(process.resourcesPath, "knowledge-repository")
+    : join(app.getAppPath(), "templates", "knowledge-repository");
+  const workbenchSession = createWorkbenchSession(
+    createFileBackedKnowledgeRepository(starterRoot),
+  );
   const mainWindow = new BrowserWindow({
     width: 1_200,
     height: 800,
@@ -119,9 +121,47 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.openFreshWorkbench();
   });
 
+  ipcMain.handle("workbench:create-repository", async (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    const selection = await dialog.showOpenDialog(mainWindow, {
+      buttonLabel: "Create Repository",
+      message: "Choose where to create the Knowledge Repository.",
+      properties: ["openDirectory", "createDirectory"],
+    });
+
+    if (selection.canceled || selection.filePaths[0] === undefined) {
+      return { outcome: "canceled" as const };
+    }
+
+    return workbenchSession.createRepository(selection.filePaths[0]);
+  });
+
+  ipcMain.handle("workbench:open-repository", async (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    const selection = await dialog.showOpenDialog(mainWindow, {
+      buttonLabel: "Open Repository",
+      message: "Choose a Knowledge Repository to open.",
+      properties: ["openDirectory"],
+    });
+
+    if (selection.canceled || selection.filePaths[0] === undefined) {
+      return { outcome: "canceled" as const };
+    }
+
+    return workbenchSession.openRepository(selection.filePaths[0]);
+  });
+
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
+    ipcMain.removeHandler("workbench:create-repository");
+    ipcMain.removeHandler("workbench:open-repository");
   });
 
   if (MAIN_WINDOW_WEBPACK_ENTRY.startsWith("file:")) {

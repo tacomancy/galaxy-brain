@@ -38,7 +38,7 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 | [`app/src/renderer/`](../../../app/src/renderer/) | Shell and workspace UI Adapters | Tracer Bullet 1 |
 | `app/src/modules/<module>/` | Framework-independent application Module; public Interface at its entry file | As the owning behavior appears |
 | `app/src/adapters/<seam>/` | Production, In-memory, fixture, or Mock Adapters at real Seams | As the Seam appears |
-| [`app/tests/workflows/`](../../../app/tests/workflows/) | S1 WebdriverIO desktop Behavior Tests | Tracer Bullet 1 |
+| [`app/tests/workflows/`](../../../app/tests/workflows/) | S1 WebdriverIO desktop Behavior Tests | [`app/tests/workflows/open-empty-workbench.e2e.ts`](../../../app/tests/workflows/open-empty-workbench.e2e.ts), [`app/tests/workflows/create-knowledge-repository.e2e.ts`](../../../app/tests/workflows/create-knowledge-repository.e2e.ts), [`app/tests/workflows/create-knowledge-repository-in-empty-directory.e2e.ts`](../../../app/tests/workflows/create-knowledge-repository-in-empty-directory.e2e.ts), [`app/tests/workflows/open-valid-knowledge-repository.e2e.ts`](../../../app/tests/workflows/open-valid-knowledge-repository.e2e.ts), [`app/tests/workflows/reject-invalid-knowledge-repository.e2e.ts`](../../../app/tests/workflows/reject-invalid-knowledge-repository.e2e.ts) |
 | `app/tests/contracts/` | S5 shared Adapter contract tests | First production Adapter |
 | `app/tests/fixtures/` | Small fixed inputs with Independent Expected Values | Tracer Bullet 1 |
 | `app/templates/knowledge-repository/` | Empty public starter skeleton for new repositories | Tracer Bullet 1 |
@@ -47,7 +47,7 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 
 | Module | Public responsibility | Test Seam | Planned public entry | Status |
 | --- | --- | --- | --- | --- |
-| [Workbench Session](architecture.md#workbench-session-module) | Open, create, or resume the Workbench, transition with context, and maintain the Working Set | S1 | [`app/src/modules/workbench-session/index.ts`](../../../app/src/modules/workbench-session/index.ts) | First fresh-session path implemented in Tracer Bullet 1 |
+| [Workbench Session](architecture.md#workbench-session-module) | Open, create, or resume the Workbench, transition with context, and maintain the Working Set | S1 | [`app/src/modules/workbench-session/index.ts`](../../../app/src/modules/workbench-session/index.ts) | Fresh-session path and create-at-new-path transition implemented in TB2; open, resume, and remaining rejection outcomes are pending |
 | [Knowledge Authoring](architecture.md#knowledge-authoring-module) | Author Working Material while preserving rich/source semantic equivalence | S1 initially | `app/src/modules/knowledge-authoring/index.ts` | Unimplemented; Tracer Bullet 11 |
 | [Governance](architecture.md#governance-module) | Draft Proposals, record Judgment, and apply eligible exact-version changes through file transactions | S2 | `app/src/modules/governance/index.ts` | Unimplemented; Tracer Bullet 8 |
 | [Source Processing](architecture.md#source-processing-module) | Add PDFs with a chosen Source Asset mode, capture located annotations, report availability, relink, and request Synthesis | S3 | `app/src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 5 |
@@ -58,18 +58,18 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 
 | Adapter | Responsibility | Planned home | Status |
 | --- | --- | --- | --- |
-| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | [`app/src/renderer/`](../../../app/src/renderer/) | First fresh-session shell implemented in Tracer Bullet 1 |
-| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | [`app/src/renderer/atlas/Atlas.tsx`](../../../app/src/renderer/atlas/Atlas.tsx) | Empty state implemented; later Atlas behavior remains unimplemented |
+| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | [`app/src/renderer/`](../../../app/src/renderer/) | Fresh-session shell plus TB2 repository selection state implemented; later shell behavior remains unimplemented |
+| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | [`app/src/renderer/atlas/Atlas.tsx`](../../../app/src/renderer/atlas/Atlas.tsx) | Fresh empty state, repository create/open success, and invalid-target feedback implemented; later Atlas behavior remains unimplemented |
 | Studio | Knowledge Authoring Interface and inspector presentation | `app/src/renderer/studio/` | Unimplemented |
 | Paper Desk | Source Processing Interface and PDF interaction presentation | `app/src/renderer/paper-desk/` | Unimplemented |
 | Proposal Review | Governance Interface and exact-diff Judgment presentation | `app/src/renderer/proposal-review/` | Unimplemented |
-| Workbench bridge | Narrow renderer-to-main desktop operations exposed through `contextBridge` | [`app/src/preload/workbench-bridge.ts`](../../../app/src/preload/workbench-bridge.ts) | Fresh Workbench session operation implemented in Tracer Bullet 1 |
+| Workbench bridge | Narrow renderer-to-main desktop operations exposed through `contextBridge` | [`app/src/preload/workbench-bridge.ts`](../../../app/src/preload/workbench-bridge.ts) | Fresh session, repository create, and repository open operations implemented in TB1/TB2 |
 
 ## External Adapters
 
 | Seam | Production Adapter | Test Adapter | Test Seam | Status |
 | --- | --- | --- | --- | --- |
-| Knowledge Repository | Root-scoped file-backed repository Adapter under `app/src/adapters/knowledge-repository/` | [`app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts`](../../../app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts) | S5 contract; used by S1–S4 | In-memory fresh-session path implemented in Tracer Bullet 1; file-backed path is the Tracer Bullet 2 target and is not yet implemented |
+| Knowledge Repository | [`app/src/adapters/knowledge-repository/file-backed-knowledge-repository.ts`](../../../app/src/adapters/knowledge-repository/file-backed-knowledge-repository.ts) stages and copies the bundled starter skeleton | [`app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts`](../../../app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts) | S5 contract; used by S1–S4 | File-backed creation at a new path is implemented in the first TB2 cycle; opening, validation, and contract coverage remain pending |
 | PDF | Deferred engine under `app/src/adapters/pdf/` | Deterministic fixture Adapter | S5 contract; used by S3 | Unimplemented; Tracer Bullet 5 |
 | Model | OpenAI API Adapter under `app/src/adapters/model/`; absent configuration is an explicit unavailable outcome; other providers are future work | Narrow operation-specific Mock Adapters, including unavailable-provider behavior | Verified through S4, not an S5 equivalence contract | Unimplemented; Tracer Bullet 12 or later |
 | Clock and identity | Platform clock and identifier sources under `app/src/adapters/system/` | Deterministic In-memory Adapters | Owning behavior's seam | Unimplemented until observable behavior requires them |

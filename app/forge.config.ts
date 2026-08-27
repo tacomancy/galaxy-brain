@@ -11,10 +11,12 @@ import { mainConfig } from "./webpack.main.config";
 import { rendererConfig } from "./webpack.renderer.config";
 
 const config: ForgeConfig = {
-  // Keep packaged application resources together in the normal Electron
-  // archive; the selected Knowledge Repository remains external to it.
+  // Keep compiled application code in the normal Electron archive and ship
+  // the starter skeleton as a read-only resource beside it; the selected
+  // Knowledge Repository remains external to the package.
   packagerConfig: {
     asar: true,
+    extraResource: ["templates/knowledge-repository"],
   },
   plugins: [
     new WebpackPlugin({
