@@ -1,8 +1,8 @@
 # Tracer Bullet 3: Resume meaningful work
 
-Status: draft implementation brief. Exact-root resume and remembered-root recovery are implemented; user acceptance remains open.
+Status: accepted on August 27, 2026.
 
-This brief coordinates the next tracer bullet in the [delivery plan](delivery-plan.md#3-resume-meaningful-work). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, or testing.
+This brief records the completed tracer bullet from the [delivery plan](delivery-plan.md#3-resume-meaningful-work). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, or testing.
 
 ## Scope
 
@@ -52,4 +52,4 @@ Do not persist active workspace, Working Set, reading position, or contextual na
 
 ## Acceptance gate
 
-Tracer Bullet 3 remains open until the focused S1 workflow demonstrates successful exact-root resume, first-launch behavior, and unavailable/invalid remembered-root recovery; the relevant contract and full verification suites are green; and the user reviews the running behavior. The completion record belongs in the delivery plan.
+Tracer Bullet 3 is accepted. The focused S1 workflow demonstrates successful exact-root resume, first-launch behavior, and unavailable/invalid remembered-root recovery; the relevant contract and full verification suites are green; and the user reviewed the running behavior. The completion record is recorded in the [delivery plan](delivery-plan.md#tracer-bullet-3-completion-record--august-27-2026).

@@ -1,6 +1,6 @@
 # V1 code map
 
-Status: Tracer Bullet 1 production implementation is complete; Tracer Bullets 2 and 3 repository lifecycle and exact-root resume behavior are implemented with S1/S5 evidence; TB3 packaged/manual acceptance remains open; later tracer bullets remain unimplemented.
+Status: Tracer Bullets 1, 2, and 3 are complete and accepted; TB4 contextual workspace transfer is the current planned slice; later tracer bullets remain unimplemented.
 
 This map tells agents where a Public Behavior enters the codebase, which Module owns it, which Adapter supplies external behavior, and which confirmed Test Seam observes it. Update it with live Markdown links in the same change that creates or moves code.
 
@@ -47,7 +47,7 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 
 | Module | Public responsibility | Test Seam | Planned public entry | Status |
 | --- | --- | --- | --- | --- |
-| [Workbench Session](architecture.md#workbench-session-module) | Open, create, or resume the Workbench, transition with context, and maintain the Working Set | S1 | [`app/src/modules/workbench-session/index.ts`](../../../app/src/modules/workbench-session/index.ts) | Fresh-session path, repository selection, access state, failure preservation, exact-root resume, and remembered-root recovery implemented in TB2/TB3; richer active-work context remains pending |
+| [Workbench Session](architecture.md#workbench-session-module) | Open, create, or resume the Workbench, transition with context, and maintain the Working Set | S1 | [`app/src/modules/workbench-session/index.ts`](../../../app/src/modules/workbench-session/index.ts) | Fresh-session path, repository selection, access state, failure preservation, exact-root resume, and remembered-root recovery implemented in TB2/TB3; TB4 contextual workspace transfer is next |
 | [Knowledge Authoring](architecture.md#knowledge-authoring-module) | Author Working Material while preserving rich/source semantic equivalence | S1 initially | `app/src/modules/knowledge-authoring/index.ts` | Unimplemented; Tracer Bullet 11 |
 | [Governance](architecture.md#governance-module) | Draft Proposals, record Judgment, and apply eligible exact-version changes through file transactions | S2 | `app/src/modules/governance/index.ts` | Unimplemented; Tracer Bullet 8 |
 | [Source Processing](architecture.md#source-processing-module) | Add PDFs with a chosen Source Asset mode, capture located annotations, report availability, relink, and request Synthesis | S3 | `app/src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 5 |
@@ -58,10 +58,10 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 
 | Adapter | Responsibility | Planned home | Status |
 | --- | --- | --- | --- |
-| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | [`app/src/renderer/`](../../../app/src/renderer/) | Fresh-session shell plus TB2 repository selection state implemented; later shell behavior remains unimplemented |
-| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | [`app/src/renderer/atlas/Atlas.tsx`](../../../app/src/renderer/atlas/Atlas.tsx) | Fresh empty state, repository selection/access status, and failure feedback implemented; later Atlas behavior remains unimplemented |
-| Studio | Knowledge Authoring Interface and inspector presentation | `app/src/renderer/studio/` | Unimplemented |
-| Paper Desk | Source Processing Interface and PDF interaction presentation | `app/src/renderer/paper-desk/` | Unimplemented |
+| Workbench shell | Window-level layout, global mode controls, accessible navigation, and workspace composition | [`app/src/renderer/`](../../../app/src/renderer/) | Fresh-session shell plus TB2/TB3 repository selection and resume state implemented; TB4 workspace composition remains planned |
+| Atlas | Orientation, continuation, Judgment queue, Learning Routes, and actionable derived state | [`app/src/renderer/atlas/Atlas.tsx`](../../../app/src/renderer/atlas/Atlas.tsx) | Fresh empty state, repository selection/access status, failure feedback, and resume state implemented; TB4 contextual transition remains planned |
+| Studio | Knowledge Authoring Interface and inspector presentation | `app/src/renderer/studio/` | Unimplemented; first exercised by TB4 contextual transition |
+| Paper Desk | Source Processing Interface and PDF interaction presentation | `app/src/renderer/paper-desk/` | Unimplemented; first exercised by TB4 Source Record transition |
 | Proposal Review | Governance Interface and exact-diff Judgment presentation | `app/src/renderer/proposal-review/` | Unimplemented |
 | Workbench bridge | Narrow renderer-to-main desktop operations exposed through `contextBridge` | [`app/src/preload/workbench-bridge.ts`](../../../app/src/preload/workbench-bridge.ts) | Fresh session, repository create, and repository open operations implemented in TB1/TB2 |
 

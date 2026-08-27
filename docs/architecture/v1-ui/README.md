@@ -16,7 +16,8 @@ This package follows the project-wide [documentation authority map](../../README
 - [Test strategy](test-strategy.md) defines the confirmed public seams through which behavior is verified.
 - [Delivery plan](delivery-plan.md) orders vertical tracer bullets for red-to-green implementation.
 - [Tracer Bullet 2 implementation brief](tracer-bullet-2-spec.md) coordinates the current Open/Create repository slice and links to its authoritative decisions and delivery gates.
-- [Tracer Bullet 3 implementation brief](tracer-bullet-3-spec.md) coordinates the current exact-repository resume slice and links to its authoritative decisions and delivery gates.
+- [Tracer Bullet 3 implementation brief](tracer-bullet-3-spec.md) records the accepted exact-repository resume slice and its delivery evidence.
+- [Tracer Bullet 4 implementation brief](tracer-bullet-4-spec.md) coordinates the next contextual workspace-transfer slice and its delivery gates.
 - [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
 - [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
 - [Engineering glossary](../../engineering/glossary.md) defines the codebase-design and test-driven-development vocabulary used by this package.
