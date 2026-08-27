@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/tacomancy/galaxy-brain/compare/v0.3.0...v0.4.0) (2026-08-27)
+
+
+### Features
+
+* implement TB6 reopen capture ([#17](https://github.com/tacomancy/galaxy-brain/issues/17)) ([468a152](https://github.com/tacomancy/galaxy-brain/commit/468a15212bf71cb3c4c0b9d937767a6f69aa745d))
+
 ## [0.3.0](https://github.com/tacomancy/galaxy-brain/compare/v0.2.0...v0.3.0) (2026-08-27)
 
 
