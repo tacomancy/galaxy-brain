@@ -62,6 +62,22 @@ export interface SynthesisPayload {
   context: SynthesisContextItem[];
 }
 
+/** Fixed result shape returned by the operation-specific Model Adapter. */
+export interface SynthesisDraft {
+  title: string;
+  text: string;
+}
+
+/** External Model Adapter outcome for confirmed Synthesis. */
+export type SynthesisModelOutcome =
+  | { outcome: "draft-proposal"; draft: SynthesisDraft }
+  | { outcome: "agent-provider-unavailable"; detail: string };
+
+/** Narrow external seam for the confirmed Synthesis request. */
+export interface SynthesisModelAdapter {
+  requestSynthesis(payload: SynthesisPayload): Promise<SynthesisModelOutcome>;
+}
+
 /** Concise and exact views of one pending Synthesis operation. */
 export interface SynthesisPreview {
   summary: string;
@@ -75,6 +91,18 @@ export interface RemoveSynthesisContextItemInput {
   preview: SynthesisPreview;
   annotationId: string;
 }
+
+/** User decision applied immediately before an external Synthesis request. */
+export interface ConfirmSynthesisInput {
+  preview: SynthesisPreview;
+  confirmation: "confirmed" | "declined";
+}
+
+/** Caller-visible outcome after the confirmation boundary. */
+export type ConfirmSynthesisOutcome =
+  | SynthesisModelOutcome
+  | { outcome: "declined" }
+  | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome of preparing a Synthesis preview. */
 export type PrepareSynthesisOutcome =
@@ -139,12 +167,17 @@ export interface SourceProcessing {
   removeSynthesisContextItem(
     input: RemoveSynthesisContextItemInput,
   ): Promise<PrepareSynthesisOutcome>;
+  /** Sends the final preview only after explicit confirmation. */
+  confirmSynthesis(
+    input: ConfirmSynthesisInput,
+  ): Promise<ConfirmSynthesisOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
 export interface SourceProcessingDependencies {
   pdf: PdfAdapter;
   workingMaterial: WorkingMaterialRepository;
+  model?: SynthesisModelAdapter;
   diagnostics?: SourceProcessingDiagnostics;
 }
 
@@ -319,9 +352,35 @@ export const createSourceProcessing = (
     );
   };
 
+  const confirmSynthesis = async (
+    input: ConfirmSynthesisInput,
+  ): Promise<ConfirmSynthesisOutcome> => {
+    if (input.confirmation !== "confirmed") {
+      return { outcome: "declined" };
+    }
+
+    if (dependencies.model === undefined) {
+      return {
+        outcome: "agent-provider-unavailable",
+        detail: "Synthesis requires a configured Agent Provider.",
+      };
+    }
+
+    try {
+      return await dependencies.model.requestSynthesis(input.preview.payload);
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis request could not be completed.",
+      };
+    }
+  };
+
   return {
     captureSourceClaim,
     prepareSynthesis,
     removeSynthesisContextItem,
+    confirmSynthesis,
   };
 };

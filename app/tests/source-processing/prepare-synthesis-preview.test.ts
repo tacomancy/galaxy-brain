@@ -6,6 +6,7 @@ import { createFixturePdfAdapter } from "../../src/adapters/pdf/fixture-pdf-adap
 import { createInMemoryWorkingMaterialRepository } from "../../src/adapters/working-material/in-memory-working-material-repository";
 import {
   createSourceProcessing,
+  type SynthesisModelAdapter,
   type StructuredAnnotation,
 } from "../../src/modules/source-processing";
 
@@ -163,5 +164,50 @@ describe("Synthesize selected evidence", () => {
         },
       },
     );
+  });
+
+  it("sends only the confirmed exact payload to the Model Adapter", async () => {
+    const requests: unknown[] = [];
+    const model: SynthesisModelAdapter = {
+      requestSynthesis: async (payload) => {
+        requests.push(payload);
+        return {
+          outcome: "draft-proposal",
+          draft: {
+            title: "Bayesian statistics synthesis",
+            text: "Bayesian inference updates prior belief with evidence.",
+          },
+        };
+      },
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model,
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "confirmed",
+      }),
+      {
+        outcome: "draft-proposal",
+        draft: {
+          title: "Bayesian statistics synthesis",
+          text: "Bayesian inference updates prior belief with evidence.",
+        },
+      },
+    );
+    assert.deepEqual(requests, [preview.preview.payload]);
   });
 });

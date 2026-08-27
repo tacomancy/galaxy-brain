@@ -249,7 +249,16 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `removeSynthesisContextItem` was not implemented.
 - **Green evidence:** The focused preview/removal test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 24 Vitest tests.
 - **Scope confirmed:** The cycle supports whole-item removal only and does not add arbitrary inline redaction, provider transmission, confirmation, persistence, or Proposal creation.
-- **Next behavior:** Require explicit confirmation immediately before sending the final exact payload to the Model Adapter.
+- **Next behavior:** Add explicit decline/cancel coverage and prove that no Model Adapter request occurs without confirmation.
+
+#### TB7 confirmed handoff cycle — August 27, 2026
+
+- **Public Behavior:** The S3 Source Processing Interface sends the final exact Synthesis payload to the operation-specific Model Adapter only after explicit confirmation and returns its fixed draft result.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow Model Adapter at the external system seam.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `confirmSynthesis` was not implemented.
+- **Green evidence:** The focused preview, removal, and confirmed-handoff tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 25 Vitest tests.
+- **Scope confirmed:** The cycle adds only the explicit confirmed handoff and fixed draft-result contract. It does not add a real network provider, S1 confirmation UI, decline/cancel coverage, automatic retention, explicit save, or Governance application.
+- **Next behavior:** Add explicit decline/cancel coverage and prove that no Model Adapter request occurs without confirmation.
 
 ### 8. Apply one governed change
 
