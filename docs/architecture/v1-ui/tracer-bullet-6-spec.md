@@ -1,6 +1,6 @@
 # Tracer Bullet 6: Reopen the capture
 
-Status: implementation complete; user acceptance pending.
+Status: implementation complete and accepted on August 27, 2026.
 
 This brief coordinates Tracer Bullet 6 in the [delivery plan](delivery-plan.md#6-reopen-the-capture). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, or testing.
 

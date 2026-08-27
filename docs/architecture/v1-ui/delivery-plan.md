@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 5 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -184,7 +184,7 @@ At S1, prove that the saved annotation and reading position are restored through
 - **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/reopen-captured-source.e2e.ts` first failed at the missing `#paper-desk-saved-annotation` behavior after the packaged app launched successfully.
 - **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, strict type checking, and 22 Vitest tests. The focused TB6 packaged workflow passed, the corrected TB4 workflow passed all 3 cases, and the full packaged workflow passed all 16 WebdriverIO specs.
 - **Scope confirmed:** The implementation restores machine-local active Paper Desk state and reading position while preserving the portable TB5 annotation. It does not select a production PDF engine, add Git/network/provider behavior, create a Proposal, invoke Synthesis, mutate Governed Knowledge, or implement import, arbitrary reading, relinking, or broader Working Set restoration.
-- **Acceptance:** User review and acceptance of the running TB6 behavior remain pending.
+- **Acceptance:** User reviewed the running TB6 behavior and accepted the restoration result on August 27, 2026.
 
 #### TB6 UI follow-up slices
 
