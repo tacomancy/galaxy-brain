@@ -39,6 +39,15 @@ This slice validates the Electron foundation selected in ADR 0004 and forces the
 
 At S1, prove that the user can explicitly open an existing valid repository or create one from the bundled empty skeleton at a new or empty path. Creation writes files and validates the Repository Format but never initializes Git or creates a commit. A nonempty invalid directory is rejected without mutation. The app remains usable without Git, Git LFS, GitHub, credentials, or network connectivity.
 
+Implement this tracer bullet in these behavior-named cycles, stopping to observe a green suite between cycles:
+
+1. Create a repository at a new path.
+2. Create a repository in an explicitly empty directory.
+3. Open an existing valid V1 repository.
+4. Reject unsafe, invalid, or unsupported targets and preserve the current selection.
+
+The [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), and [Test Strategy](test-strategy.md) documents own the behavior, structure, file contract, and verification details for this slice. The [Tracer Bullet 2 brief](tracer-bullet-2-spec.md) coordinates those authorities without restating them.
+
 ### 3. Resume meaningful work
 
 At S1, prove that reopening a known session validates and resumes the last explicitly selected repository, active workspace, and context, while a first launch opens without a repository and an unavailable or invalid remembered path presents explicit Open/Create choices. Do not scan for sibling repositories. Add only the machine-local session persistence needed for the worked fixture.
