@@ -2,9 +2,9 @@
  * Electron composition root for the Knowledge Workbench.
  *
  * This process owns privileged operations and wires the renderer-facing
- * bridge to application Modules. Tracer Bullet 2 composes the production
- * file-backed repository Adapter while remaining independent of Git, network,
- * and provider state.
+ * bridge to application Modules. Tracer Bullets 2 and 3 compose the
+ * production file-backed repository and machine-local session-state Adapters
+ * while remaining independent of Git, network, and provider state.
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import { readFile } from "node:fs/promises";
@@ -12,6 +12,7 @@ import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createFileBackedKnowledgeRepository } from "../adapters/knowledge-repository/file-backed-knowledge-repository";
+import { createFileBackedWorkbenchSessionState } from "../adapters/session-state/file-backed-workbench-session-state";
 import { createWorkbenchSession } from "../modules/workbench-session";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -96,8 +97,15 @@ const createWindow = async (): Promise<void> => {
   const starterRoot = app.isPackaged
     ? join(process.resourcesPath, "knowledge-repository")
     : join(app.getAppPath(), "templates", "knowledge-repository");
+  const sessionStateArgument = process.argv.find((argument) =>
+    argument.startsWith("--galaxy-brain-session-state="),
+  );
+  const sessionStatePath =
+    sessionStateArgument?.slice("--galaxy-brain-session-state=".length) ??
+    join(app.getPath("userData"), "workbench-session.json");
   const workbenchSession = createWorkbenchSession(
     createFileBackedKnowledgeRepository(starterRoot),
+    createFileBackedWorkbenchSessionState(sessionStatePath),
   );
   const mainWindow = new BrowserWindow({
     width: 1_200,

@@ -1,6 +1,6 @@
 # Tracer Bullet 2: Create or open a local Knowledge Repository
 
-Status: draft implementation brief. Tracer Bullet 2 has not yet been accepted.
+Status: accepted on August 27, 2026.
 
 This brief coordinates the next tracer bullet in the [delivery plan](delivery-plan.md#2-create-or-open-a-local-knowledge-repository). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, or testing.
 

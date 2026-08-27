@@ -1,6 +1,6 @@
 # V1 code map
 
-Status: Tracer Bullet 1 production implementation is complete; Tracer Bullet 2 repository lifecycle behavior is implemented with S1/S5 evidence; packaged/manual acceptance remains part of the delivery gate; later tracer bullets remain unimplemented.
+Status: Tracer Bullet 1 production implementation is complete; Tracer Bullets 2 and 3 repository lifecycle and exact-root resume behavior are implemented with S1/S5 evidence; TB3 packaged/manual acceptance remains open; later tracer bullets remain unimplemented.
 
 This map tells agents where a Public Behavior enters the codebase, which Module owns it, which Adapter supplies external behavior, and which confirmed Test Seam observes it. Update it with live Markdown links in the same change that creates or moves code.
 
@@ -47,7 +47,7 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 
 | Module | Public responsibility | Test Seam | Planned public entry | Status |
 | --- | --- | --- | --- | --- |
-| [Workbench Session](architecture.md#workbench-session-module) | Open, create, or resume the Workbench, transition with context, and maintain the Working Set | S1 | [`app/src/modules/workbench-session/index.ts`](../../../app/src/modules/workbench-session/index.ts) | Fresh-session path, repository selection, access state, and failure preservation implemented in TB2; resume remains pending |
+| [Workbench Session](architecture.md#workbench-session-module) | Open, create, or resume the Workbench, transition with context, and maintain the Working Set | S1 | [`app/src/modules/workbench-session/index.ts`](../../../app/src/modules/workbench-session/index.ts) | Fresh-session path, repository selection, access state, failure preservation, exact-root resume, and remembered-root recovery implemented in TB2/TB3; richer active-work context remains pending |
 | [Knowledge Authoring](architecture.md#knowledge-authoring-module) | Author Working Material while preserving rich/source semantic equivalence | S1 initially | `app/src/modules/knowledge-authoring/index.ts` | Unimplemented; Tracer Bullet 11 |
 | [Governance](architecture.md#governance-module) | Draft Proposals, record Judgment, and apply eligible exact-version changes through file transactions | S2 | `app/src/modules/governance/index.ts` | Unimplemented; Tracer Bullet 8 |
 | [Source Processing](architecture.md#source-processing-module) | Add PDFs with a chosen Source Asset mode, capture located annotations, report availability, relink, and request Synthesis | S3 | `app/src/modules/source-processing/index.ts` | Unimplemented; Tracer Bullet 5 |
@@ -70,6 +70,7 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 | Seam | Production Adapter | Test Adapter | Test Seam | Status |
 | --- | --- | --- | --- | --- |
 | Knowledge Repository | [`app/src/adapters/knowledge-repository/file-backed-knowledge-repository.ts`](../../../app/src/adapters/knowledge-repository/file-backed-knowledge-repository.ts) stages, validates, and opens the bundled repository format | [`app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts`](../../../app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts) | S5 contract; used by S1–S4 | File-backed creation, opening, safety validation, compatibility outcomes, and contract coverage implemented in TB2 |
+| Machine-local session state | [`app/src/adapters/session-state/file-backed-workbench-session-state.ts`](../../../app/src/adapters/session-state/file-backed-workbench-session-state.ts) stores the last explicitly selected repository root outside the portable format | Isolated session-state path supplied by the S1 workflow harness | S1 | Exact-root persistence and explicit unavailable/invalid remembered-root recovery are implemented in TB3; broader workspace context remains deferred |
 | PDF | Deferred engine under `app/src/adapters/pdf/` | Deterministic fixture Adapter | S5 contract; used by S3 | Unimplemented; Tracer Bullet 5 |
 | Model | OpenAI API Adapter under `app/src/adapters/model/`; absent configuration is an explicit unavailable outcome; other providers are future work | Narrow operation-specific Mock Adapters, including unavailable-provider behavior | Verified through S4, not an S5 equivalence contract | Unimplemented; Tracer Bullet 12 or later |
 | Clock and identity | Platform clock and identifier sources under `app/src/adapters/system/` | Deterministic In-memory Adapters | Owning behavior's seam | Unimplemented until observable behavior requires them |

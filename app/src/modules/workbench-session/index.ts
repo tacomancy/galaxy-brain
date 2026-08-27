@@ -9,6 +9,8 @@ export interface FreshWorkbench {
   repositoryPath?: string;
   repositoryAccess?: "read-write" | "read-only";
   repositorySelection?: "created" | "opened" | "read-only-compatible";
+  /** The remembered root could not be validated; recovery stays unselected. */
+  repositoryResumeFailure?: RepositoryResumeFailure;
 }
 
 export type RepositoryOperationOutcome =
@@ -22,6 +24,19 @@ export type RepositoryOperationOutcome =
   | { outcome: "unsupported-format"; detail: string }
   | { outcome: "operation-failed"; detail: string };
 
+/** Outcomes that leave the Workbench unselected and require recovery choices. */
+export type RepositoryResumeFailure = Extract<
+  RepositoryOperationOutcome,
+  {
+    outcome:
+      | "invalid-format"
+      | "unsafe-target"
+      | "target-unavailable"
+      | "unsupported-format"
+      | "operation-failed";
+  }
+>;
+
 /**
  * The Knowledge Repository behavior required by the current Workbench
  * Session. The Adapter owns filesystem details; the Module owns selection
@@ -33,18 +48,33 @@ export interface KnowledgeRepository {
 }
 
 /**
+ * Machine-local convenience state for the last explicitly selected root.
+ * Implementations must not store this state in the portable repository.
+ */
+export interface WorkbenchSessionState {
+  /** Missing, malformed, or unreadable state is treated as first launch. */
+  readSelectedRepository(): Promise<string | undefined>;
+  /** Rejecting this write means the current selection is not changed. */
+  writeSelectedRepository(repositoryPath: string): Promise<void>;
+}
+
+/**
  * Opens and describes the current Workbench session and creates a repository
  * for its callers. Implementations hide repository selection and session
  * state decisions from the renderer.
  */
 export interface WorkbenchSession {
-  openFreshWorkbench(): FreshWorkbench;
+  /** Validates the remembered root once, then returns Atlas-facing state. */
+  openFreshWorkbench(): Promise<FreshWorkbench>;
+  /** A session-state write failure returns operation-failed and preserves selection. */
   createRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
+  /** A session-state write failure returns operation-failed and preserves selection. */
   openRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
 }
 
 export const createWorkbenchSession = (
   knowledgeRepository: KnowledgeRepository,
+  sessionState: WorkbenchSessionState,
 ): WorkbenchSession => {
   let selectedRepository:
     | {
@@ -54,10 +84,78 @@ export const createWorkbenchSession = (
       }
     | undefined;
 
+  let hasRestoredSession = false;
+  let repositoryResumeFailure: RepositoryResumeFailure | undefined;
+
+  const restoreSelectedRepository = async (): Promise<void> => {
+    if (hasRestoredSession) {
+      return;
+    }
+
+    hasRestoredSession = true;
+    const rememberedPath = await sessionState.readSelectedRepository();
+
+    if (rememberedPath === undefined) {
+      return;
+    }
+
+    const outcome = await knowledgeRepository.openAt(rememberedPath);
+
+    if (
+      outcome.outcome === "opened" ||
+      outcome.outcome === "read-only-compatible"
+    ) {
+      selectedRepository = {
+        path: outcome.repositoryPath,
+        access: outcome.outcome === "opened" ? "read-write" : "read-only",
+        selection: outcome.outcome,
+      };
+      return;
+    }
+
+    if (
+      outcome.outcome === "invalid-format" ||
+      outcome.outcome === "unsafe-target" ||
+      outcome.outcome === "target-unavailable" ||
+      outcome.outcome === "unsupported-format" ||
+      outcome.outcome === "operation-failed"
+    ) {
+      repositoryResumeFailure = outcome;
+    }
+  };
+
+  const selectRepository = async (
+    outcome: Extract<
+      RepositoryOperationOutcome,
+      { outcome: "created" | "opened" | "read-only-compatible" }
+    >,
+  ): Promise<RepositoryOperationOutcome> => {
+    try {
+      await sessionState.writeSelectedRepository(outcome.repositoryPath);
+    } catch {
+      return {
+        outcome: "operation-failed",
+        detail: "The Workbench session could not be saved.",
+      };
+    }
+
+    selectedRepository = {
+      path: outcome.repositoryPath,
+      access:
+        outcome.outcome === "read-only-compatible" ? "read-only" : "read-write",
+      selection: outcome.outcome,
+    };
+    repositoryResumeFailure = undefined;
+
+    return outcome;
+  };
+
   // Keep the Module framework-independent so the same Interface can be used
   // by Electron and deterministic behavior tests.
   return {
-    openFreshWorkbench: () => {
+    openFreshWorkbench: async () => {
+      await restoreSelectedRepository();
+
       const workbench: FreshWorkbench = {
         // A new session always begins in Atlas for orientation.
         activeWorkspace: "atlas",
@@ -71,17 +169,17 @@ export const createWorkbenchSession = (
         workbench.repositorySelection = selectedRepository.selection;
       }
 
+      if (repositoryResumeFailure !== undefined) {
+        workbench.repositoryResumeFailure = repositoryResumeFailure;
+      }
+
       return workbench;
     },
     createRepository: async (repositoryPath) => {
       const outcome = await knowledgeRepository.createAt(repositoryPath);
 
       if (outcome.outcome === "created") {
-        selectedRepository = {
-          path: outcome.repositoryPath,
-          access: "read-write",
-          selection: "created",
-        };
+        return selectRepository(outcome);
       }
 
       return outcome;
@@ -93,11 +191,7 @@ export const createWorkbenchSession = (
         outcome.outcome === "opened" ||
         outcome.outcome === "read-only-compatible"
       ) {
-        selectedRepository = {
-          path: outcome.repositoryPath,
-          access: outcome.outcome === "opened" ? "read-write" : "read-only",
-          selection: outcome.outcome,
-        };
+        return selectRepository(outcome);
       }
 
       return outcome;
