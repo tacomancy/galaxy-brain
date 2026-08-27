@@ -23,6 +23,7 @@ import type {
   KnowledgeRepository,
   RepositoryOperationOutcome,
   WorkbenchContext,
+  WorkbenchContextReadOutcome,
 } from "../../modules/workbench-session";
 
 const canonicalRoots = [
@@ -334,25 +335,21 @@ const findMarkdownMetadata = async (
   root: string,
   type: string,
 ): Promise<Map<string, string> | undefined> => {
-  try {
-    const entries = await readdir(root, {
-      encoding: "utf8",
-      withFileTypes: true,
-    });
+  const entries = await readdir(root, {
+    encoding: "utf8",
+    withFileTypes: true,
+  });
 
-    for (const entry of entries) {
-      if (!entry.isFile() || extname(entry.name) !== ".md") {
-        continue;
-      }
-
-      const metadata = await readMarkdownMetadata(join(root, entry.name));
-
-      if (metadata?.get("type") === type) {
-        return metadata;
-      }
+  for (const entry of entries) {
+    if (!entry.isFile() || extname(entry.name) !== ".md") {
+      continue;
     }
-  } catch {
-    return undefined;
+
+    const metadata = await readMarkdownMetadata(join(root, entry.name));
+
+    if (metadata?.get("type") === type) {
+      return metadata;
+    }
   }
 
   return undefined;
@@ -686,11 +683,24 @@ export const createFileBackedKnowledgeRepository = (
   },
   readWorkbenchContext: async (
     repositoryPath,
-  ): Promise<WorkbenchContext | undefined> => {
+  ): Promise<WorkbenchContextReadOutcome> => {
     try {
-      return await readWorkbenchContext(repositoryPath);
-    } catch {
-      return undefined;
+      const context = await readWorkbenchContext(repositoryPath);
+
+      if (context === undefined) {
+        return {
+          outcome: "not-found",
+          detail: "No complete topic context is available.",
+        };
+      }
+
+      return { outcome: "available", context };
+    } catch (cause: unknown) {
+      return {
+        outcome: "unavailable",
+        detail: "The selected repository context could not be read.",
+        cause,
+      };
     }
   },
 });

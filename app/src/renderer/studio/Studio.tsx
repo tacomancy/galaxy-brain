@@ -26,7 +26,7 @@ export const Studio = ({
       <section aria-labelledby="studio-topic-heading">
         <h2 id="studio-topic-heading">Current topic</h2>
         <p id="studio-topic-title">{workbench.context.topic.title}</p>
-        <p id="studio-topic-context">Continuing from Atlas</p>
+        <p id="studio-topic-context">Topic context preserved in this session</p>
         <p id="studio-source-record-title">
           {workbench.context.sourceRecord.title}
         </p>

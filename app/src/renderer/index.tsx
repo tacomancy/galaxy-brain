@@ -36,6 +36,18 @@ const WorkbenchShell = ({
     RepositoryOperationOutcome | WorkspaceTransitionOutcome | undefined
   >(initialWorkbench.repositoryResumeFailure);
 
+  const applyWorkspaceTransition = (
+    outcome: WorkspaceTransitionOutcome,
+  ): void => {
+    if (outcome.outcome === "transitioned") {
+      setLastOutcome(undefined);
+      setWorkbench(outcome.workbench);
+      return;
+    }
+
+    setLastOutcome(outcome);
+  };
+
   const refreshWorkbench = async (): Promise<void> => {
     // React owns only this presentation projection; the main-process Session
     // remains the authority for repository selection and access.
@@ -56,14 +68,7 @@ const WorkbenchShell = ({
 
   const openTopicInStudio = async (topicId: string): Promise<void> => {
     const outcome = await window.workbench.openTopicInStudio(topicId);
-
-    if (outcome.outcome === "transitioned") {
-      setLastOutcome(undefined);
-      setWorkbench(outcome.workbench);
-      return;
-    }
-
-    setLastOutcome(outcome);
+    applyWorkspaceTransition(outcome);
   };
 
   const openSourceRecordInPaperDesk = async (
@@ -71,28 +76,14 @@ const WorkbenchShell = ({
   ): Promise<void> => {
     const outcome =
       await window.workbench.openSourceRecordInPaperDesk(sourceRecordId);
-
-    if (outcome.outcome === "transitioned") {
-      setLastOutcome(undefined);
-      setWorkbench(outcome.workbench);
-      return;
-    }
-
-    setLastOutcome(outcome);
+    applyWorkspaceTransition(outcome);
   };
 
   const switchWorkspace = async (
     workspace: WorkbenchWorkspace,
   ): Promise<void> => {
     const outcome = await window.workbench.switchWorkspace(workspace);
-
-    if (outcome.outcome === "transitioned") {
-      setLastOutcome(undefined);
-      setWorkbench(outcome.workbench);
-      return;
-    }
-
-    setLastOutcome(outcome);
+    applyWorkspaceTransition(outcome);
   };
 
   const workspace = (() => {

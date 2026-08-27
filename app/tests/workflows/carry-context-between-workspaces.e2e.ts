@@ -33,13 +33,14 @@ describe("Carry context between workspaces", () => {
     await topicAction.click();
 
     await $("#studio-heading").waitForDisplayed();
+    assert.equal(await $("#studio-heading").getText(), "Studio");
     assert.equal(
       await $("#studio-topic-title").getText(),
       "Bayesian statistics",
     );
     assert.equal(
       await $("#studio-topic-context").getText(),
-      "Continuing from Atlas",
+      "Topic context preserved in this session",
     );
   });
 
@@ -62,6 +63,7 @@ describe("Carry context between workspaces", () => {
     await sourceRecordAction.click();
 
     await $("#paper-desk-heading").waitForDisplayed();
+    assert.equal(await $("#paper-desk-heading").getText(), "Paper Desk");
     assert.equal(
       await $("#paper-desk-source-record-title").getText(),
       "Bayesian statistics fixture source",
@@ -80,9 +82,23 @@ describe("Carry context between workspaces", () => {
     await switcher.waitForDisplayed();
     await $("#workspace-switcher-studio").click();
     await $("#studio-heading").waitForDisplayed();
+    assert.equal(await $("#studio-heading").getText(), "Studio");
+    assert.equal(
+      await $("#workspace-switcher-studio").getAttribute("aria-current"),
+      "page",
+    );
+    assert.equal(
+      await $("#studio-topic-context").getText(),
+      "Topic context preserved in this session",
+    );
 
     await $("#workspace-switcher-paper-desk").click();
     await $("#paper-desk-heading").waitForDisplayed();
+    assert.equal(await $("#paper-desk-heading").getText(), "Paper Desk");
+    assert.equal(
+      await $("#workspace-switcher-paper-desk").getAttribute("aria-current"),
+      "page",
+    );
     assert.equal(
       await $("#paper-desk-topic-relationship").getText(),
       "Related topic: Bayesian statistics",
@@ -90,6 +106,11 @@ describe("Carry context between workspaces", () => {
 
     await $("#workspace-switcher-atlas").click();
     await $("#atlas-heading").waitForDisplayed();
+    assert.equal(await $("#atlas-heading").getText(), "Atlas");
+    assert.equal(
+      await $("#workspace-switcher-atlas").getAttribute("aria-current"),
+      "page",
+    );
     assert.equal(
       await $("#atlas-topic-title").getText(),
       "Bayesian statistics",
