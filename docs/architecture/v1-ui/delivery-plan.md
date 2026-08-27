@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: S1–S5 Test Seams confirmed; implementation has not started.
+Status: Tracer Bullet 1 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed; Tracer Bullet 2 is next.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -24,6 +24,16 @@ Do not refactor during the red-to-green loop. Refactoring belongs to a separate 
 At S1, prove that a fresh desktop session opens Atlas with the authentic empty-state path and no demonstration data mixed into it. Implement the smallest vertical path from UI adapter through Workbench Session to an in-memory Knowledge Repository adapter.
 
 This slice validates the Electron foundation selected in ADR 0004 and forces the first concrete application composition. If the real S1 path contradicts the stack rationale, stop and revisit the ADR rather than hiding the mismatch behind the test harness.
+
+#### Tracer Bullet 1 completion record — August 27, 2026
+
+- **Public Behavior:** A fresh desktop session opens Atlas with the authentic empty-state path and no demonstration data.
+- **Test Seam:** S1 desktop workflow, using the real packaged Electron application, main process, preload bridge, Workbench Session, Atlas UI Adapter, and in-memory Knowledge Repository Adapter.
+- **Automated evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and the configured Vitest command. `npm run test:workflow` packaged the macOS arm64 application and passed the WebdriverIO scenario: 1 spec passed.
+- **Manual evidence:** The developer launched the application with `npm start` and observed the `Galaxy Brain` native window title, the `Atlas` workspace, the plain white empty state, and the exact repository-unselected message.
+- **Scope confirmed:** Repository open/create, persistence, resume, file-backed adapters, and later S1–S5 behaviors remain deferred to subsequent tracer bullets.
+- **Process note:** The original red-to-green failure was not captured in the repository history; the implementation and behavior test were introduced together in the initial tracer-bullet commit. This record makes no retroactive claim about a red run. A restricted packaging attempt also failed before test execution because the sandbox could not resolve `github.com`; the network-enabled retry passed.
+- **Acceptance:** The user reviewed the running application and accepted the first tracer bullet.
 
 ### 2. Create or open a local Knowledge Repository
 

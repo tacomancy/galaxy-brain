@@ -1,6 +1,6 @@
 # V1 code map
 
-Status: production implementation has not started. Planned homes below are orientation constraints, not links to files that do not yet exist.
+Status: Tracer Bullet 1 production implementation is complete; later tracer bullets remain unimplemented. Planned homes below remain orientation constraints for behavior not yet implemented.
 
 This map tells agents where a Public Behavior enters the codebase, which Module owns it, which Adapter supplies external behavior, and which confirmed Test Seam observes it. Update it with live Markdown links in the same change that creates or moves code.
 
