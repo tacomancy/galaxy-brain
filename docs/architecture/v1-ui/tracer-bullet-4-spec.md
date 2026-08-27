@@ -1,6 +1,6 @@
 # Tracer Bullet 4: Carry context between workspaces
 
-Status: implementation complete; user acceptance remains open.
+Status: implementation complete and accepted on August 27, 2026.
 
 This brief coordinates this tracer bullet in the [delivery plan](delivery-plan.md#4-carry-context-between-workspaces). It is an implementation entry point, not a second authority for product behavior, architecture, or testing.
 
@@ -72,4 +72,4 @@ Tracer Bullet 4 is complete only when:
 - the compact global switcher, if implemented, is limited to this flow and preserves context; and
 - no later tracer bullet is implemented speculatively and no new Test Seam or hard-to-reverse architectural decision is introduced without the required confirmation.
 
-The implementation completion record is recorded in the [delivery plan](delivery-plan.md#tracer-bullet-4-implementation-completion-record--august-27-2026). The acceptance gate remains open until the user reviews the running behavior.
+The implementation completion record is recorded in the [delivery plan](delivery-plan.md#tracer-bullet-4-implementation-completion-record--august-27-2026). The user reviewed the running behavior and accepted the acceptance gate on August 27, 2026.

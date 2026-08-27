@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1, 2, and 3 complete and accepted on August 27, 2026; TB4 implementation is complete and awaits user acceptance; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 4 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -91,7 +91,7 @@ At S1, prove that reopening a known session validates and resumes the last expli
 
 ### 4. Carry context between workspaces
 
-Status: implementation complete; user acceptance remains open.
+Status: implementation complete and accepted on August 27, 2026.
 
 At S1, prove a contextual transition from an Atlas item to Studio and then to its Source Record in Paper Desk without losing the topic relationship. Add the compact global switcher only to the extent this behavior needs it.
 
@@ -106,7 +106,7 @@ The [Tracer Bullet 4 brief](tracer-bullet-4-spec.md) coordinates this slice agai
 - **Automated evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 13 Vitest tests. The focused packaged workflow passed all 3 TB4 behavior cases, and the full packaged workflow passed all 15 WebdriverIO workflow specs.
 - **Review follow-up:** Workflow assertions cover visible workspace names and active switcher state. Context reads distinguish available, absent, and unreadable metadata while retaining an internal diagnostic cause; public Workbench contracts document their invariants and outcomes.
 - **Scope confirmed:** Context transfer is in-session only. Active workspace, Working Set, reading position, and contextual navigation are not persisted across relaunch; PDF rendering, capture, Synthesis, authoring, Governance, and Discovery remain deferred.
-- **Acceptance:** User review of the running TB4 behavior remains open.
+- **Acceptance:** The user reviewed the running behavior, including Atlas → Studio → Paper Desk, context-preserving workspace switching, and keyboard activation, and accepted TB4.
 
 ### 5. Capture one located source claim
 
