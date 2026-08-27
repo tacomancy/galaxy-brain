@@ -243,6 +243,30 @@ const ensureAnnotationDirectory = async (
   return directoryPath;
 };
 
+const readAnnotationDirectory = async (
+  canonicalPath: string,
+): Promise<string | undefined> => {
+  const directoryPath = resolve(canonicalPath, annotationDirectoryName);
+
+  try {
+    const stats = await lstat(directoryPath);
+
+    if (stats.isSymbolicLink() || !stats.isDirectory()) {
+      throw new UnsafeAnnotationTargetError(
+        "The source annotation directory is unsafe.",
+      );
+    }
+
+    return directoryPath;
+  } catch (cause: unknown) {
+    if (isErrnoException(cause) && cause.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw cause;
+  }
+};
+
 type FileFingerprint = { digest: string } | undefined;
 
 const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
@@ -296,6 +320,15 @@ export const createFileBackedWorkingMaterialRepository = (
     }
 
     try {
+      const annotationDirectory = await readAnnotationDirectory(canonicalPath);
+
+      if (annotationDirectory === undefined) {
+        return {
+          outcome: "not-found",
+          detail: "The source annotation was not found.",
+        };
+      }
+
       const contents = await readFile(
         annotationFilePath(canonicalPath, annotationId),
         "utf8",
@@ -365,12 +398,17 @@ export const createFileBackedWorkingMaterialRepository = (
         };
       }
 
-      const annotationDirectory = resolve(
-        canonicalPath,
-        annotationDirectoryName,
-      );
-
       try {
+        const annotationDirectory =
+          await readAnnotationDirectory(canonicalPath);
+
+        if (annotationDirectory === undefined) {
+          return {
+            outcome: "not-found",
+            detail: "The source annotation was not found.",
+          };
+        }
+
         const entries = await readdir(annotationDirectory, {
           encoding: "utf8",
           withFileTypes: true,
@@ -431,10 +469,20 @@ export const createFileBackedWorkingMaterialRepository = (
       }
 
       try {
-        const entries = await readdir(
-          resolve(canonicalPath, annotationDirectoryName),
-          { encoding: "utf8", withFileTypes: true },
-        );
+        const annotationDirectory =
+          await readAnnotationDirectory(canonicalPath);
+
+        if (annotationDirectory === undefined) {
+          return {
+            outcome: "not-found",
+            detail: "The source annotation was not found.",
+          };
+        }
+
+        const entries = await readdir(annotationDirectory, {
+          encoding: "utf8",
+          withFileTypes: true,
+        });
         const annotations: StructuredAnnotation[] = [];
 
         for (const entry of entries) {

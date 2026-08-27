@@ -19,6 +19,7 @@ interface StudioProps {
   synthesisPreview: SynthesisPreview | undefined;
   synthesisOutcome: ConfirmSynthesisOutcome | undefined;
   savedSynthesisResults: SynthesisSavedResult[];
+  savedSynthesisResultsReadError: string | undefined;
   restoreOutcome: RestoreSynthesisResultOutcome | undefined;
   onRestoreSynthesisResult: (
     resultId: string,
@@ -36,6 +37,7 @@ export const Studio = ({
   synthesisPreview,
   synthesisOutcome,
   savedSynthesisResults,
+  savedSynthesisResultsReadError,
   restoreOutcome,
   onRestoreSynthesisResult,
 }: StudioProps): JSX.Element => {
@@ -266,7 +268,8 @@ export const Studio = ({
               )}
             </section>
           )}
-          {savedSynthesisResults.length === 0 ? null : (
+          {savedSynthesisResultsReadError === undefined &&
+          savedSynthesisResults.length === 0 ? null : (
             <section
               id="studio-synthesis-results"
               className="working-material-card synthesis-card"
@@ -281,6 +284,12 @@ export const Studio = ({
                 </div>
                 <span className="status-pill">Recoverable</span>
               </div>
+              {savedSynthesisResultsReadError === undefined ? null : (
+                <p id="studio-synthesis-results-read-error" role="alert">
+                  Saved Synthesis results are unavailable:{" "}
+                  {savedSynthesisResultsReadError}
+                </p>
+              )}
               {savedSynthesisResults.map((result) => (
                 <article
                   key={result.id}

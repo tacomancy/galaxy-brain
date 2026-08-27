@@ -11,6 +11,7 @@ import type {
   ConfirmSynthesisOutcome,
   RestoreSynthesisResultOutcome,
   SynthesisPreview,
+  SynthesisResultListReadOutcome,
   SynthesisSavedResult,
 } from "../modules/source-processing";
 import type {
@@ -38,7 +39,7 @@ const WorkbenchShell = ({
   initialSavedSynthesisResults,
 }: {
   initialWorkbench: FreshWorkbench;
-  initialSavedSynthesisResults: SynthesisSavedResult[];
+  initialSavedSynthesisResults: SynthesisResultListReadOutcome;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
   const [lastOutcome, setLastOutcome] = useState<
@@ -52,7 +53,17 @@ const WorkbenchShell = ({
   >();
   const [savedSynthesisResults, setSavedSynthesisResults] = useState<
     SynthesisSavedResult[]
-  >(initialSavedSynthesisResults);
+  >(
+    initialSavedSynthesisResults.outcome === "found"
+      ? initialSavedSynthesisResults.results
+      : [],
+  );
+  const [savedSynthesisResultsReadError, setSavedSynthesisResultsReadError] =
+    useState<string | undefined>(
+      initialSavedSynthesisResults.outcome === "unavailable"
+        ? initialSavedSynthesisResults.detail
+        : undefined,
+    );
   const [restoreOutcome, setRestoreOutcome] = useState<
     RestoreSynthesisResultOutcome | undefined
   >();
@@ -74,9 +85,12 @@ const WorkbenchShell = ({
     // remains the authority for repository selection and access.
     setWorkbench(await window.workbench.openFreshWorkbench());
     const outcome = await window.workbench.readSynthesisResults();
-    setSavedSynthesisResults(
-      outcome.outcome === "found" ? outcome.results : [],
-    );
+    if (outcome.outcome === "found") {
+      setSavedSynthesisResults(outcome.results);
+      setSavedSynthesisResultsReadError(undefined);
+    } else {
+      setSavedSynthesisResultsReadError(outcome.detail);
+    }
   };
 
   const createRepository = async (): Promise<void> => {
@@ -180,9 +194,12 @@ const WorkbenchShell = ({
 
     if (outcome.outcome === "restored") {
       const refreshed = await window.workbench.readSynthesisResults();
-      setSavedSynthesisResults(
-        refreshed.outcome === "found" ? refreshed.results : [],
-      );
+      if (refreshed.outcome === "found") {
+        setSavedSynthesisResults(refreshed.results);
+        setSavedSynthesisResultsReadError(undefined);
+      } else {
+        setSavedSynthesisResultsReadError(refreshed.detail);
+      }
     }
   };
 
@@ -198,6 +215,7 @@ const WorkbenchShell = ({
           synthesisPreview={synthesisPreview}
           synthesisOutcome={synthesisOutcome}
           savedSynthesisResults={savedSynthesisResults}
+          savedSynthesisResultsReadError={savedSynthesisResultsReadError}
           restoreOutcome={restoreOutcome}
           onRestoreSynthesisResult={restoreSynthesisResult}
         />
@@ -240,12 +258,10 @@ const WorkbenchShell = ({
 
 void window.workbench.openFreshWorkbench().then(async (workbench) => {
   const outcome = await window.workbench.readSynthesisResults();
-  const savedSynthesisResults =
-    outcome.outcome === "found" ? outcome.results : [];
   root.render(
     <WorkbenchShell
       initialWorkbench={workbench}
-      initialSavedSynthesisResults={savedSynthesisResults}
+      initialSavedSynthesisResults={outcome}
     />,
   );
 });
