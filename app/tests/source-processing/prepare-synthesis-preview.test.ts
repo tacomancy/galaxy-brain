@@ -477,4 +477,101 @@ describe("Synthesize selected evidence", () => {
       },
     ]);
   });
+
+  it("saves prompt and concise context only with explicit opt-in", async () => {
+    const results: SynthesisResultRepository = {
+      saveResult: async () => undefined,
+    };
+    const model: SynthesisModelAdapter = {
+      requestSynthesis: async () => ({
+        outcome: "draft-proposal",
+        draft: {
+          title: "Bayesian statistics synthesis",
+          text: "Bayesian inference updates prior belief with evidence.",
+        },
+      }),
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model,
+      results,
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      prompt: "Explain how this evidence supports the topic.",
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    const confirmed = await sourceProcessing.confirmSynthesis({
+      preview: preview.preview,
+      confirmation: "confirmed",
+    });
+    assert.equal(confirmed.outcome, "draft-proposal");
+    if (confirmed.outcome !== "draft-proposal") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.saveSynthesisResult({
+        resultId: "synthesis-result-bayesian-statistics-with-context",
+        preview: preview.preview,
+        draft: confirmed.draft,
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        includePromptAndContext: true,
+      }),
+      {
+        outcome: "saved",
+        result: {
+          id: "synthesis-result-bayesian-statistics-with-context",
+          state: "working-material",
+          title: "Bayesian statistics synthesis",
+          text: "Bayesian inference updates prior belief with evidence.",
+          targetTopic: {
+            id: "bayesian-statistics",
+            title: "Bayesian statistics",
+          },
+          provenance: {
+            attribution: "agent-generated",
+            provider: "OpenAI API",
+            model: "fixture-pinned-model",
+            generatedAt: "2026-08-27T20:30:00.000Z",
+            operation: "synthesize-into-topic",
+            sourceContext: [
+              {
+                annotationId:
+                  "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+                sourceRecord: {
+                  id: "bayesian-statistics-fixture-source",
+                  title: "Bayesian statistics fixture source",
+                },
+                sourceLocator: "page:2#chars=0-54",
+                attribution: "source-claim",
+                classification: "source-claim",
+              },
+            ],
+          },
+          prompt: "Explain how this evidence supports the topic.",
+          contextSnapshot: [
+            {
+              annotationId:
+                "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+              sourceRecord: {
+                id: "bayesian-statistics-fixture-source",
+                title: "Bayesian statistics fixture source",
+              },
+              sourceLocator: "page:2#chars=0-54",
+              summary:
+                "Selected source claim from the Bayesian statistics fixture source.",
+            },
+          ],
+        },
+      },
+    );
+  });
 });

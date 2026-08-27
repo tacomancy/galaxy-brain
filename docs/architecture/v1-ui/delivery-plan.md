@@ -295,6 +295,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle adds only the default explicit-save contract and preserves Working Material status. It does not add file-backed result serialization, prompt/context retention, result versioning, source-change warnings, S1 save UI, or Governance application.
 - **Next behavior:** Add the separately explicit save-with-prompt/context option with concise context snapshots and no full source excerpts or hidden payload retention.
 
+#### TB7 opt-in prompt/context snapshot cycle — August 27, 2026
+
+- **Public Behavior:** A separate explicit save choice retains the human-facing prompt, selected Source Record/Source Locator references, and concise context summaries as a point-in-time snapshot, without retaining full source excerpts or the hidden payload.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow result Repository Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first showed that the opt-in prompt and context snapshot were omitted from the saved result.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 30 Vitest tests.
+- **Scope confirmed:** The cycle adds only the explicit opt-in snapshot fields. It does not add full source excerpts, hidden payload retention, file-backed serialization, source-change warnings, result versioning, or S1 save UI.
+- **Next behavior:** Preserve the saved context snapshot and show a non-blocking warning when the current Source Record identity or content identity differs.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

@@ -40,6 +40,7 @@ export interface PrepareSynthesisInput {
   targetTopic: SynthesisTopicReference;
   selectedAnnotations: StructuredAnnotation[];
   provider: SynthesisProviderReference;
+  prompt?: string;
 }
 
 /** One source-bound item in the inspectable Synthesis payload. */
@@ -60,6 +61,7 @@ export interface SynthesisPayload {
   model: string;
   targetTopic: SynthesisTopicReference;
   context: SynthesisContextItem[];
+  prompt?: string;
 }
 
 /** Fixed result shape returned by the operation-specific Model Adapter. */
@@ -105,6 +107,16 @@ export interface SynthesisSavedResult {
   text: string;
   targetTopic: SynthesisTopicReference;
   provenance: SynthesisProvenance;
+  prompt?: string;
+  contextSnapshot?: SynthesisContextSnapshot[];
+}
+
+/** Concise, point-in-time context retained only with explicit opt-in. */
+export interface SynthesisContextSnapshot {
+  annotationId: string;
+  sourceRecord: SourceRecordReference;
+  sourceLocator: string;
+  summary: string;
 }
 
 /** Repository Adapter for explicit Synthesis result persistence. */
@@ -118,6 +130,7 @@ export interface SynthesisPreview {
   estimatedRequestSize: number;
   provider: SynthesisProviderReference;
   payload: SynthesisPayload;
+  prompt?: string;
 }
 
 /** Input for removing one complete context item before confirmation. */
@@ -138,6 +151,7 @@ export interface SaveSynthesisResultInput {
   preview: SynthesisPreview;
   draft: SynthesisDraft;
   generatedAt: string;
+  includePromptAndContext?: boolean;
 }
 
 /** Caller-visible result of an explicit Synthesis save. */
@@ -257,6 +271,7 @@ const buildSynthesisPreview = (
   targetTopic: SynthesisTopicReference,
   provider: SynthesisProviderReference,
   context: SynthesisContextItem[],
+  prompt?: string,
 ): PrepareSynthesisOutcome => {
   if (
     context.length === 0 ||
@@ -276,22 +291,26 @@ const buildSynthesisPreview = (
     0,
   );
   const claimLabel = context.length === 1 ? "source claim" : "source claims";
+  const promptSummary = prompt === undefined ? "" : ` Prompt: "${prompt}".`;
+  const payload: SynthesisPayload = {
+    operation: "synthesize-into-topic",
+    model: provider.model,
+    targetTopic: { ...targetTopic },
+    context: context.map((item) => ({
+      ...item,
+      sourceRecord: { ...item.sourceRecord },
+    })),
+    ...(prompt === undefined ? {} : { prompt }),
+  };
 
   return {
     outcome: "preview-ready",
     preview: {
-      summary: `Synthesize ${context.length} selected ${claimLabel} into "${targetTopic.title}" using model "${provider.model}" via ${provider.destination}; ${estimatedRequestSize} source characters selected.`,
+      summary: `Synthesize ${context.length} selected ${claimLabel} into "${targetTopic.title}" using model "${provider.model}" via ${provider.destination}; ${estimatedRequestSize} source characters selected.${promptSummary}`,
       estimatedRequestSize,
       provider: { ...provider },
-      payload: {
-        operation: "synthesize-into-topic",
-        model: provider.model,
-        targetTopic: { ...targetTopic },
-        context: context.map((item) => ({
-          ...item,
-          sourceRecord: { ...item.sourceRecord },
-        })),
-      },
+      ...(prompt === undefined ? {} : { prompt }),
+      payload,
     },
   };
 };
@@ -381,6 +400,7 @@ export const createSourceProcessing = (
         classification: annotation.classification,
         state: annotation.state,
       })),
+      input.prompt,
     );
   };
 
@@ -402,6 +422,7 @@ export const createSourceProcessing = (
       input.preview.payload.targetTopic,
       input.preview.provider,
       remainingContext,
+      input.preview.prompt,
     );
   };
 
@@ -468,6 +489,19 @@ export const createSourceProcessing = (
           classification: item.classification,
         })),
       },
+      ...(input.includePromptAndContext
+        ? {
+            ...(input.preview.prompt === undefined
+              ? {}
+              : { prompt: input.preview.prompt }),
+            contextSnapshot: input.preview.payload.context.map((item) => ({
+              annotationId: item.annotationId,
+              sourceRecord: { ...item.sourceRecord },
+              sourceLocator: item.sourceLocator,
+              summary: `Selected ${item.classification === "source-claim" ? "source claim" : item.classification} from the ${item.sourceRecord.title}.`,
+            })),
+          }
+        : {}),
     };
 
     try {
