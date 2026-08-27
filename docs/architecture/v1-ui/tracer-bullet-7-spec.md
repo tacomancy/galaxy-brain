@@ -1,6 +1,6 @@
 # Tracer Bullet 7: Synthesize selected evidence explicitly
 
-Status: preview preparation, context removal, confirmed handoff, decline/cancel preservation, provider-unavailable handling, transient result handling, default explicit save, opt-in prompt/context snapshot, stale-context warning, unavailable-source-status handling, explicit versioned snapshot refresh, confirmed result regeneration, and result restore implemented on August 27, 2026; remaining TB7 cycles are pending.
+Status: preview preparation, context removal, confirmed handoff, decline/cancel preservation, provider-unavailable handling, transient result handling, default explicit save, opt-in prompt/context snapshot, stale-context warning, unavailable-source-status handling, explicit versioned snapshot refresh, confirmed result regeneration, result restore, and human-authorship preservation implemented on August 27, 2026; remaining TB7 cycles are pending.
 
 This tracer bullet adds the first provider-dependent Agentic Capability to the accepted provider-free Source Processing path. It makes Synthesis an explicit, inspectable, user-authorized operation over selected Structured Annotations. It does not make an Agent Provider a prerequisite for the Workbench or promote generated output to Governed Knowledge.
 
@@ -12,7 +12,7 @@ The first vertical behavior is **prepare a Synthesis preview**. From the fixture
 - an inspectable exact outbound payload containing only the selected annotation and target topic context; and
 - a preview state that has made no Agent Provider request and has not changed local Working Material.
 
-Later vertical cycles extend this same behavior to whole-context-item removal and preview regeneration, explicit confirmation, the literal draft Proposal fixture returned by a confirmed provider response, decline/cancel preservation, unavailable-provider handling, non-retention, explicit save, an explicit versioned context refresh that preserves the prior snapshot without regenerating the result, confirmed result regeneration as a new version, and restore as a new current version without a provider request.
+Later vertical cycles extend this same behavior to whole-context-item removal and preview regeneration, explicit confirmation, the literal draft Proposal fixture returned by a confirmed provider response, decline/cancel preservation, unavailable-provider handling, non-retention, explicit save, an explicit versioned context refresh that preserves the prior snapshot without regenerating the result, confirmed result regeneration as a new version, restore as a new current version without a provider request, and human edits that add authorship without erasing agent provenance.
 
 ## Test Seam and expected values
 

@@ -127,6 +127,8 @@ export interface SynthesisSavedResult {
   priorContextSnapshots?: SynthesisContextSnapshotVersion[];
   resultVersion?: number;
   priorResults?: SynthesisSavedResult[];
+  humanAuthorship?: "human-authored";
+  humanEdits?: SynthesisHumanEdit[];
 }
 
 /** Concise, point-in-time context retained only with explicit opt-in. */
@@ -144,6 +146,13 @@ export interface SynthesisContextSnapshotVersion {
   version: number;
   refreshedAt: string;
   snapshot: SynthesisContextSnapshot[];
+}
+
+/** Human-authorship record retained alongside the original agent provenance. */
+export interface SynthesisHumanEdit {
+  attribution: "human-authored";
+  editedAt: string;
+  changedFields: ("title" | "text")[];
 }
 
 /** Repository Adapter for explicit Synthesis result persistence. */
@@ -206,6 +215,14 @@ export interface RestoreSynthesisResultInput {
   version: number;
 }
 
+/** Explicit request to edit a saved Synthesis result as Working Material. */
+export interface EditSynthesisResultInput {
+  result: SynthesisSavedResult;
+  title: string;
+  text: string;
+  editedAt: string;
+}
+
 /** Caller-visible result of an explicit Synthesis save. */
 export type SaveSynthesisResultOutcome =
   | { outcome: "saved"; result: SynthesisSavedResult }
@@ -242,6 +259,11 @@ export type RegenerateSynthesisResultOutcome =
 /** Caller-visible outcome of an explicit Synthesis result restore. */
 export type RestoreSynthesisResultOutcome =
   | { outcome: "restored"; result: SynthesisSavedResult }
+  | { outcome: "operation-failed"; detail: string };
+
+/** Caller-visible outcome of an explicit human edit. */
+export type EditSynthesisResultOutcome =
+  | { outcome: "edited"; result: SynthesisSavedResult }
   | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome after the confirmation boundary. */
@@ -338,6 +360,10 @@ export interface SourceProcessing {
   restoreSynthesisResult(
     input: RestoreSynthesisResultInput,
   ): Promise<RestoreSynthesisResultOutcome>;
+  /** Records human authorship without removing agent provenance. */
+  editSynthesisResult(
+    input: EditSynthesisResultInput,
+  ): Promise<EditSynthesisResultOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -928,6 +954,61 @@ export const createSourceProcessing = (
     return { outcome: "restored", result };
   };
 
+  const editSynthesisResult = async (
+    input: EditSynthesisResultInput,
+  ): Promise<EditSynthesisResultOutcome> => {
+    const changedFields: ("title" | "text")[] = [];
+
+    if (input.title !== input.result.title) {
+      changedFields.push("title");
+    }
+
+    if (input.text !== input.result.text) {
+      changedFields.push("text");
+    }
+
+    if (
+      input.result.id.length === 0 ||
+      input.title.length === 0 ||
+      input.text.length === 0 ||
+      input.editedAt.length === 0 ||
+      changedFields.length === 0 ||
+      dependencies.results === undefined
+    ) {
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result could not be edited.",
+      };
+    }
+
+    const editedResult: SynthesisSavedResult = {
+      ...input.result,
+      title: input.title,
+      text: input.text,
+      humanAuthorship: "human-authored",
+      humanEdits: [
+        ...(input.result.humanEdits ?? []),
+        {
+          attribution: "human-authored",
+          editedAt: input.editedAt,
+          changedFields,
+        },
+      ],
+    };
+
+    try {
+      await dependencies.results.saveResult(editedResult);
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result could not be edited.",
+      };
+    }
+
+    return { outcome: "edited", result: editedResult };
+  };
+
   return {
     captureSourceClaim,
     prepareSynthesis,
@@ -938,5 +1019,6 @@ export const createSourceProcessing = (
     refreshSynthesisContext,
     regenerateSynthesisResult,
     restoreSynthesisResult,
+    editSynthesisResult,
   };
 };

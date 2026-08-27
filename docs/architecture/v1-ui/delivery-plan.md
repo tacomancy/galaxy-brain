@@ -349,6 +349,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle adds explicit restore and version-history preservation only. It does not add automatic restore, result cleanup, file-backed serialization, or S1 history controls.
 - **Next behavior:** Preserve `agent-generated` provenance when a saved result receives a later human edit while remaining Working Material.
 
+#### TB7 human-authorship preservation cycle — August 27, 2026
+
+- **Public Behavior:** An explicit human edit saves updated Working Material with `human-authored` metadata and an edit record while preserving the original `agent-generated` provider, model, operation, timestamp, and source-context provenance.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow result Repository Adapter; no Model Adapter is involved.
+- **Red evidence:** No separate red command output was captured; the human-edit test was added against the required provenance outcome before running the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 37 Vitest tests.
+- **Scope confirmed:** The cycle records human authorship without promoting the result to Governed Knowledge, contacting a provider, changing result versions, or adding file-backed serialization or S1 editing controls.
+- **Next behavior:** Add durable file-backed persistence for saved Synthesis results and their provenance/version history.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

@@ -1176,4 +1176,76 @@ describe("Synthesize selected evidence", () => {
       priorResults: [firstResult],
     });
   });
+
+  it("preserves agent provenance when a human edits the saved result", async () => {
+    const result: SynthesisSavedResult = {
+      id: "synthesis-result-bayesian-statistics-fixture",
+      state: "working-material",
+      title: "Bayesian statistics synthesis",
+      text: "Bayesian inference updates prior belief with evidence.",
+      targetTopic: {
+        id: "bayesian-statistics",
+        title: "Bayesian statistics",
+      },
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      resultVersion: 1,
+    };
+    const savedResults: SynthesisSavedResult[] = [];
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      results: {
+        saveResult: async (savedResult) => {
+          savedResults.push(savedResult);
+        },
+      },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.editSynthesisResult({
+        result,
+        title: "Bayesian statistics synthesis — reviewed",
+        text: "Bayesian inference updates prior belief with evidence; reviewed by a human.",
+        editedAt: "2026-08-27T21:30:00.000Z",
+      }),
+      {
+        outcome: "edited",
+        result: {
+          ...result,
+          title: "Bayesian statistics synthesis — reviewed",
+          text: "Bayesian inference updates prior belief with evidence; reviewed by a human.",
+          humanAuthorship: "human-authored",
+          humanEdits: [
+            {
+              attribution: "human-authored",
+              editedAt: "2026-08-27T21:30:00.000Z",
+              changedFields: ["title", "text"],
+            },
+          ],
+        },
+      },
+    );
+    assert.deepEqual(savedResults, [
+      {
+        ...result,
+        title: "Bayesian statistics synthesis — reviewed",
+        text: "Bayesian inference updates prior belief with evidence; reviewed by a human.",
+        humanAuthorship: "human-authored",
+        humanEdits: [
+          {
+            attribution: "human-authored",
+            editedAt: "2026-08-27T21:30:00.000Z",
+            changedFields: ["title", "text"],
+          },
+        ],
+      },
+    ]);
+  });
 });
