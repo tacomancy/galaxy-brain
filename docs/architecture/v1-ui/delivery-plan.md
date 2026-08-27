@@ -358,6 +358,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle records human authorship without promoting the result to Governed Knowledge, contacting a provider, changing result versions, or adding file-backed serialization or S1 editing controls.
 - **Next behavior:** Add durable file-backed persistence for saved Synthesis results and their provenance/version history.
 
+#### TB7 file-backed result-persistence cycle — August 27, 2026
+
+- **Public Behavior:** The S5 Synthesis result Repository Adapter saves and reopens explicitly saved Working Material as portable JSON, including agent provenance, human-authorship records, context snapshots, result versions, and retained prior results; missing results remain an explicit `not-found` outcome.
+- **Test Seam:** S5 file-backed result Repository Adapter contract in an isolated temporary Knowledge Repository.
+- **Red evidence:** No separate red command output was captured; the S5 contract was added against the required round-trip and missing-result outcomes before running the implementation.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 38 Vitest tests.
+- **Scope confirmed:** The Adapter stores only explicitly saved result metadata and history. It does not store hidden request/response payloads, initialize Git, contact a provider, or add S1 presentation.
+- **Next behavior:** Expose the saved-result confirmation, provenance, version, and restore controls through the packaged S1 Workbench surface.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

@@ -1,6 +1,6 @@
 # Tracer Bullet 7: Synthesize selected evidence explicitly
 
-Status: preview preparation, context removal, confirmed handoff, decline/cancel preservation, provider-unavailable handling, transient result handling, default explicit save, opt-in prompt/context snapshot, stale-context warning, unavailable-source-status handling, explicit versioned snapshot refresh, confirmed result regeneration, result restore, and human-authorship preservation implemented on August 27, 2026; remaining TB7 cycles are pending.
+Status: preview preparation, context removal, confirmed handoff, decline/cancel preservation, provider-unavailable handling, transient result handling, default explicit save, opt-in prompt/context snapshot, stale-context warning, unavailable-source-status handling, explicit versioned snapshot refresh, confirmed result regeneration, result restore, human-authorship preservation, and file-backed result persistence implemented on August 27, 2026; remaining TB7 cycles are pending.
 
 This tracer bullet adds the first provider-dependent Agentic Capability to the accepted provider-free Source Processing path. It makes Synthesis an explicit, inspectable, user-authorized operation over selected Structured Annotations. It does not make an Agent Provider a prerequisite for the Workbench or promote generated output to Governed Knowledge.
 

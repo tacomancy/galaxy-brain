@@ -158,7 +158,15 @@ export interface SynthesisHumanEdit {
 /** Repository Adapter for explicit Synthesis result persistence. */
 export interface SynthesisResultRepository {
   saveResult(result: SynthesisSavedResult): Promise<void>;
+  readResult?(resultId: string): Promise<SynthesisResultReadOutcome>;
+  readResults?(): Promise<SynthesisSavedResult[]>;
 }
+
+/** Caller-visible read outcome for one explicitly saved Synthesis result. */
+export type SynthesisResultReadOutcome =
+  | { outcome: "found"; result: SynthesisSavedResult }
+  | { outcome: "not-found"; detail: string }
+  | { outcome: "unavailable"; detail: string };
 
 /** Concise and exact views of one pending Synthesis operation. */
 export interface SynthesisPreview {
