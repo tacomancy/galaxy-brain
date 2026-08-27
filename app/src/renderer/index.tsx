@@ -2,6 +2,7 @@
 import { createRoot } from "react-dom/client";
 import { useState } from "react";
 
+import "./styles.css";
 import { Atlas } from "./atlas/Atlas";
 import { PaperDesk } from "./paper-desk/PaperDesk";
 import { Studio } from "./studio/Studio";

@@ -274,7 +274,7 @@ export const createWorkbenchSession = (
       }
 
       if (
-        activeWorkspace === "paper-desk" &&
+        (activeWorkspace === "studio" || activeWorkspace === "paper-desk") &&
         contextReadOutcome.outcome === "available"
       ) {
         const annotationOutcome =
@@ -368,7 +368,10 @@ export const createWorkbenchSession = (
       workbench.context = repository.context;
     }
 
-    if (workspace === "paper-desk" && repository.context !== undefined) {
+    if (
+      (workspace === "studio" || workspace === "paper-desk") &&
+      repository.context !== undefined
+    ) {
       if (repository.sourceAnnotation === undefined) {
         const annotationOutcome =
           await knowledgeRepository.readWorkbenchAnnotation(
