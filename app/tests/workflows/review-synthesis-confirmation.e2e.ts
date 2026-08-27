@@ -55,9 +55,14 @@ describe("Review a Synthesis request", () => {
     await $(
       "#studio-synthesis-remove-annotation-bayesian-statistics-fixture-source-page-2-55-83",
     ).click();
-    assert.equal(
-      await $("#studio-synthesis-summary").getText(),
-      'Synthesize 1 selected source claim into "Bayesian statistics" using model "fixture-pinned-model" via OpenAI API; 54 source characters selected.',
+    await browser.waitUntil(
+      async () =>
+        (await $("#studio-synthesis-summary").getText()) ===
+        'Synthesize 1 selected source claim into "Bayesian statistics" using model "fixture-pinned-model" via OpenAI API; 54 source characters selected.',
+      {
+        timeout: 5_000,
+        timeoutMsg: "The Synthesis preview did not regenerate after removal.",
+      },
     );
     assert.doesNotMatch(
       await $("#studio-synthesis-payload").getText(),
