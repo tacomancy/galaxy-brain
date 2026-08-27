@@ -277,6 +277,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** This cycle proves graceful unavailability only. It does not add provider configuration loading, a real network Adapter, automatic payload/result retention, explicit save, Proposal application, or S1 presentation.
 - **Next behavior:** Prove that confirmed result and request bodies are not retained automatically, while explicit save remains a separate user action.
 
+#### TB7 transient result cycle — August 27, 2026
+
+- **Public Behavior:** A confirmed draft result is returned to the S3 caller transiently, without invoking Working Material persistence; explicit save remains a separate operation.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with a persistence-observing Working Material Adapter and an operation-specific Model Adapter.
+- **Red evidence:** No separate red run was captured for this boundary; the existing confirmed-handoff behavior already returned the result without persistence, and this cycle added a focused regression test to make that privacy rule explicit.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 28 Vitest tests.
+- **Scope confirmed:** The cycle does not add automatic history, caches, logs, audit retention, explicit result save, prompt/context save, provenance metadata, or Proposal application.
+- **Next behavior:** Add an explicit save operation that preserves agent provenance while keeping the result Working Material.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

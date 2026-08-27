@@ -8,6 +8,7 @@ import {
   createSourceProcessing,
   type SynthesisModelAdapter,
   type StructuredAnnotation,
+  type WorkingMaterialRepository,
 } from "../../src/modules/source-processing";
 
 const expectedAnnotation: StructuredAnnotation = {
@@ -302,5 +303,60 @@ describe("Synthesize selected evidence", () => {
       preview.preview.payload.context[0]?.text,
       expectedAnnotation.text,
     );
+  });
+
+  it("returns the draft transiently without automatically saving it", async () => {
+    let saveCalls = 0;
+    const workingMaterial: WorkingMaterialRepository = {
+      saveAnnotation: async () => {
+        saveCalls += 1;
+      },
+      readAnnotation: async () => ({
+        outcome: "not-found",
+        detail: "The source annotation was not found.",
+      }),
+      readAnnotationForSourceRecord: async () => ({
+        outcome: "not-found",
+        detail: "The source annotation was not found.",
+      }),
+    };
+    const model: SynthesisModelAdapter = {
+      requestSynthesis: async () => ({
+        outcome: "draft-proposal",
+        draft: {
+          title: "Bayesian statistics synthesis",
+          text: "Bayesian inference updates prior belief with evidence.",
+        },
+      }),
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial,
+      model,
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "confirmed",
+      }),
+      {
+        outcome: "draft-proposal",
+        draft: {
+          title: "Bayesian statistics synthesis",
+          text: "Bayesian inference updates prior belief with evidence.",
+        },
+      },
+    );
+    assert.equal(saveCalls, 0);
   });
 });
