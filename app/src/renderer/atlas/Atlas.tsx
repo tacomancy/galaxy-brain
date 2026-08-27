@@ -1,15 +1,18 @@
 import type {
-  FreshWorkbench,
   RepositoryOperationOutcome,
+  WorkbenchState,
+  WorkspaceTransitionOutcome,
 } from "../../modules/workbench-session";
 import type { JSX } from "react";
 
 /** Props supplied by the Workbench Session through the renderer entry point. */
 interface AtlasProps {
-  workbench: FreshWorkbench;
-  lastOutcome: RepositoryOperationOutcome | undefined;
+  workbench: WorkbenchState;
+  lastOutcome:
+    RepositoryOperationOutcome | WorkspaceTransitionOutcome | undefined;
   onCreateRepository: () => Promise<void>;
   onOpenRepository: () => Promise<void>;
+  onOpenTopicInStudio: (topicId: string) => Promise<void>;
 }
 
 /**
@@ -23,6 +26,7 @@ export const Atlas = ({
   lastOutcome,
   onCreateRepository,
   onOpenRepository,
+  onOpenTopicInStudio,
 }: AtlasProps): JSX.Element => {
   // This is an invariant of the fresh-session Interface. Failing loudly keeps
   // a mismatched composition from looking like a valid Atlas screen.
@@ -82,6 +86,21 @@ export const Atlas = ({
           >
             Create another Knowledge Repository
           </button>
+          {workbench.context === undefined ? null : (
+            <section id="atlas-topic" aria-labelledby="atlas-topic-heading">
+              <h2 id="atlas-topic-heading">Continue working</h2>
+              <p id="atlas-topic-title">{workbench.context.topic.title}</p>
+              <button
+                id="atlas-topic-open-studio"
+                type="button"
+                onClick={() =>
+                  onOpenTopicInStudio(workbench.context?.topic.id ?? "")
+                }
+              >
+                Open in Studio
+              </button>
+            </section>
+          )}
         </section>
       )}
       {/* Stable outcome is exposed separately from explanatory copy for S1. */}

@@ -2,7 +2,7 @@
  * Electron composition root for the Knowledge Workbench.
  *
  * This process owns privileged operations and wires the renderer-facing
- * bridge to application Modules. Tracer Bullets 2 and 3 compose the
+ * bridge to application Modules. Tracer Bullets 2 through 4 compose the
  * production file-backed repository and machine-local session-state Adapters
  * while remaining independent of Git, network, and provider state.
  */
@@ -14,9 +14,13 @@ import { fileURLToPath } from "node:url";
 import { createFileBackedKnowledgeRepository } from "../adapters/knowledge-repository/file-backed-knowledge-repository";
 import { createFileBackedWorkbenchSessionState } from "../adapters/session-state/file-backed-workbench-session-state";
 import { createWorkbenchSession } from "../modules/workbench-session";
+import type { WorkbenchWorkspace } from "../modules/workbench-session";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
+
+const isWorkbenchWorkspace = (value: unknown): value is WorkbenchWorkspace =>
+  value === "atlas" || value === "studio" || value === "paper-desk";
 
 // A custom secure scheme lets packaged renderer assets load without exposing
 // a broad file:// surface to the sandboxed renderer.
@@ -165,11 +169,56 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.openRepository(selection.filePaths[0]);
   });
 
+  ipcMain.handle(
+    "workbench:open-topic-in-studio",
+    (event, topicId: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (typeof topicId !== "string" || topicId.length === 0) {
+        throw new Error("Invalid Workbench topic transition.");
+      }
+
+      return workbenchSession.openTopicInStudio(topicId);
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:open-source-record-in-paper-desk",
+    (event, sourceRecordId: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (typeof sourceRecordId !== "string" || sourceRecordId.length === 0) {
+        throw new Error("Invalid Workbench Source Record transition.");
+      }
+
+      return workbenchSession.openSourceRecordInPaperDesk(sourceRecordId);
+    },
+  );
+
+  ipcMain.handle("workbench:switch-workspace", (event, workspace: unknown) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    if (!isWorkbenchWorkspace(workspace)) {
+      throw new Error("Invalid Workbench workspace transition.");
+    }
+
+    return workbenchSession.switchWorkspace(workspace);
+  });
+
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
     ipcMain.removeHandler("workbench:create-repository");
     ipcMain.removeHandler("workbench:open-repository");
+    ipcMain.removeHandler("workbench:open-topic-in-studio");
+    ipcMain.removeHandler("workbench:open-source-record-in-paper-desk");
+    ipcMain.removeHandler("workbench:switch-workspace");
   });
 
   if (MAIN_WINDOW_WEBPACK_ENTRY.startsWith("file:")) {

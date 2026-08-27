@@ -3,9 +3,15 @@ import { createRoot } from "react-dom/client";
 import { useState } from "react";
 
 import { Atlas } from "./atlas/Atlas";
+import { PaperDesk } from "./paper-desk/PaperDesk";
+import { Studio } from "./studio/Studio";
+import { WorkspaceSwitcher } from "./workspace-switcher/WorkspaceSwitcher";
 import type {
   FreshWorkbench,
   RepositoryOperationOutcome,
+  WorkbenchState,
+  WorkbenchWorkspace,
+  WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
 
 const rootElement = document.getElementById("root");
@@ -25,9 +31,9 @@ const WorkbenchShell = ({
 }: {
   initialWorkbench: FreshWorkbench;
 }) => {
-  const [workbench, setWorkbench] = useState(initialWorkbench);
+  const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
   const [lastOutcome, setLastOutcome] = useState<
-    RepositoryOperationOutcome | undefined
+    RepositoryOperationOutcome | WorkspaceTransitionOutcome | undefined
   >(initialWorkbench.repositoryResumeFailure);
 
   const refreshWorkbench = async (): Promise<void> => {
@@ -48,13 +54,83 @@ const WorkbenchShell = ({
     await refreshWorkbench();
   };
 
+  const openTopicInStudio = async (topicId: string): Promise<void> => {
+    const outcome = await window.workbench.openTopicInStudio(topicId);
+
+    if (outcome.outcome === "transitioned") {
+      setLastOutcome(undefined);
+      setWorkbench(outcome.workbench);
+      return;
+    }
+
+    setLastOutcome(outcome);
+  };
+
+  const openSourceRecordInPaperDesk = async (
+    sourceRecordId: string,
+  ): Promise<void> => {
+    const outcome =
+      await window.workbench.openSourceRecordInPaperDesk(sourceRecordId);
+
+    if (outcome.outcome === "transitioned") {
+      setLastOutcome(undefined);
+      setWorkbench(outcome.workbench);
+      return;
+    }
+
+    setLastOutcome(outcome);
+  };
+
+  const switchWorkspace = async (
+    workspace: WorkbenchWorkspace,
+  ): Promise<void> => {
+    const outcome = await window.workbench.switchWorkspace(workspace);
+
+    if (outcome.outcome === "transitioned") {
+      setLastOutcome(undefined);
+      setWorkbench(outcome.workbench);
+      return;
+    }
+
+    setLastOutcome(outcome);
+  };
+
+  const workspace = (() => {
+    if (workbench.activeWorkspace === "studio") {
+      return (
+        <Studio
+          workbench={workbench}
+          onOpenSourceRecordInPaperDesk={openSourceRecordInPaperDesk}
+        />
+      );
+    }
+
+    if (workbench.activeWorkspace === "paper-desk") {
+      return <PaperDesk workbench={workbench} />;
+    }
+
+    return (
+      <Atlas
+        workbench={workbench}
+        lastOutcome={lastOutcome}
+        onCreateRepository={createRepository}
+        onOpenRepository={openRepository}
+        onOpenTopicInStudio={openTopicInStudio}
+      />
+    );
+  })();
+
   return (
-    <Atlas
-      workbench={workbench}
-      lastOutcome={lastOutcome}
-      onCreateRepository={createRepository}
-      onOpenRepository={openRepository}
-    />
+    <>
+      {workbench.repositoryStatus === "selected" ? (
+        <WorkspaceSwitcher
+          activeWorkspace={workbench.activeWorkspace}
+          hasContext={workbench.context !== undefined}
+          onSwitchWorkspace={switchWorkspace}
+        />
+      ) : null}
+      {workspace}
+    </>
   );
 };
 

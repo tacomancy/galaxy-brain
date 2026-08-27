@@ -39,5 +39,6 @@ export const createInMemoryKnowledgeRepository = (): KnowledgeRepository => {
 
       return { outcome: "opened", repositoryPath: canonicalPath };
     },
+    readWorkbenchContext: async () => undefined,
   };
 };

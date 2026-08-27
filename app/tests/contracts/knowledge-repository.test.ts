@@ -375,6 +375,7 @@ describe("Workbench Session selection contract", () => {
           outcome: "invalid-format",
           detail: "invalid",
         }),
+        readWorkbenchContext: async () => undefined,
       },
       {
         readSelectedRepository: async () => undefined,

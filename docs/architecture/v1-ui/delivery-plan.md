@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1, 2, and 3 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed; Tracer Bullet 4 is the next implementation slice.
+Status: Tracer Bullets 1, 2, and 3 complete and accepted on August 27, 2026; TB4 implementation is complete and awaits user acceptance; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -91,9 +91,21 @@ At S1, prove that reopening a known session validates and resumes the last expli
 
 ### 4. Carry context between workspaces
 
+Status: implementation complete; user acceptance remains open.
+
 At S1, prove a contextual transition from an Atlas item to Studio and then to its Source Record in Paper Desk without losing the topic relationship. Add the compact global switcher only to the extent this behavior needs it.
 
 The [Tracer Bullet 4 brief](tracer-bullet-4-spec.md) coordinates this slice against the accepted Product Decisions, Architecture, and Test Strategy documents.
+
+#### Tracer Bullet 4 implementation completion record — August 27, 2026
+
+- **Public Behavior:** A selected fixture topic can move from Atlas into Studio, its associated Source Record can move into Paper Desk, and the compact workspace switcher moves among Atlas, Studio, and Paper Desk without dropping the topic relationship.
+- **Test Seam:** S1 packaged desktop workflow through the real Electron main process, preload bridge, Workbench Session, and Atlas, Studio, and Paper Desk UI Adapters.
+- **Red evidence:** The focused workflow first failed because `#atlas-topic-open-studio`, then `#studio-source-record-open-paper-desk`, and finally `#workspace-switcher` were absent, with each failure observed before its corresponding implementation.
+- **Green evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/carry-context-between-workspaces.e2e.ts` passed all 3 TB4 behavior cases.
+- **Automated evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 12 Vitest tests. The full packaged workflow passed all 15 WebdriverIO workflow specs.
+- **Scope confirmed:** Context transfer is in-session only. Active workspace, Working Set, reading position, and contextual navigation are not persisted across relaunch; PDF rendering, capture, Synthesis, authoring, Governance, and Discovery remain deferred.
+- **Acceptance:** User review of the running TB4 behavior remains open.
 
 ### 5. Capture one located source claim
 
