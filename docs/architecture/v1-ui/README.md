@@ -14,6 +14,7 @@ This package follows the project-wide [documentation authority map](../../README
 - [Code map](code-map.md) maps architectural responsibilities to live or explicitly planned source locations.
 - [Test strategy](test-strategy.md) defines the confirmed public seams through which behavior is verified.
 - [Delivery plan](delivery-plan.md) orders vertical tracer bullets for red-to-green implementation.
+- [Tracer Bullet 2 specification](tracer-bullet-2-spec.md) defines the current Open/Create repository slice, acceptance matrix, and completion gate.
 - [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
 - [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
 - [Engineering glossary](../../engineering/glossary.md) defines the codebase-design and test-driven-development vocabulary used by this package.

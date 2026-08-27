@@ -58,7 +58,7 @@ Critical behaviors:
 - An explicitly saved OpenAI result is labeled agent-generated and preserves provider, pinned model, generation timestamp, operation, and applicable Source Record or Source Locator references; the metadata does not make it Governed Knowledge.
 - The default save omits the human-facing prompt and context; a separate explicit save-with-prompt/context action includes the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot, but not full source excerpts or the hidden full API payload. A mismatch in saved versus current source identity or content identity may affect navigation targets but does not rewrite the saved snapshot; the Workbench shows a non-blocking warning that the source changed.
 
-Tests at this seam use real application modules and local in-memory adapters. They do not mock workspace modules, inspect UI implementation state, select editor-engine nodes, or query storage as a side channel.
+Tests at this seam use real application Modules and locally substitutable Adapters. In-memory Adapters remain appropriate for behaviors that do not require durable files; a behavior that explicitly proves the local file lifecycle, such as Tracer Bullet 2, uses the production file-backed Adapter against isolated temporary roots. These tests assert the stable Workbench outcome rather than parsing error strings. They do not mock workspace Modules, inspect UI implementation state, select editor-engine nodes, or query storage as a UI side channel.
 
 **Why S1 is not the only Test Seam:** expressing every version, dependency, provenance, and authority edge case through the UI would make the suite slow, repetitive, and sensitive to harmless presentation changes. S1 proves representative end-to-end paths; S2 through S4 exhaustively protect the dense rules behind those paths.
 
@@ -181,7 +181,7 @@ Use a small, fixed example corpus whose expected outcomes are written independen
 - a Proposal containing two changes with one explicit dependency; and
 - a stale-target variant with a different literal version identifier.
 
-Mocks are allowed only for true external dependencies such as a model provider. Prefer in-memory adapters for local-substitutable dependencies such as the repository. Inject clocks and identity sources when their outputs affect observable behavior.
+Mocks are allowed only for true external dependencies such as a model provider. Prefer in-memory Adapters for local-substitutable dependencies unless the behavior under test explicitly requires durable file semantics; those cases use the production file-backed Adapter with isolated temporary roots and share the S5 contract. The TB2 harness denies Git process execution and outbound sockets so unexpected boundary calls fail deterministically. Inject clocks and identity sources when their outputs affect observable behavior.
 
 ## Prohibited test shapes
 
