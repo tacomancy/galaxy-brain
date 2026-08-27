@@ -340,6 +340,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle adds fresh confirmation, one confirmed regeneration request, new result-version metadata, and prior-result preservation. It does not implement restore, automatic regeneration, S1 controls, file-backed result serialization, or result cleanup.
 - **Next behavior:** Add explicit restore of an older result as a new current version without making a Model Adapter request.
 
+#### TB7 result-restore cycle — August 27, 2026
+
+- **Public Behavior:** An explicit restore selects a retained older result, saves it as a new current version, preserves the current and all intervening versions, and makes no Model Adapter request.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a result Repository Adapter; the Model Adapter is present only as a request-observation guard.
+- **Red evidence:** No separate red command output was captured; the restore test was added against the required public outcome before running the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 36 Vitest tests.
+- **Scope confirmed:** The cycle adds explicit restore and version-history preservation only. It does not add automatic restore, result cleanup, file-backed serialization, or S1 history controls.
+- **Next behavior:** Preserve `agent-generated` provenance when a saved result receives a later human edit while remaining Working Material.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

@@ -200,6 +200,12 @@ export interface RegenerateSynthesisResultInput {
   generatedAt: string;
 }
 
+/** Explicit request to restore an older saved result as the current version. */
+export interface RestoreSynthesisResultInput {
+  currentResult: SynthesisSavedResult;
+  version: number;
+}
+
 /** Caller-visible result of an explicit Synthesis save. */
 export type SaveSynthesisResultOutcome =
   | { outcome: "saved"; result: SynthesisSavedResult }
@@ -231,6 +237,11 @@ export type RegenerateSynthesisResultOutcome =
   | { outcome: "declined" }
   | { outcome: "canceled" }
   | { outcome: "agent-provider-unavailable"; detail: string }
+  | { outcome: "operation-failed"; detail: string };
+
+/** Caller-visible outcome of an explicit Synthesis result restore. */
+export type RestoreSynthesisResultOutcome =
+  | { outcome: "restored"; result: SynthesisSavedResult }
   | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome after the confirmation boundary. */
@@ -323,6 +334,10 @@ export interface SourceProcessing {
   regenerateSynthesisResult(
     input: RegenerateSynthesisResultInput,
   ): Promise<RegenerateSynthesisResultOutcome>;
+  /** Restores an older result as a new current version without provider calls. */
+  restoreSynthesisResult(
+    input: RestoreSynthesisResultInput,
+  ): Promise<RestoreSynthesisResultOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -872,6 +887,47 @@ export const createSourceProcessing = (
     return { outcome: "regenerated", result: regeneratedResult };
   };
 
+  const restoreSynthesisResult = async (
+    input: RestoreSynthesisResultInput,
+  ): Promise<RestoreSynthesisResultOutcome> => {
+    const currentVersion = input.currentResult.resultVersion ?? 1;
+    const priorResults = input.currentResult.priorResults ?? [];
+    const restoredResult = priorResults.find(
+      (result) => (result.resultVersion ?? 1) === input.version,
+    );
+
+    if (
+      input.currentResult.id.length === 0 ||
+      input.version <= 0 ||
+      input.version >= currentVersion ||
+      restoredResult === undefined ||
+      dependencies.results === undefined
+    ) {
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result version could not be restored.",
+      };
+    }
+
+    const result: SynthesisSavedResult = {
+      ...restoredResult,
+      resultVersion: currentVersion + 1,
+      priorResults: [...priorResults, input.currentResult],
+    };
+
+    try {
+      await dependencies.results.saveResult(result);
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result version could not be restored.",
+      };
+    }
+
+    return { outcome: "restored", result };
+  };
+
   return {
     captureSourceClaim,
     prepareSynthesis,
@@ -881,5 +937,6 @@ export const createSourceProcessing = (
     checkSynthesisContext,
     refreshSynthesisContext,
     regenerateSynthesisResult,
+    restoreSynthesisResult,
   };
 };

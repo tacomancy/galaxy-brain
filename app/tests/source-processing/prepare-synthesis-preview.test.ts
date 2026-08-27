@@ -1092,4 +1092,88 @@ describe("Synthesize selected evidence", () => {
       resultVersion: 1,
     });
   });
+
+  it("restores an older result as a new current version without a provider call", async () => {
+    const firstResult: SynthesisSavedResult = {
+      id: "synthesis-result-bayesian-statistics-fixture",
+      state: "working-material",
+      title: "Bayesian statistics synthesis",
+      text: "Bayesian inference updates prior belief with evidence.",
+      targetTopic: {
+        id: "bayesian-statistics",
+        title: "Bayesian statistics",
+      },
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      resultVersion: 1,
+    };
+    const currentResult: SynthesisSavedResult = {
+      ...firstResult,
+      title: "Regenerated Bayesian statistics synthesis",
+      text: "The regenerated synthesis remains Working Material.",
+      provenance: {
+        ...firstResult.provenance,
+        generatedAt: "2026-08-27T21:00:00.000Z",
+      },
+      resultVersion: 2,
+      priorResults: [firstResult],
+    };
+    let modelCalls = 0;
+    const savedResults: SynthesisSavedResult[] = [];
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model: {
+        requestSynthesis: async () => {
+          modelCalls += 1;
+          throw new Error("Restore must not call the provider.");
+        },
+      },
+      results: {
+        saveResult: async (result) => {
+          savedResults.push(result);
+        },
+      },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.restoreSynthesisResult({
+        currentResult,
+        version: 1,
+      }),
+      {
+        outcome: "restored",
+        result: {
+          ...firstResult,
+          resultVersion: 3,
+          priorResults: [firstResult, currentResult],
+        },
+      },
+    );
+    assert.deepEqual(savedResults, [
+      {
+        ...firstResult,
+        resultVersion: 3,
+        priorResults: [firstResult, currentResult],
+      },
+    ]);
+    assert.equal(modelCalls, 0);
+    assert.deepEqual(currentResult, {
+      ...firstResult,
+      title: "Regenerated Bayesian statistics synthesis",
+      text: "The regenerated synthesis remains Working Material.",
+      provenance: {
+        ...firstResult.provenance,
+        generatedAt: "2026-08-27T21:00:00.000Z",
+      },
+      resultVersion: 2,
+      priorResults: [firstResult],
+    });
+  });
 });
