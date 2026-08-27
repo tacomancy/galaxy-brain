@@ -1,0 +1,53 @@
+{
+  "name": "galaxy-brain",
+  "productName": "Galaxy Brain",
+  "version": "0.1.0",
+  "description": "The Galaxy Brain desktop Knowledge Workbench.",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": "24.19.0"
+  },
+  "main": ".webpack/main",
+  "scripts": {
+    "start": "electron-forge start",
+    "format": "prettier --write src tests/workflows ./*.ts ./*.mjs ./*.json",
+    "format:check": "prettier --check src tests/workflows ./*.ts ./*.mjs ./*.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:workflow": "npm run package && wdio run ./wdio.conf.ts",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "prepackage": "node -e \"if (process.version !== 'v24.19.0') { throw new Error('Galaxy Brain requires Node 24.19.0. Run nvm use before packaging.') }\"",
+    "package": "electron-forge package"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "7.11.2",
+    "@electron-forge/plugin-webpack": "7.11.2",
+    "@types/mocha": "10.0.10",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@wdio/cli": "9.31.3",
+    "@wdio/electron-service": "10.2.0",
+    "@wdio/globals": "9.31.3",
+    "@wdio/local-runner": "9.31.3",
+    "@wdio/mocha-framework": "9.31.2",
+    "electron": "44.0.0",
+    "eslint": "9.39.2",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "prettier": "3.7.4",
+    "puppeteer-core": "24.43.1",
+    "ts-loader": "9.5.4",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.53.0",
+    "vitest": "4.1.11",
+    "webpack": "5.104.1"
+  }
+}
