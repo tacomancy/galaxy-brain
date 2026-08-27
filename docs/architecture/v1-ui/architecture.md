@@ -70,6 +70,8 @@ The live correspondence between these responsibilities and source files belongs 
 
 Its interface opens the Workbench, transitions to a workspace with context, and manages the bounded Working Set. Its implementation owns launch-versus-resume behavior, the explicitly selected repository root, global and contextual navigation, back/forward history, active items, reading position, and UI-state autosave. It may resume the last explicitly selected root after validating it; an unavailable or invalid root produces a user-choice recovery state rather than discovery.
 
+For Tracer Bullet 2, Workbench Session owns the Open/Create selection transition and exposes these caller-facing outcomes: `opened`, `created`, `canceled`, `read-only-compatible`, `invalid-format`, `unsafe-target`, `target-unavailable`, and `operation-failed`. Human-readable details, paths, and recovery instructions are presentation data attached to an outcome; callers and tests do not parse error strings. Cancellation is a no-op, and a failed replacement preserves the current selection or the fresh empty state.
+
 Callers do not manage route serialization, session persistence, or context reconstruction themselves. Deleting this module would force every workspace to reproduce those rules, so the module earns leverage and locality.
 
 ### Source Processing module

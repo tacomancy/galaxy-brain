@@ -27,7 +27,7 @@ This ledger is an index and audit trail. The linked architecture, ADRs, proposal
 
 Finding IDs preserve their historical origin. In particular, the `OPEN-*` prefix does not mean a finding is currently open; use the Status column and disposition as the authority.
 
-No current finding remains open, decision-needed, or pending a proposal.
+The prior review batch had no current finding remaining open, decision-needed, or pending a proposal. Later document-grilling rounds may add findings below while their decisions are being resolved.
 
 ## Document findings
 
@@ -150,3 +150,25 @@ The separately applied [software design and human-agent collaboration guidance p
 ## Open work
 
 - Revisit deferred findings only through a scoped proposal and explicit review.
+
+## Tracer Bullet 2 specification review — August 27, 2026
+
+The [Tracer Bullet 2 specification](../architecture/v1-ui/tracer-bullet-2-spec.md) was reviewed for security, testability, scope, and domain clarity. The user approved the recommended dispositions below, which were applied to the specification and affected test-strategy/code-map records.
+
+| ID | Finding | Status | Disposition |
+| --- | --- | --- | --- |
+| TB2-001 | The specification required a real local file lifecycle and exact created files, but previously said S1 used only local in-memory Adapters while exact file-tree checks belonged to S5. | resolved | User approved using the production file-backed Adapter through the S1 workflow with isolated temporary roots, plus supporting S5 contract coverage now. |
+| TB2-002 | Path safety was underspecified for symlinked targets, symlinked template entries, and changes between validation and mutation. | resolved | User approved canonical path validation, rejection of symlinked targets and unsafe entries, containment checks, and immediate revalidation before mutation. |
+| TB2-003 | Starter copying into an existing empty directory was not atomic and could leave a partial skeleton after failure. | resolved | User approved staging, validation, atomic placement where possible, cleanup, and restoration of the original empty state when required. |
+| TB2-004 | “Valid V1 structure,” “invalid,” and “unsupported” lacked exact validation rules. | resolved | User approved requiring the scalar V1 declaration and seven canonical directories, allowing unknown files, rejecting malformed or ambiguous metadata, and using a safe non-executing YAML parser. |
+| TB2-005 | The unsupported-format behavior did not resolve the Repository Format allowance for newer formats that can be safely read. | resolved | User approved read/write for V1, read-only for safely interpretable newer formats, and an unsupported/unselected outcome for malformed or unsafe formats; migration remains deferred. |
+| TB2-006 | Failure and cancellation state was ambiguous when a repository was already selected. | resolved | User approved cancellation as a no-op and preservation of the current repository after a failed replacement; the fresh empty state remains empty after failure. |
+| TB2-007 | “New path” did not define missing parents, file targets, permission errors, unavailable volumes, or concurrent target creation. | resolved | User approved a new final directory under an existing writable parent, rejection without mutation for invalid/unavailable targets, and recoverable handling of concurrent creation. |
+| TB2-008 | The starter skeleton’s expected contents were not fully distinguished from subject matter or fixture content. | resolved | User approved an explicit starter inventory covering README files, registry seeds, templates, `.gitattributes`, and `.gitkeep` entries, with separate absence checks for fixture/private content. |
+| TB2-009 | The provider-free and no-network claims lacked reproducible automated proof. | resolved | User approved executable boundary checks that fail on unexpected Git process or network use, supplemented by manual offline testing. |
+| TB2-010 | The candidate bundled several independent behaviors despite the one-behavior-per-Red-to-Green-cycle rule. | resolved | User approved sequencing create-new first, then empty-path creation, valid open, and safety/recovery cases across separate green cycles. |
+| TB2-011 | The specification distinguished successful, canceled, invalid, unsupported, read-only, and operational failure outcomes, but did not define stable caller-visible outcome values that tests and UI Adapters could share. | resolved | User approved a discriminated domain outcome with stable values for opened, created, canceled, read-only-compatible, invalid-format, unsafe-target, target-unavailable, and operation-failed; human-readable detail remains presentation-level. |
+| TB2-012 | Rejecting unsafe filesystem entries during creation did not say whether an existing valid repository containing symlinks should be rejected, opened read-only, or opened normally when no write is requested. | resolved | User approved rejecting any selected repository containing symlinks as `unsafe-target` and leaving it unselected; Tracer Bullet 2 does not attempt to prove a symlink harmless or open it read-only. |
+| TB2-013 | Staging and atomic placement reduce partial writes, but a process crash after placement and before staging cleanup can leave recovery artifacts or an ambiguous repository state. | resolved | User approved uniquely named application-owned staging paths outside the final repository, the validated final manifest/roots as the commit point, safe cleanup of recognized abandoned staging artifacts on the next attempt, and no automatic deletion inside an explicitly selected user directory. |
+| TB2-014 | “Explicit starter inventory” was required, but its update policy was not named. A snapshot assertion could either drift silently or block intentional starter changes. | resolved | User approved a checked-in inventory of starter-relative paths and content categories, updated in the same reviewed change as intentional skeleton changes. |
+| TB2-015 | “Fail loudly” for unexpected Git or network use did not specify the enforcement mechanism, so a test could pass merely because the environment happened to be offline. | resolved | User approved a deterministic harness that denies Git process execution and outbound sockets, fails on attempted boundary calls, and retains manual offline testing as secondary evidence. |

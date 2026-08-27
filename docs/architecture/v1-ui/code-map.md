@@ -1,6 +1,6 @@
 # V1 code map
 
-Status: Tracer Bullet 1 production implementation is complete; later tracer bullets remain unimplemented. Planned homes below remain orientation constraints for behavior not yet implemented.
+Status: Tracer Bullet 1 production implementation is complete; Tracer Bullet 2 is specified and implementation is in progress when its behavior cycle begins; later tracer bullets remain unimplemented. Planned homes below remain orientation constraints for behavior not yet implemented.
 
 This map tells agents where a Public Behavior enters the codebase, which Module owns it, which Adapter supplies external behavior, and which confirmed Test Seam observes it. Update it with live Markdown links in the same change that creates or moves code.
 
@@ -69,7 +69,7 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 
 | Seam | Production Adapter | Test Adapter | Test Seam | Status |
 | --- | --- | --- | --- | --- |
-| Knowledge Repository | Root-scoped file-backed repository Adapter under `app/src/adapters/knowledge-repository/` | [`app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts`](../../../app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts) | S5 contract; used by S1–S4 | In-memory fresh-session path implemented in Tracer Bullet 1; file-backed path remains deferred |
+| Knowledge Repository | Root-scoped file-backed repository Adapter under `app/src/adapters/knowledge-repository/` | [`app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts`](../../../app/src/adapters/knowledge-repository/in-memory-knowledge-repository.ts) | S5 contract; used by S1–S4 | In-memory fresh-session path implemented in Tracer Bullet 1; file-backed path is the Tracer Bullet 2 target and is not yet implemented |
 | PDF | Deferred engine under `app/src/adapters/pdf/` | Deterministic fixture Adapter | S5 contract; used by S3 | Unimplemented; Tracer Bullet 5 |
 | Model | OpenAI API Adapter under `app/src/adapters/model/`; absent configuration is an explicit unavailable outcome; other providers are future work | Narrow operation-specific Mock Adapters, including unavailable-provider behavior | Verified through S4, not an S5 equivalence contract | Unimplemented; Tracer Bullet 12 or later |
 | Clock and identity | Platform clock and identifier sources under `app/src/adapters/system/` | Deterministic In-memory Adapters | Owning behavior's seam | Unimplemented until observable behavior requires them |

@@ -40,6 +40,12 @@ A Workbench checks `format` and `format_version` before enabling writes:
 - A required migration is separately previewed, explicitly confirmed, recoverable, and recorded in the repository. It never occurs merely by opening or updating the Workbench.
 - External changes to files known as Governed Knowledge are preserved and marked unverified until explicitly reviewed.
 
+For the Tracer Bullet 2 file-backed Adapter, a read/write V1 repository has the scalar `format: galaxy-brain` declaration, `format_version: 1`, and all seven canonical roots. Unknown files and additional format content are preserved. Malformed YAML, duplicate or ambiguous keys, non-scalar declarations, missing canonical roots, and unsafe filesystem entries are invalid. YAML parsing is safe and non-executing. A newer format is read-only only when its meaning can be preserved safely; malformed, unknown, or unsafe formats remain unselected, and migration is outside this slice.
+
+The selected creation root must be canonical and must not be a symlink. The starter skeleton contains no symlinks, and copying never follows links. The Adapter rechecks the canonical target and its emptiness immediately before mutation. Opening a repository containing any symlink returns an unsafe-target outcome and leaves it unselected.
+
+Creation stages the complete skeleton in a uniquely named application-owned temporary sibling, validates it, and places it at the selected root atomically where the platform permits. When an existing empty directory cannot be replaced atomically, failure restores its original empty state. Failed operations clean staging and never select a partial repository. Later cleanup may remove only recognized abandoned staging paths; it never scans or deletes content inside an explicitly selected user directory.
+
 Proposal application is a recoverable filesystem transaction. It rechecks targeted-file fingerprints immediately before writing, preserves targeted rollback data, writes the approved files and immutable audit record under `proposals/applied/`, and never claims completion after a partial failure. The user receives a non-blocking notice that changes were saved locally; Galaxy Brain does not claim Git commit, remote synchronization, or backup status.
 
 ## Starter and fixture
