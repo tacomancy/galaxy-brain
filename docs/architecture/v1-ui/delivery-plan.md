@@ -153,7 +153,7 @@ At S3, prove that capturing the known PDF passage produces a source-claim Struct
 - **Public Behavior:** The Source Processing module captures the literal Bayesian statistics fixture passage as a `source-claim` Structured Annotation with the exact Source Record reference, page 2 locator `page:2#chars=0-54`, captured text, attribution, classification, and `working-material` state.
 - **Test Seams:** S3 Source Processing behavior through its public Interface, plus S5 PDF and Working Material Adapter contracts.
 - **Red evidence:** The focused S3 test first failed because the Source Processing Interface was absent; the persistence cycle then failed because the file-backed Working Material Adapter was absent. Each missing behavior was observed before its implementation.
-- **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, strict type checking, and 18 Vitest tests, including the TB5 S3 behavior and S5 Adapter contract suites.
+- **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, strict type checking, and 19 Vitest tests, including the TB5 S3 behavior and S5 Adapter contract suites.
 - **Scope confirmed:** The implementation is provider-free and does not create a Proposal, invoke Synthesis, mutate Governed Knowledge, invoke Git or network services, or select a production PDF engine. PDF import, Paper Desk controls, reopen, relinking, and Synthesis remain deferred.
 - **Acceptance:** User review and acceptance of the S3 behavior remain pending.
 

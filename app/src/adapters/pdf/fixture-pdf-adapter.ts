@@ -9,6 +9,7 @@ const fixtureSourceRecord = {
   title: "Bayesian statistics fixture source",
 };
 const fixturePassage = "Bayesian inference updates prior belief with evidence.";
+const fixturePassageEnd = 54;
 
 /** Deterministic PDF Adapter for the independently specified TB5 fixture. */
 export const createFixturePdfAdapter = (): PdfAdapter => ({
@@ -20,7 +21,7 @@ export const createFixturePdfAdapter = (): PdfAdapter => ({
       input.sourceRecord.title !== fixtureSourceRecord.title ||
       input.page !== 2 ||
       input.start !== 0 ||
-      input.end !== fixturePassage.length
+      input.end !== fixturePassageEnd
     ) {
       return {
         outcome: "source-unavailable",

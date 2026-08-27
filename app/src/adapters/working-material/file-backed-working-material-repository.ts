@@ -310,7 +310,15 @@ export const createFileBackedWorkingMaterialRepository = (
         annotationFilePath(canonicalPath, annotationId),
         "utf8",
       );
-      return { outcome: "found", annotation: parseAnnotation(contents) };
+      const annotation = parseAnnotation(contents);
+
+      if (annotation.id !== annotationId) {
+        throw new InvalidAnnotationError(
+          "The annotation identity does not match its path.",
+        );
+      }
+
+      return { outcome: "found", annotation };
     } catch (cause: unknown) {
       if (isErrnoException(cause) && cause.code === "ENOENT") {
         return {
