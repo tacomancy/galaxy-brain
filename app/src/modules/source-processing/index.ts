@@ -54,6 +54,10 @@ export interface WorkingMaterialRepository {
   saveAnnotation(annotation: StructuredAnnotation): Promise<void>;
   /** Reopens an annotation or returns a caller-meaningful read outcome. */
   readAnnotation(annotationId: string): Promise<WorkingMaterialReadOutcome>;
+  /** Finds the saved annotation associated with one Source Record. */
+  readAnnotationForSourceRecord(
+    sourceRecordId: string,
+  ): Promise<WorkingMaterialReadOutcome>;
 }
 
 /** Caller-visible result of the first source-claim capture behavior. */

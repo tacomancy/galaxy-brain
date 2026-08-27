@@ -1,6 +1,6 @@
 # Tracer Bullet 6: Reopen the capture
 
-Status: documentation complete; implementation pending.
+Status: implementation complete; user acceptance pending.
 
 This brief coordinates Tracer Bullet 6 in the [delivery plan](delivery-plan.md#6-reopen-the-capture). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, or testing.
 

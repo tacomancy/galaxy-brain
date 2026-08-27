@@ -42,6 +42,9 @@ describe("Carry context between workspaces", () => {
       await $("#studio-topic-context").getText(),
       "Topic context preserved in this session",
     );
+
+    await $("#workspace-switcher-atlas").click();
+    await $("#atlas-heading").waitForDisplayed();
   });
 
   it("opens the associated Source Record in Paper Desk with the topic relationship", async () => {
@@ -72,6 +75,9 @@ describe("Carry context between workspaces", () => {
       await $("#paper-desk-topic-relationship").getText(),
       "Related topic: Bayesian statistics",
     );
+
+    await $("#workspace-switcher-atlas").click();
+    await $("#atlas-heading").waitForDisplayed();
   });
 
   it("switches workspaces without dropping the active context", async () => {

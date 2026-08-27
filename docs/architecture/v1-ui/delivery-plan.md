@@ -177,6 +177,25 @@ The guidance-compliant [Tracer Bullet 6 brief](tracer-bullet-6-spec.md) is now t
 
 At S1, prove that the saved annotation and reading position are restored through the public desktop workflow. This joins the source-processing behavior to real session and repository behavior without querying storage from the test.
 
+#### Tracer Bullet 6 implementation completion record — August 27, 2026
+
+- **Public Behavior:** The packaged Workbench opens the fixture Source Record, presents the saved TB5 source claim, moves Paper Desk to page 2 character 0, and restores Paper Desk, the annotation, and the reading position after relaunch.
+- **Test Seam:** S1 packaged desktop workflow through the real Electron main process, preload bridge, Workbench Session, Paper Desk UI Adapter, file-backed Knowledge Repository and Working Material Adapters, and machine-local session-state Adapter; S5 coverage includes saved annotation lookup and session snapshots.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/reopen-captured-source.e2e.ts` first failed at the missing `#paper-desk-saved-annotation` behavior after the packaged app launched successfully.
+- **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, strict type checking, and 22 Vitest tests. The focused TB6 packaged workflow passed, the corrected TB4 workflow passed all 3 cases, and the full packaged workflow passed all 16 WebdriverIO specs.
+- **Scope confirmed:** The implementation restores machine-local active Paper Desk state and reading position while preserving the portable TB5 annotation. It does not select a production PDF engine, add Git/network/provider behavior, create a Proposal, invoke Synthesis, mutate Governed Knowledge, or implement import, arbitrary reading, relinking, or broader Working Set restoration.
+- **Acceptance:** User review and acceptance of the running TB6 behavior remain pending.
+
+#### TB6 UI follow-up slices
+
+After TB6 is accepted, the prototype-informed UI promotion is split into three independently reviewable S1 slices. Before each implementation slice, complete the [documentation prerequisite](#documentation-prerequisite), review the applicable accepted authorities and preceding delivery evidence, and check the corresponding guidance-compliant brief before writing behavior tests or implementation code.
+
+1. [TB6.1 — Promote the Atlas view](tracer-bullet-6-1-atlas-ui-spec.md): replace the minimal Atlas selected-repository presentation with a real continuation surface while preserving repository recovery and Atlas → Studio behavior.
+2. [TB6.2 — Promote the Studio view](tracer-bullet-6-2-studio-ui-spec.md): replace the minimal Studio contextual presentation with a real topic/source-claim surface while preserving Studio → Paper Desk behavior and Working Material labeling.
+3. [TB6.3 — Promote the Paper Desk view](tracer-bullet-6-3-paper-desk-ui-spec.md): replace the minimal Paper Desk presentation with a source-first reading surface while preserving TB6 provenance, reading-position restoration, keyboard operation, and relaunch behavior.
+
+These are presentation slices over existing Workbench Modules and Adapters. Do not promote the standalone prototype as a selectable production mode, introduce mock repository data, or implement later authoring, Synthesis, Governance, Discovery, or production PDF behavior speculatively.
+
 ### 7. Synthesize selected evidence explicitly
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

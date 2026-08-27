@@ -43,5 +43,9 @@ export const createInMemoryKnowledgeRepository = (): KnowledgeRepository => {
       outcome: "not-found",
       detail: "No contextual topic is available.",
     }),
+    readWorkbenchAnnotation: async () => ({
+      outcome: "not-found",
+      detail: "The source annotation was not found.",
+    }),
   };
 };

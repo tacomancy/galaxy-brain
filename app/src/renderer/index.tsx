@@ -86,6 +86,23 @@ const WorkbenchShell = ({
     applyWorkspaceTransition(outcome);
   };
 
+  const openSavedAnnotation = async (): Promise<void> => {
+    const outcome = await window.workbench.openSavedAnnotation();
+
+    if (outcome.outcome === "position-restored") {
+      setLastOutcome(undefined);
+      setWorkbench(outcome.workbench);
+      return;
+    }
+
+    if (
+      outcome.outcome === "context-unavailable" ||
+      outcome.outcome === "operation-failed"
+    ) {
+      setLastOutcome(outcome);
+    }
+  };
+
   const workspace = (() => {
     if (workbench.activeWorkspace === "studio") {
       return (
@@ -97,7 +114,12 @@ const WorkbenchShell = ({
     }
 
     if (workbench.activeWorkspace === "paper-desk") {
-      return <PaperDesk workbench={workbench} />;
+      return (
+        <PaperDesk
+          workbench={workbench}
+          onOpenSavedAnnotation={openSavedAnnotation}
+        />
+      );
     }
 
     return (

@@ -19,12 +19,14 @@ import {
   resolve,
 } from "node:path";
 
+import { createFileBackedWorkingMaterialRepository } from "../working-material/file-backed-working-material-repository";
 import type {
   KnowledgeRepository,
   RepositoryOperationOutcome,
   WorkbenchContext,
   WorkbenchContextReadOutcome,
 } from "../../modules/workbench-session";
+import type { WorkingMaterialReadOutcome } from "../../modules/source-processing";
 
 const canonicalRoots = [
   "assets",
@@ -703,4 +705,11 @@ export const createFileBackedKnowledgeRepository = (
       };
     }
   },
+  readWorkbenchAnnotation: async (
+    repositoryPath,
+    sourceRecordId,
+  ): Promise<WorkingMaterialReadOutcome> =>
+    createFileBackedWorkingMaterialRepository(
+      repositoryPath,
+    ).readAnnotationForSourceRecord(sourceRecordId),
 });
