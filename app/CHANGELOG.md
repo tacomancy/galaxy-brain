@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/tacomancy/galaxy-brain/compare/v0.4.0...v0.5.0) (2026-08-27)
+
+
+### Features
+
+* promote TB6 workbench views ([#19](https://github.com/tacomancy/galaxy-brain/issues/19)) ([b498b3d](https://github.com/tacomancy/galaxy-brain/commit/b498b3d9de2090b7fe122dd89b07c3d34e40b09a))
+
 ## [0.4.0](https://github.com/tacomancy/galaxy-brain/compare/v0.3.0...v0.4.0) (2026-08-27)
 
 
