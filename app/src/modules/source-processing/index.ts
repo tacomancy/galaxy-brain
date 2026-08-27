@@ -89,6 +89,20 @@ export interface SynthesisSourceContextReference {
   classification: StructuredAnnotation["classification"];
 }
 
+/** Current comparable identity for a Source Record and its content. */
+export type SynthesisSourceIdentityOutcome =
+  | {
+      outcome: "available";
+      sourceIdentity: string;
+      contentIdentity: string;
+    }
+  | { outcome: "unavailable"; detail: string };
+
+/** External seam for checking a saved Synthesis context against its source. */
+export interface SynthesisSourceIdentityAdapter {
+  readIdentity(sourceRecordId: string): Promise<SynthesisSourceIdentityOutcome>;
+}
+
 /** Agent provenance retained without promoting the result to authority. */
 export interface SynthesisProvenance {
   attribution: "agent-generated";
@@ -116,6 +130,8 @@ export interface SynthesisContextSnapshot {
   annotationId: string;
   sourceRecord: SourceRecordReference;
   sourceLocator: string;
+  sourceIdentity: string;
+  contentIdentity: string;
   summary: string;
 }
 
@@ -154,9 +170,29 @@ export interface SaveSynthesisResultInput {
   includePromptAndContext?: boolean;
 }
 
+/** Input for checking saved source context against current source identity. */
+export interface CheckSynthesisContextInput {
+  result: SynthesisSavedResult;
+}
+
 /** Caller-visible result of an explicit Synthesis save. */
 export type SaveSynthesisResultOutcome =
   | { outcome: "saved"; result: SynthesisSavedResult }
+  | { outcome: "operation-failed"; detail: string };
+
+/** Caller-visible source freshness outcome for a saved Synthesis result. */
+export type CheckSynthesisContextOutcome =
+  | { outcome: "current"; result: SynthesisSavedResult }
+  | {
+      outcome: "stale-context";
+      result: SynthesisSavedResult;
+      warning: string;
+    }
+  | {
+      outcome: "source-status-unavailable";
+      result: SynthesisSavedResult;
+      warning: string;
+    }
   | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome after the confirmation boundary. */
@@ -237,6 +273,10 @@ export interface SourceProcessing {
   saveSynthesisResult(
     input: SaveSynthesisResultInput,
   ): Promise<SaveSynthesisResultOutcome>;
+  /** Checks saved context without rewriting or blocking the result. */
+  checkSynthesisContext(
+    input: CheckSynthesisContextInput,
+  ): Promise<CheckSynthesisContextOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -245,6 +285,7 @@ export interface SourceProcessingDependencies {
   workingMaterial: WorkingMaterialRepository;
   model?: SynthesisModelAdapter;
   results?: SynthesisResultRepository;
+  sourceIdentity?: SynthesisSourceIdentityAdapter;
   diagnostics?: SourceProcessingDiagnostics;
 }
 
@@ -469,6 +510,48 @@ export const createSourceProcessing = (
       };
     }
 
+    const contextIdentities = new Map<
+      string,
+      { sourceIdentity: string; contentIdentity: string }
+    >();
+
+    if (input.includePromptAndContext) {
+      if (dependencies.sourceIdentity === undefined) {
+        return {
+          outcome: "operation-failed",
+          detail: "The Synthesis source context could not be checked.",
+        };
+      }
+
+      for (const item of input.preview.payload.context) {
+        let identity: SynthesisSourceIdentityOutcome;
+
+        try {
+          identity = await dependencies.sourceIdentity.readIdentity(
+            item.sourceRecord.id,
+          );
+        } catch (cause: unknown) {
+          dependencies.diagnostics?.record(cause);
+          return {
+            outcome: "operation-failed",
+            detail: "The Synthesis source context could not be checked.",
+          };
+        }
+
+        if (identity.outcome === "unavailable") {
+          return {
+            outcome: "operation-failed",
+            detail: "The Synthesis source context could not be checked.",
+          };
+        }
+
+        contextIdentities.set(item.annotationId, {
+          sourceIdentity: identity.sourceIdentity,
+          contentIdentity: identity.contentIdentity,
+        });
+      }
+    }
+
     const result: SynthesisSavedResult = {
       id: input.resultId,
       state: "working-material",
@@ -495,6 +578,8 @@ export const createSourceProcessing = (
               ? {}
               : { prompt: input.preview.prompt }),
             contextSnapshot: input.preview.payload.context.map((item) => ({
+              // Every context item was checked and inserted immediately above.
+              ...contextIdentities.get(item.annotationId)!,
               annotationId: item.annotationId,
               sourceRecord: { ...item.sourceRecord },
               sourceLocator: item.sourceLocator,
@@ -517,11 +602,68 @@ export const createSourceProcessing = (
     return { outcome: "saved", result };
   };
 
+  const checkSynthesisContext = async (
+    input: CheckSynthesisContextInput,
+  ): Promise<CheckSynthesisContextOutcome> => {
+    const snapshots = input.result.contextSnapshot;
+
+    if (snapshots === undefined || snapshots.length === 0) {
+      return { outcome: "current", result: input.result };
+    }
+
+    if (dependencies.sourceIdentity === undefined) {
+      return {
+        outcome: "source-status-unavailable",
+        result: input.result,
+        warning: "source status unavailable",
+      };
+    }
+
+    for (const snapshot of snapshots) {
+      let identity: SynthesisSourceIdentityOutcome;
+
+      try {
+        identity = await dependencies.sourceIdentity.readIdentity(
+          snapshot.sourceRecord.id,
+        );
+      } catch (cause: unknown) {
+        dependencies.diagnostics?.record(cause);
+        return {
+          outcome: "operation-failed",
+          detail: "The saved Synthesis context could not be checked.",
+        };
+      }
+
+      if (identity.outcome === "unavailable") {
+        return {
+          outcome: "source-status-unavailable",
+          result: input.result,
+          warning: "source status unavailable",
+        };
+      }
+
+      if (
+        identity.sourceIdentity !== snapshot.sourceIdentity ||
+        identity.contentIdentity !== snapshot.contentIdentity
+      ) {
+        return {
+          outcome: "stale-context",
+          result: input.result,
+          warning:
+            "The saved Synthesis context differs from the current source.",
+        };
+      }
+    }
+
+    return { outcome: "current", result: input.result };
+  };
+
   return {
     captureSourceClaim,
     prepareSynthesis,
     removeSynthesisContextItem,
     confirmSynthesis,
     saveSynthesisResult,
+    checkSynthesisContext,
   };
 };

@@ -8,6 +8,7 @@ import {
   createSourceProcessing,
   type SynthesisModelAdapter,
   type SynthesisSavedResult,
+  type SynthesisSourceIdentityAdapter,
   type StructuredAnnotation,
   type WorkingMaterialRepository,
   type SynthesisResultRepository,
@@ -482,6 +483,13 @@ describe("Synthesize selected evidence", () => {
     const results: SynthesisResultRepository = {
       saveResult: async () => undefined,
     };
+    const sourceIdentity: SynthesisSourceIdentityAdapter = {
+      readIdentity: async () => ({
+        outcome: "available",
+        sourceIdentity: "source-identity-bayesian-statistics-v1",
+        contentIdentity: "content-identity-bayesian-statistics-v1",
+      }),
+    };
     const model: SynthesisModelAdapter = {
       requestSynthesis: async () => ({
         outcome: "draft-proposal",
@@ -496,6 +504,7 @@ describe("Synthesize selected evidence", () => {
       workingMaterial: createInMemoryWorkingMaterialRepository(),
       model,
       results,
+      sourceIdentity,
     });
     const preview = await sourceProcessing.prepareSynthesis({
       ...synthesisInput,
@@ -566,6 +575,8 @@ describe("Synthesize selected evidence", () => {
                 title: "Bayesian statistics fixture source",
               },
               sourceLocator: "page:2#chars=0-54",
+              sourceIdentity: "source-identity-bayesian-statistics-v1",
+              contentIdentity: "content-identity-bayesian-statistics-v1",
               summary:
                 "Selected source claim from the Bayesian statistics fixture source.",
             },
@@ -573,5 +584,100 @@ describe("Synthesize selected evidence", () => {
         },
       },
     );
+  });
+
+  it("warns without rewriting a saved snapshot when the source changes", async () => {
+    let currentIdentity = {
+      sourceIdentity: "source-identity-bayesian-statistics-v1",
+      contentIdentity: "content-identity-bayesian-statistics-v1",
+    };
+    const sourceIdentity: SynthesisSourceIdentityAdapter = {
+      readIdentity: async () => ({
+        outcome: "available",
+        ...currentIdentity,
+      }),
+    };
+    const savedResults: SynthesisSavedResult[] = [];
+    const results: SynthesisResultRepository = {
+      saveResult: async (result) => {
+        savedResults.push(result);
+      },
+    };
+    const model: SynthesisModelAdapter = {
+      requestSynthesis: async () => ({
+        outcome: "draft-proposal",
+        draft: {
+          title: "Bayesian statistics synthesis",
+          text: "Bayesian inference updates prior belief with evidence.",
+        },
+      }),
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model,
+      results,
+      sourceIdentity,
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      prompt: "Explain how this evidence supports the topic.",
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    const confirmed = await sourceProcessing.confirmSynthesis({
+      preview: preview.preview,
+      confirmation: "confirmed",
+    });
+    assert.equal(confirmed.outcome, "draft-proposal");
+    if (confirmed.outcome !== "draft-proposal") {
+      return;
+    }
+
+    const saved = await sourceProcessing.saveSynthesisResult({
+      resultId: "synthesis-result-bayesian-statistics-with-context",
+      preview: preview.preview,
+      draft: confirmed.draft,
+      generatedAt: "2026-08-27T20:30:00.000Z",
+      includePromptAndContext: true,
+    });
+    assert.equal(saved.outcome, "saved");
+    if (saved.outcome !== "saved") {
+      return;
+    }
+
+    currentIdentity = {
+      sourceIdentity: "source-identity-bayesian-statistics-v2",
+      contentIdentity: "content-identity-bayesian-statistics-v2",
+    };
+    assert.deepEqual(
+      await sourceProcessing.checkSynthesisContext({ result: saved.result }),
+      {
+        outcome: "stale-context",
+        result: saved.result,
+        warning: "The saved Synthesis context differs from the current source.",
+      },
+    );
+    assert.deepEqual(savedResults, [saved.result]);
+    assert.deepEqual(saved.result.contextSnapshot, [
+      {
+        annotationId:
+          "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+        sourceRecord: {
+          id: "bayesian-statistics-fixture-source",
+          title: "Bayesian statistics fixture source",
+        },
+        sourceLocator: "page:2#chars=0-54",
+        sourceIdentity: "source-identity-bayesian-statistics-v1",
+        contentIdentity: "content-identity-bayesian-statistics-v1",
+        summary:
+          "Selected source claim from the Bayesian statistics fixture source.",
+      },
+    ]);
   });
 });

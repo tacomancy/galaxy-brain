@@ -304,6 +304,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle adds only the explicit opt-in snapshot fields. It does not add full source excerpts, hidden payload retention, file-backed serialization, source-change warnings, result versioning, or S1 save UI.
 - **Next behavior:** Preserve the saved context snapshot and show a non-blocking warning when the current Source Record identity or content identity differs.
 
+#### TB7 stale-context warning cycle — August 27, 2026
+
+- **Public Behavior:** When a saved opt-in Synthesis context snapshot's Source Record identity or content identity differs from the current source, the S3 Interface returns a non-blocking stale-context warning and the unchanged saved result remains available.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a Source Identity Adapter at the external source-status seam.
+- **Red evidence:** No separate red command output was captured for this cycle; the stale-context behavior test was written against the missing `checkSynthesisContext` capability before its implementation.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 31 Vitest tests.
+- **Scope confirmed:** The cycle does not rewrite the saved snapshot, block access, refresh the snapshot, regenerate the result, or implement source-status-unavailable handling.
+- **Next behavior:** Preserve access and report `source status unavailable` when the current Source Record identity cannot be checked or lacks a comparable identity.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
