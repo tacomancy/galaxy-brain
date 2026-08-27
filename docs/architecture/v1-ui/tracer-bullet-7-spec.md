@@ -1,6 +1,6 @@
 # Tracer Bullet 7: Synthesize selected evidence explicitly
 
-Status: first preview cycle implemented on August 27, 2026; remaining TB7 cycles are pending.
+Status: first two preview cycles implemented on August 27, 2026; remaining TB7 cycles are pending.
 
 This tracer bullet adds the first provider-dependent Agentic Capability to the accepted provider-free Source Processing path. It makes Synthesis an explicit, inspectable, user-authorized operation over selected Structured Annotations. It does not make an Agent Provider a prerequisite for the Workbench or promote generated output to Governed Knowledge.
 

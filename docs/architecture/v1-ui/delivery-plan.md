@@ -240,7 +240,16 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `prepareSynthesis` was not implemented.
 - **Green evidence:** The focused preview test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 23 Vitest tests.
 - **Scope confirmed:** This cycle only establishes the provider-independent preview contract. It does not contact a Model Adapter, confirm or decline a request, remove context items, persist payloads or results, or create a Proposal.
-- **Next behavior:** Remove one whole selected context item and regenerate the concise summary and exact payload before adding the confirmation boundary.
+- **Next behavior:** Add whole-context-item removal and regenerated preview coverage before adding the confirmation boundary.
+
+#### TB7 second preview cycle — August 27, 2026
+
+- **Public Behavior:** The S3 Source Processing Interface removes one complete selected context item and regenerates the concise summary and exact payload from the remaining evidence.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with fixed selected annotations and no provider call.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `removeSynthesisContextItem` was not implemented.
+- **Green evidence:** The focused preview/removal test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 24 Vitest tests.
+- **Scope confirmed:** The cycle supports whole-item removal only and does not add arbitrary inline redaction, provider transmission, confirmation, persistence, or Proposal creation.
+- **Next behavior:** Require explicit confirmation immediately before sending the final exact payload to the Model Adapter.
 
 ### 8. Apply one governed change
 

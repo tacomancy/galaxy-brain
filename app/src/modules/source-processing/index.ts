@@ -66,7 +66,14 @@ export interface SynthesisPayload {
 export interface SynthesisPreview {
   summary: string;
   estimatedRequestSize: number;
+  provider: SynthesisProviderReference;
   payload: SynthesisPayload;
+}
+
+/** Input for removing one complete context item before confirmation. */
+export interface RemoveSynthesisContextItemInput {
+  preview: SynthesisPreview;
+  annotationId: string;
 }
 
 /** Caller-visible outcome of preparing a Synthesis preview. */
@@ -128,6 +135,10 @@ export interface SourceProcessing {
   prepareSynthesis(
     input: PrepareSynthesisInput,
   ): Promise<PrepareSynthesisOutcome>;
+  /** Removes one selected annotation and regenerates both preview views. */
+  removeSynthesisContextItem(
+    input: RemoveSynthesisContextItemInput,
+  ): Promise<PrepareSynthesisOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -155,6 +166,49 @@ const annotationIdFor = (input: CaptureSourceClaimInput): string =>
 
 const logicalLocatorFor = (input: CaptureSourceClaimInput): string =>
   `page:${input.page}#chars=${input.start}-${input.end}`;
+
+const buildSynthesisPreview = (
+  targetTopic: SynthesisTopicReference,
+  provider: SynthesisProviderReference,
+  context: SynthesisContextItem[],
+): PrepareSynthesisOutcome => {
+  if (
+    context.length === 0 ||
+    targetTopic.id.length === 0 ||
+    targetTopic.title.length === 0 ||
+    provider.destination.length === 0 ||
+    provider.model.length === 0
+  ) {
+    return {
+      outcome: "invalid-selection",
+      detail: "Synthesis requires a target topic and selected evidence.",
+    };
+  }
+
+  const estimatedRequestSize = context.reduce(
+    (size, item) => size + item.text.length,
+    0,
+  );
+  const claimLabel = context.length === 1 ? "source claim" : "source claims";
+
+  return {
+    outcome: "preview-ready",
+    preview: {
+      summary: `Synthesize ${context.length} selected ${claimLabel} into "${targetTopic.title}" using model "${provider.model}" via ${provider.destination}; ${estimatedRequestSize} source characters selected.`,
+      estimatedRequestSize,
+      provider: { ...provider },
+      payload: {
+        operation: "synthesize-into-topic",
+        model: provider.model,
+        targetTopic: { ...targetTopic },
+        context: context.map((item) => ({
+          ...item,
+          sourceRecord: { ...item.sourceRecord },
+        })),
+      },
+    },
+  };
+};
 
 /**
  * Composes capture policy behind the Source Processing Interface. The PDF
@@ -228,49 +282,46 @@ export const createSourceProcessing = (
   const prepareSynthesis = async (
     input: PrepareSynthesisInput,
   ): Promise<PrepareSynthesisOutcome> => {
-    if (
-      input.selectedAnnotations.length === 0 ||
-      input.targetTopic.id.length === 0 ||
-      input.targetTopic.title.length === 0 ||
-      input.provider.destination.length === 0 ||
-      input.provider.model.length === 0
-    ) {
+    return buildSynthesisPreview(
+      input.targetTopic,
+      input.provider,
+      input.selectedAnnotations.map((annotation) => ({
+        kind: "structured-annotation" as const,
+        annotationId: annotation.id,
+        text: annotation.text,
+        sourceRecord: { ...annotation.sourceRecord },
+        sourceLocator: annotation.sourceLocator.logical,
+        attribution: annotation.attribution,
+        classification: annotation.classification,
+        state: annotation.state,
+      })),
+    );
+  };
+
+  const removeSynthesisContextItem = async (
+    input: RemoveSynthesisContextItemInput,
+  ): Promise<PrepareSynthesisOutcome> => {
+    const remainingContext = input.preview.payload.context.filter(
+      (item) => item.annotationId !== input.annotationId,
+    );
+
+    if (remainingContext.length === input.preview.payload.context.length) {
       return {
         outcome: "invalid-selection",
-        detail: "Synthesis requires a target topic and selected evidence.",
+        detail: "The selected Synthesis context item was not found.",
       };
     }
 
-    const estimatedRequestSize = input.selectedAnnotations.reduce(
-      (size, annotation) => size + annotation.text.length,
-      0,
+    return buildSynthesisPreview(
+      input.preview.payload.targetTopic,
+      input.preview.provider,
+      remainingContext,
     );
-    const claimLabel =
-      input.selectedAnnotations.length === 1 ? "source claim" : "source claims";
-
-    return {
-      outcome: "preview-ready",
-      preview: {
-        summary: `Synthesize ${input.selectedAnnotations.length} selected ${claimLabel} into "${input.targetTopic.title}" using model "${input.provider.model}" via ${input.provider.destination}; ${estimatedRequestSize} source characters selected.`,
-        estimatedRequestSize,
-        payload: {
-          operation: "synthesize-into-topic",
-          model: input.provider.model,
-          targetTopic: { ...input.targetTopic },
-          context: input.selectedAnnotations.map((annotation) => ({
-            kind: "structured-annotation" as const,
-            annotationId: annotation.id,
-            text: annotation.text,
-            sourceRecord: { ...annotation.sourceRecord },
-            sourceLocator: annotation.sourceLocator.logical,
-            attribution: annotation.attribution,
-            classification: annotation.classification,
-            state: annotation.state,
-          })),
-        },
-      },
-    };
   };
 
-  return { captureSourceClaim, prepareSynthesis };
+  return {
+    captureSourceClaim,
+    prepareSynthesis,
+    removeSynthesisContextItem,
+  };
 };
