@@ -1,6 +1,6 @@
 # Tracer Bullet 5: Capture one located source claim
 
-Status: implementation in progress.
+Status: implementation complete; user acceptance pending.
 
 This brief coordinates Tracer Bullet 5 in the [delivery plan](delivery-plan.md#5-capture-one-located-source-claim). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, or testing.
 
