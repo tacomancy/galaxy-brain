@@ -331,6 +331,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle adds explicit context refresh and prior-snapshot retention only. It does not regenerate the result, contact the Model Adapter, mutate source files, auto-refresh, add file-backed result serialization, or implement S1 refresh UI.
 - **Next behavior:** Add result regeneration as a separate new result version that preserves the prior generated result and requires fresh confirmation before a new provider request.
 
+#### TB7 confirmed result-regeneration cycle — August 27, 2026
+
+- **Public Behavior:** A regeneration request requires a fresh explicit confirmation. Declining or canceling makes no Model Adapter request and does not save anything; confirmation sends the exact prepared payload, then saves the returned draft as a new result version while preserving the prior generated result and keeping the result as Working Material.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface, a narrow request-observation Model Adapter, and a result Repository Adapter.
+- **Red evidence:** No separate red command output was captured; the focused regeneration tests were added against the required public outcome and then run through the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 35 Vitest tests.
+- **Scope confirmed:** The cycle adds fresh confirmation, one confirmed regeneration request, new result-version metadata, and prior-result preservation. It does not implement restore, automatic regeneration, S1 controls, file-backed result serialization, or result cleanup.
+- **Next behavior:** Add explicit restore of an older result as a new current version without making a Model Adapter request.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

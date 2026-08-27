@@ -7,6 +7,7 @@ import { createInMemoryWorkingMaterialRepository } from "../../src/adapters/work
 import {
   createSourceProcessing,
   type SynthesisModelAdapter,
+  type SynthesisPayload,
   type SynthesisSavedResult,
   type SynthesisSourceIdentityAdapter,
   type StructuredAnnotation,
@@ -856,5 +857,239 @@ describe("Synthesize selected evidence", () => {
         ],
       },
     ]);
+  });
+
+  it("requires fresh confirmation before regenerating a saved result", async () => {
+    let modelCalls = 0;
+    let saveCalls = 0;
+    const previousResult: SynthesisSavedResult = {
+      id: "synthesis-result-bayesian-statistics-fixture",
+      state: "working-material",
+      title: "Bayesian statistics synthesis",
+      text: "Bayesian inference updates prior belief with evidence.",
+      targetTopic: {
+        id: "bayesian-statistics",
+        title: "Bayesian statistics",
+      },
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      resultVersion: 1,
+    };
+    const model: SynthesisModelAdapter = {
+      requestSynthesis: async () => {
+        modelCalls += 1;
+        return {
+          outcome: "draft-proposal",
+          draft: {
+            title: "Regenerated Bayesian statistics synthesis",
+            text: "The regenerated synthesis remains Working Material.",
+          },
+        };
+      },
+    };
+    const results: SynthesisResultRepository = {
+      saveResult: async () => {
+        saveCalls += 1;
+      },
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model,
+      results,
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.regenerateSynthesisResult({
+        previousResult,
+        preview: preview.preview,
+        confirmation: "declined",
+        generatedAt: "2026-08-27T21:00:00.000Z",
+      }),
+      { outcome: "declined" },
+    );
+    assert.deepEqual(
+      await sourceProcessing.regenerateSynthesisResult({
+        previousResult,
+        preview: preview.preview,
+        confirmation: "canceled",
+        generatedAt: "2026-08-27T21:00:00.000Z",
+      }),
+      { outcome: "canceled" },
+    );
+    assert.equal(modelCalls, 0);
+    assert.equal(saveCalls, 0);
+    assert.deepEqual(previousResult, {
+      id: "synthesis-result-bayesian-statistics-fixture",
+      state: "working-material",
+      title: "Bayesian statistics synthesis",
+      text: "Bayesian inference updates prior belief with evidence.",
+      targetTopic: {
+        id: "bayesian-statistics",
+        title: "Bayesian statistics",
+      },
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      resultVersion: 1,
+    });
+  });
+
+  it("saves regeneration as a new result version and preserves the prior result", async () => {
+    const previousResult: SynthesisSavedResult = {
+      id: "synthesis-result-bayesian-statistics-fixture",
+      state: "working-material",
+      title: "Bayesian statistics synthesis",
+      text: "Bayesian inference updates prior belief with evidence.",
+      targetTopic: {
+        id: "bayesian-statistics",
+        title: "Bayesian statistics",
+      },
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      resultVersion: 1,
+    };
+    const requests: SynthesisPayload[] = [];
+    const savedResults: SynthesisSavedResult[] = [];
+    const model: SynthesisModelAdapter = {
+      requestSynthesis: async (payload) => {
+        requests.push(payload);
+        return {
+          outcome: "draft-proposal",
+          draft: {
+            title: "Regenerated Bayesian statistics synthesis",
+            text: "The regenerated synthesis remains Working Material.",
+          },
+        };
+      },
+    };
+    const results: SynthesisResultRepository = {
+      saveResult: async (result) => {
+        savedResults.push(result);
+      },
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model,
+      results,
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.regenerateSynthesisResult({
+        previousResult,
+        preview: preview.preview,
+        confirmation: "confirmed",
+        generatedAt: "2026-08-27T21:00:00.000Z",
+      }),
+      {
+        outcome: "regenerated",
+        result: {
+          ...previousResult,
+          title: "Regenerated Bayesian statistics synthesis",
+          text: "The regenerated synthesis remains Working Material.",
+          provenance: {
+            ...previousResult.provenance,
+            generatedAt: "2026-08-27T21:00:00.000Z",
+            sourceContext: [
+              {
+                annotationId:
+                  "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+                sourceRecord: {
+                  id: "bayesian-statistics-fixture-source",
+                  title: "Bayesian statistics fixture source",
+                },
+                sourceLocator: "page:2#chars=0-54",
+                attribution: "source-claim",
+                classification: "source-claim",
+              },
+            ],
+          },
+          resultVersion: 2,
+          priorResults: [previousResult],
+        },
+      },
+    );
+    assert.deepEqual(requests, [preview.preview.payload]);
+    assert.deepEqual(savedResults, [
+      {
+        ...previousResult,
+        title: "Regenerated Bayesian statistics synthesis",
+        text: "The regenerated synthesis remains Working Material.",
+        provenance: {
+          ...previousResult.provenance,
+          generatedAt: "2026-08-27T21:00:00.000Z",
+          sourceContext: [
+            {
+              annotationId:
+                "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+              sourceRecord: {
+                id: "bayesian-statistics-fixture-source",
+                title: "Bayesian statistics fixture source",
+              },
+              sourceLocator: "page:2#chars=0-54",
+              attribution: "source-claim",
+              classification: "source-claim",
+            },
+          ],
+        },
+        resultVersion: 2,
+        priorResults: [previousResult],
+      },
+    ]);
+    assert.deepEqual(previousResult, {
+      id: "synthesis-result-bayesian-statistics-fixture",
+      state: "working-material",
+      title: "Bayesian statistics synthesis",
+      text: "Bayesian inference updates prior belief with evidence.",
+      targetTopic: {
+        id: "bayesian-statistics",
+        title: "Bayesian statistics",
+      },
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      resultVersion: 1,
+    });
   });
 });

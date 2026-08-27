@@ -125,6 +125,8 @@ export interface SynthesisSavedResult {
   contextSnapshot?: SynthesisContextSnapshot[];
   contextSnapshotVersion?: number;
   priorContextSnapshots?: SynthesisContextSnapshotVersion[];
+  resultVersion?: number;
+  priorResults?: SynthesisSavedResult[];
 }
 
 /** Concise, point-in-time context retained only with explicit opt-in. */
@@ -190,6 +192,14 @@ export interface RefreshSynthesisContextInput {
   refreshedAt: string;
 }
 
+/** Explicit request to regenerate a saved result after a fresh confirmation. */
+export interface RegenerateSynthesisResultInput {
+  previousResult: SynthesisSavedResult;
+  preview: SynthesisPreview;
+  confirmation: ConfirmSynthesisInput["confirmation"];
+  generatedAt: string;
+}
+
 /** Caller-visible result of an explicit Synthesis save. */
 export type SaveSynthesisResultOutcome =
   | { outcome: "saved"; result: SynthesisSavedResult }
@@ -213,6 +223,14 @@ export type CheckSynthesisContextOutcome =
 /** Caller-visible outcome of an explicit Synthesis context refresh. */
 export type RefreshSynthesisContextOutcome =
   | { outcome: "refreshed"; result: SynthesisSavedResult }
+  | { outcome: "operation-failed"; detail: string };
+
+/** Caller-visible outcome of an explicit Synthesis result regeneration. */
+export type RegenerateSynthesisResultOutcome =
+  | { outcome: "regenerated"; result: SynthesisSavedResult }
+  | { outcome: "declined" }
+  | { outcome: "canceled" }
+  | { outcome: "agent-provider-unavailable"; detail: string }
   | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome after the confirmation boundary. */
@@ -301,6 +319,10 @@ export interface SourceProcessing {
   refreshSynthesisContext(
     input: RefreshSynthesisContextInput,
   ): Promise<RefreshSynthesisContextOutcome>;
+  /** Regenerates and saves a new result version only after fresh confirmation. */
+  regenerateSynthesisResult(
+    input: RegenerateSynthesisResultInput,
+  ): Promise<RegenerateSynthesisResultOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -765,6 +787,91 @@ export const createSourceProcessing = (
     return { outcome: "refreshed", result: refreshedResult };
   };
 
+  const regenerateSynthesisResult = async (
+    input: RegenerateSynthesisResultInput,
+  ): Promise<RegenerateSynthesisResultOutcome> => {
+    if (input.confirmation === "declined") {
+      return { outcome: "declined" };
+    }
+
+    if (input.confirmation === "canceled") {
+      return { outcome: "canceled" };
+    }
+
+    if (
+      input.previousResult.id.length === 0 ||
+      input.generatedAt.length === 0 ||
+      dependencies.results === undefined
+    ) {
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result could not be regenerated.",
+      };
+    }
+
+    if (dependencies.model === undefined) {
+      return {
+        outcome: "agent-provider-unavailable",
+        detail: "Synthesis requires a configured Agent Provider.",
+      };
+    }
+
+    let modelOutcome: SynthesisModelOutcome;
+
+    try {
+      modelOutcome = await dependencies.model.requestSynthesis(
+        input.preview.payload,
+      );
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis request could not be completed.",
+      };
+    }
+
+    if (modelOutcome.outcome !== "draft-proposal") {
+      return modelOutcome;
+    }
+
+    const regeneratedResult: SynthesisSavedResult = {
+      ...input.previousResult,
+      title: modelOutcome.draft.title,
+      text: modelOutcome.draft.text,
+      provenance: {
+        ...input.previousResult.provenance,
+        provider: input.preview.provider.destination,
+        model: input.preview.provider.model,
+        generatedAt: input.generatedAt,
+        operation: input.preview.payload.operation,
+        sourceContext: input.preview.payload.context.map((item) => ({
+          annotationId: item.annotationId,
+          sourceRecord: { ...item.sourceRecord },
+          sourceLocator: item.sourceLocator,
+          attribution: item.attribution,
+          classification: item.classification,
+        })),
+      },
+      resultVersion: (input.previousResult.resultVersion ?? 1) + 1,
+      priorResults: [
+        ...(input.previousResult.priorResults ?? []),
+        input.previousResult,
+      ],
+    };
+
+    try {
+      await dependencies.results.saveResult(regeneratedResult);
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result could not be regenerated.",
+      };
+    }
+
+    return { outcome: "regenerated", result: regeneratedResult };
+  };
+
   return {
     captureSourceClaim,
     prepareSynthesis,
@@ -773,5 +880,6 @@ export const createSourceProcessing = (
     saveSynthesisResult,
     checkSynthesisContext,
     refreshSynthesisContext,
+    regenerateSynthesisResult,
   };
 };
