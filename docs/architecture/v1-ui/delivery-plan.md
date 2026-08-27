@@ -229,7 +229,18 @@ These are presentation slices over existing Workbench Modules and Adapters. Do n
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
+The [Tracer Bullet 7 brief](tracer-bullet-7-spec.md) coordinates this slice against the accepted Product Decisions, Architecture, Test Strategy, and applicable Agent Provider ADRs.
+
 At S3, prove that **Synthesize into topic** shows a concise summary and inspectable exact payload for the selected annotations and target context, allows removal of whole context items with regenerated previews, requires explicit confirmation before sending that final payload to OpenAI, and returns the literal draft Proposal fixture when the confirmed request succeeds. Add separate cycles proving that capture or source completion alone produces no Proposal, that declining makes no request and preserves the annotations, that arbitrary inline redaction is unavailable, that the Model Adapter cannot add context after confirmation, that request and response payloads are not retained unless explicitly saved, that the default save retains the result plus agent provenance but not the prompt/context, that an explicit save-with-prompt/context choice retains the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot but not full source excerpts or the hidden full payload, that a mismatch in saved versus current source identity or content identity does not rewrite the saved snapshot and produces a non-blocking stale-context warning, that the saved result remains Working Material, and that agent-assisted Synthesis returns `agent-provider-unavailable` without one while preserving the annotations.
+
+#### TB7 first preview cycle — August 27, 2026
+
+- **Public Behavior:** The S3 Source Processing Interface prepares an exact, inspectable Synthesis preview for the selected Bayesian statistics source claim and target topic without contacting an Agent Provider or changing Working Material.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with the deterministic fixture PDF and in-memory Working Material Adapters.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `prepareSynthesis` was not implemented.
+- **Green evidence:** The focused preview test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 23 Vitest tests.
+- **Scope confirmed:** This cycle only establishes the provider-independent preview contract. It does not contact a Model Adapter, confirm or decline a request, remove context items, persist payloads or results, or create a Proposal.
+- **Next behavior:** Remove one whole selected context item and regenerate the concise summary and exact payload before adding the confirmation boundary.
 
 ### 8. Apply one governed change
 

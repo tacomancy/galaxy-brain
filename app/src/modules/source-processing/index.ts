@@ -23,6 +23,57 @@ export interface StructuredAnnotation {
   classification: "source-claim";
 }
 
+/** Stable topic identity used as the target of an explicit Synthesis request. */
+export interface SynthesisTopicReference {
+  id: string;
+  title: string;
+}
+
+/** Provider details shown before an Agentic Capability can transmit. */
+export interface SynthesisProviderReference {
+  destination: string;
+  model: string;
+}
+
+/** Selected evidence and target context for a Synthesis preview. */
+export interface PrepareSynthesisInput {
+  targetTopic: SynthesisTopicReference;
+  selectedAnnotations: StructuredAnnotation[];
+  provider: SynthesisProviderReference;
+}
+
+/** One source-bound item in the inspectable Synthesis payload. */
+export interface SynthesisContextItem {
+  kind: "structured-annotation";
+  annotationId: string;
+  text: string;
+  sourceRecord: SourceRecordReference;
+  sourceLocator: string;
+  attribution: StructuredAnnotation["attribution"];
+  classification: StructuredAnnotation["classification"];
+  state: StructuredAnnotation["state"];
+}
+
+/** Exact request data shown before the Model Adapter is called. */
+export interface SynthesisPayload {
+  operation: "synthesize-into-topic";
+  model: string;
+  targetTopic: SynthesisTopicReference;
+  context: SynthesisContextItem[];
+}
+
+/** Concise and exact views of one pending Synthesis operation. */
+export interface SynthesisPreview {
+  summary: string;
+  estimatedRequestSize: number;
+  payload: SynthesisPayload;
+}
+
+/** Caller-visible outcome of preparing a Synthesis preview. */
+export type PrepareSynthesisOutcome =
+  | { outcome: "preview-ready"; preview: SynthesisPreview }
+  | { outcome: "invalid-selection"; detail: string };
+
 /** Caller-selected source location for the first TB5 capture behavior. */
 export interface CaptureSourceClaimInput {
   sourceRecord: SourceRecordReference;
@@ -73,6 +124,10 @@ export interface SourceProcessing {
   captureSourceClaim(
     input: CaptureSourceClaimInput,
   ): Promise<CaptureSourceClaimOutcome>;
+  /** Prepares an inspectable Synthesis request without contacting a provider. */
+  prepareSynthesis(
+    input: PrepareSynthesisInput,
+  ): Promise<PrepareSynthesisOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -108,8 +163,10 @@ const logicalLocatorFor = (input: CaptureSourceClaimInput): string =>
  */
 export const createSourceProcessing = (
   dependencies: SourceProcessingDependencies,
-): SourceProcessing => ({
-  captureSourceClaim: async (input): Promise<CaptureSourceClaimOutcome> => {
+): SourceProcessing => {
+  const captureSourceClaim = async (
+    input: CaptureSourceClaimInput,
+  ): Promise<CaptureSourceClaimOutcome> => {
     if (!isValidLocator(input)) {
       return {
         outcome: "invalid-locator",
@@ -166,5 +223,54 @@ export const createSourceProcessing = (
     }
 
     return { outcome: "captured", annotation };
-  },
-});
+  };
+
+  const prepareSynthesis = async (
+    input: PrepareSynthesisInput,
+  ): Promise<PrepareSynthesisOutcome> => {
+    if (
+      input.selectedAnnotations.length === 0 ||
+      input.targetTopic.id.length === 0 ||
+      input.targetTopic.title.length === 0 ||
+      input.provider.destination.length === 0 ||
+      input.provider.model.length === 0
+    ) {
+      return {
+        outcome: "invalid-selection",
+        detail: "Synthesis requires a target topic and selected evidence.",
+      };
+    }
+
+    const estimatedRequestSize = input.selectedAnnotations.reduce(
+      (size, annotation) => size + annotation.text.length,
+      0,
+    );
+    const claimLabel =
+      input.selectedAnnotations.length === 1 ? "source claim" : "source claims";
+
+    return {
+      outcome: "preview-ready",
+      preview: {
+        summary: `Synthesize ${input.selectedAnnotations.length} selected ${claimLabel} into "${input.targetTopic.title}" using model "${input.provider.model}" via ${input.provider.destination}; ${estimatedRequestSize} source characters selected.`,
+        estimatedRequestSize,
+        payload: {
+          operation: "synthesize-into-topic",
+          model: input.provider.model,
+          targetTopic: { ...input.targetTopic },
+          context: input.selectedAnnotations.map((annotation) => ({
+            kind: "structured-annotation" as const,
+            annotationId: annotation.id,
+            text: annotation.text,
+            sourceRecord: { ...annotation.sourceRecord },
+            sourceLocator: annotation.sourceLocator.logical,
+            attribution: annotation.attribution,
+            classification: annotation.classification,
+            state: annotation.state,
+          })),
+        },
+      },
+    };
+  };
+
+  return { captureSourceClaim, prepareSynthesis };
+};
