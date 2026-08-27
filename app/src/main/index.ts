@@ -8,7 +8,7 @@
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import { readFile } from "node:fs/promises";
-import { basename, dirname, extname, join, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createFileBackedKnowledgeRepository } from "../adapters/knowledge-repository/file-backed-knowledge-repository";
@@ -16,6 +16,7 @@ import { createFileBackedWorkbenchSessionState } from "../adapters/session-state
 import { createFixturePdfAdapter } from "../adapters/pdf/fixture-pdf-adapter";
 import { createFileBackedSynthesisResultRepository } from "../adapters/working-material/file-backed-synthesis-result-repository";
 import { createFileBackedWorkingMaterialRepository } from "../adapters/working-material/file-backed-working-material-repository";
+import { contentTypeFor } from "./renderer-asset-content-type";
 import { createSourceProcessing } from "../modules/source-processing";
 import type {
   ConfirmSynthesisOutcome,
@@ -58,18 +59,6 @@ protocol.registerSchemesAsPrivileged([
 // Forge can recreate the main process during development. Registering the
 // handler only once prevents duplicate protocol registrations in that path.
 let isRendererProtocolInstalled = false;
-
-/** Maps the small set of packaged renderer assets to safe response types. */
-const contentTypeFor = (path: string): string => {
-  switch (extname(path)) {
-    case ".html":
-      return "text/html; charset=UTF-8";
-    case ".js":
-      return "text/javascript; charset=UTF-8";
-    default:
-      return "application/octet-stream";
-  }
-};
 
 /**
  * Serves packaged renderer assets through the allow-listed custom scheme.
