@@ -46,4 +46,6 @@ The hard-to-reverse decisions are recorded separately:
 
 The S1–S5 Test Seams in [Test strategy](test-strategy.md) were confirmed on August 26, 2026. Implementation may test at those seams and no others without a documented and confirmed amendment. Delivery proceeds one behavior at a time: write one failing test at an agreed seam, observe the failure, add the minimum implementation that passes it, and then choose the next slice using what the previous cycle taught.
 
+Before implementation begins for every tracer bullet, review the governing documentation and applicable ADRs, create or update a guidance-compliant tracer-bullet spec, and confirm its Public Behavior, Test Seam, independently known expected values, minimum vertical path, boundaries, and acceptance evidence. This documentation prerequisite must be complete before writing implementation code or behavior tests.
+
 The existing files under `prototype/knowledge-workbench/` remain throwaway comparison material. They are evidence for the accepted interaction direction, not a production foundation or an implementation constraint.

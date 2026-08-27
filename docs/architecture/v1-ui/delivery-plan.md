@@ -8,18 +8,32 @@ Scope note: the release gate proves the provider-free core V1 workflow. Agentic 
 
 This is an ordered sequence of candidate tracer bullets, not a backlog of tests to write in advance. Start a slice only after the preceding cycle is green and its evidence has been reviewed. For each slice:
 
-1. Select one behavior at a confirmed seam.
-2. Write one behavior-named test with independently known expected values.
-3. Run it and observe the expected failure for the missing behavior.
-4. Add only enough implementation to make that test pass.
-5. Run the relevant suite and observe green.
-6. Record what the slice taught and choose or revise the next slice.
+1. Complete the documentation prerequisite below.
+2. Select one behavior at a confirmed seam.
+3. Write one behavior-named test with independently known expected values.
+4. Run it and observe the expected failure for the missing behavior.
+5. Add only enough implementation to make that test pass.
+6. Run the relevant suite and observe green.
+7. Record what the slice taught and choose or revise the next slice.
 
 Do not refactor during the red-to-green loop. Refactoring belongs to a separate review stage while the suite is green.
+
+## Documentation prerequisite
+
+Before starting implementation of every tracer bullet, explicitly complete this task:
+
+1. Review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md) when the slice touches repository files, [Test Strategy](test-strategy.md), applicable ADRs, and the completed delivery records for preceding tracer bullets.
+2. Create or update a guidance-compliant `tracer-bullet-<N>-spec.md` brief for the slice.
+3. Record the first Public Behavior, confirmed Test Seam, independently known expected values, required fixtures and External System Seams, minimum vertical path, scope boundaries, deferrals, acceptance evidence, and any decision that requires an ADR or user confirmation.
+4. Check the brief against those authorities and obtain any required confirmation before writing implementation code or behavior tests.
+
+Do not begin the Red-to-Green cycle until this documentation review and spec task is complete. Every candidate below carries this prerequisite, including a future implementation cycle for a previously completed tracer bullet.
 
 ## Candidate tracer bullets
 
 ### 1. Open the real empty Workbench
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S1, prove that a fresh desktop session opens Atlas with the authentic empty-state path and no demonstration data mixed into it. Implement the smallest vertical path from UI adapter through Workbench Session to an in-memory Knowledge Repository adapter.
 
@@ -36,6 +50,8 @@ This slice validates the Electron foundation selected in ADR 0004 and forces the
 - **Acceptance:** The user reviewed the running application and accepted the first tracer bullet.
 
 ### 2. Create or open a local Knowledge Repository
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S1, prove that the user can explicitly open an existing valid repository or create one from the bundled empty skeleton at a new or empty path. Creation writes files and validates the Repository Format but never initializes Git or creates a commit. A nonempty invalid directory is rejected without mutation. The app remains usable without Git, Git LFS, GitHub, credentials, or network connectivity.
 
@@ -57,6 +73,8 @@ The [Product Decisions](product-decisions.md), [Architecture](architecture.md), 
 - **Acceptance:** The user directed formal closeout after the implementation and packaged workflow evidence were reviewed.
 
 ### 3. Resume meaningful work
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 Status: implementation complete and accepted on August 27, 2026 for exact repository resume and remembered-root recovery.
 
@@ -91,6 +109,8 @@ At S1, prove that reopening a known session validates and resumes the last expli
 
 ### 4. Carry context between workspaces
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+
 Status: implementation complete and accepted on August 27, 2026.
 
 At S1, prove a contextual transition from an Atlas item to Studio and then to its Source Record in Paper Desk without losing the topic relationship. Add the compact global switcher only to the extent this behavior needs it.
@@ -110,6 +130,8 @@ The [Tracer Bullet 4 brief](tracer-bullet-4-spec.md) coordinates this slice agai
 
 ### 5. Capture one located source claim
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite), including the TB5-specific preparation task below.
+
 #### TB5 preparation task — before implementation
 
 Before starting implementation, review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), [Test Strategy](test-strategy.md), applicable ADRs, and the completed TB1–TB4 delivery records. Then create a guidance-compliant `tracer-bullet-5-spec.md` brief that:
@@ -126,45 +148,67 @@ At S3, prove that capturing the known PDF passage produces a source-claim Struct
 
 ### 6. Reopen the capture
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+
 At S1, prove that the saved annotation and reading position are restored through the public desktop workflow. This joins the source-processing behavior to real session and repository behavior without querying storage from the test.
 
 ### 7. Synthesize selected evidence explicitly
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S3, prove that **Synthesize into topic** shows a concise summary and inspectable exact payload for the selected annotations and target context, allows removal of whole context items with regenerated previews, requires explicit confirmation before sending that final payload to OpenAI, and returns the literal draft Proposal fixture when the confirmed request succeeds. Add separate cycles proving that capture or source completion alone produces no Proposal, that declining makes no request and preserves the annotations, that arbitrary inline redaction is unavailable, that the Model Adapter cannot add context after confirmation, that request and response payloads are not retained unless explicitly saved, that the default save retains the result plus agent provenance but not the prompt/context, that an explicit save-with-prompt/context choice retains the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot but not full source excerpts or the hidden full payload, that a mismatch in saved versus current source identity or content identity does not rewrite the saved snapshot and produces a non-blocking stale-context warning, that the saved result remains Working Material, and that agent-assisted Synthesis returns `agent-provider-unavailable` without one while preserving the annotations.
 
 ### 8. Apply one governed change
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+
 At S2, start with a literal existing governed version and a manually authored Proposal from an edited Working Material draft. Prove that explicit acceptance and application create the expected new version while the current version remains unchanged until application and the previous version remains retrievable, all without an Agent Provider. Agent-assisted Proposal drafting can be added at the model seam without changing Governance authority.
 
 ### 9. Reject stale and incoherent applications
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 Continue at S2 one behavior per cycle: first prove stale Judgment is rejected, then prove an invalid dependency subset is rejected, and then prove independently reviewable changes can receive different decisions. Do not prebuild all dependency behavior in the first governance cycle.
 
 ### 10. Review through the desktop interface
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+
 At S1, prove that Atlas opens the dedicated review route, displays the fixture change and evidence, records Judgment, and shows the applied version. Use the real Governance module; do not mock it to make the UI test convenient.
 
 ### 11. Preserve meaning across editing views
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S1, prove one worked extended-Markdown construct can be edited in rich view, inspected in source view, reopened, and observed with the same meaning. Expand one construct per later cycle—link, embed, callout, equation, citation—letting each reveal the next necessary editor behavior.
 
 ### 12. Separate Search, Ask, and Jump
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+
 At S4, prove one mode at a time. Start with a literal Search result, add a cited Ask answer from the known corpus after explicit confirmation of its concise summary and inspectable exact OpenAI payload, including removing a whole context item and observing the regenerated payload, then prove the default save excludes the prompt/context while the explicit save-with-prompt/context choice retains the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot—but not full source excerpts—and preserves agent provenance without becoming Governed Knowledge. Change a referenced source afterward so its identity or content identity differs, and verify that the saved snapshot is not silently rewritten, that navigation may resolve the current source, and that opening the saved artifact shows a non-blocking stale-context warning. Add an unsupported Ask outcome, an unavailable-provider Ask outcome without an API key, and finally a known Jump command. Follow with one S1 cycle proving the selected mode and outbound payload are visible before execution, that declining makes no request, and that local workflows remain usable without Agent Provider configuration.
 
 ### 13. Make Atlas actionable
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S1, prove the fixture session appears under Continue working and the fixture Proposal under Needs your judgment. Add individual cycles for a traceable metric, a human-authored Learning Route, and a visually distinct Generated Relationship.
 
 ### 14. Keep learning progress human-owned
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+
 At S1, prove that a suggestion explains its fixture evidence but does not advance the learning stage until confirmed. If S1 cannot express the critical behavior economically, pause and propose a new Test Seam in the test strategy before writing the test.
 
 ### 15. Survive a missing or changed PDF
 
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+
 At S3, prove that an unavailable or hash-changed linked PDF preserves the Source Record and annotations. In the next cycle, prove relinking makes the known page available without silently accepting changed bytes or changing its logical Source Locator.
 
 ### 16. Complete the desktop quality contract
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S1, add one behavior per cycle for keyboard-only completion of a critical workflow, visible focus, semantic landmarks and names, reduced motion, scalable text, theme persistence, undo, and version-history recovery. Use automated accessibility tooling as supporting evidence, never as a substitute for observable workflow assertions and manual review.
 

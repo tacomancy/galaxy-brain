@@ -4,6 +4,8 @@ Status: Tracer Bullets 1 through 4 are complete and accepted; later tracer bulle
 
 This map tells agents where a Public Behavior enters the codebase, which Module owns it, which Adapter supplies external behavior, and which confirmed Test Seam observes it. Update it with live Markdown links in the same change that creates or moves code.
 
+Before implementation begins for any Tracer Bullet, review the governing documentation and applicable ADRs, create or update its guidance-compliant tracer-bullet spec, and confirm the behavior, Test Seam, independently known expected values, vertical path, boundaries, and acceptance evidence. The code map is implementation orientation after that prerequisite, not a substitute for the spec.
+
 ## Orient by behavior
 
 1. Identify the current Tracer Bullet and confirmed Test Seam.

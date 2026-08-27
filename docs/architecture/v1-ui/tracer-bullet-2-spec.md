@@ -22,6 +22,10 @@ The following documents are authoritative and must be updated at their owning bo
 
 The existing [code map](code-map.md) remains the source for live and planned production locations.
 
+## Documentation prerequisite
+
+Before implementation, review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), [Test Strategy](test-strategy.md), applicable ADRs, and the preceding delivery records. Create or update this document as a guidance-compliant tracer-bullet spec, then confirm the first Public Behavior, confirmed Test Seams, independently known expected values, required fixtures and External System Seams, minimum vertical path, scope boundaries, deferrals, acceptance evidence, and any decision requiring an ADR or user confirmation. Do not begin implementation or behavior tests until this review and spec check is complete. This requirement governs every future tracer-bullet implementation cycle; the acceptance record below preserves TB2's historical evidence.
+
 ## Implementation checklist
 
 1. Execute the four behavior cycles in the [delivery plan](delivery-plan.md#2-create-or-open-a-local-knowledge-repository).
