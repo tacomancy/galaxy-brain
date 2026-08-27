@@ -110,6 +110,18 @@ The [Tracer Bullet 4 brief](tracer-bullet-4-spec.md) coordinates this slice agai
 
 ### 5. Capture one located source claim
 
+#### TB5 preparation task — before implementation
+
+Before starting implementation, review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), [Test Strategy](test-strategy.md), applicable ADRs, and the completed TB1–TB4 delivery records. Then create a guidance-compliant `tracer-bullet-5-spec.md` brief that:
+
+- names the confirmed S3 Source Processing seam and the minimum vertical path;
+- states the single first Public Behavior and its independently known expected values;
+- identifies the PDF fixture, Source Locator, attribution, and relevant External System Seams;
+- preserves the distinction among source material, Structured Annotation, Working Material, and Governed Knowledge; and
+- records explicit scope boundaries, deferrals, acceptance evidence, and any decision that requires an ADR or user confirmation.
+
+Do not begin TB5 implementation until the documentation review is complete and the TB5 brief has been checked against those authorities.
+
 At S3, prove that capturing the known PDF passage produces a source-claim Structured Annotation with the fixture Source Locator and attribution. Implement the minimum PDF adapter and Working Material persistence needed for that outcome.
 
 ### 6. Reopen the capture
