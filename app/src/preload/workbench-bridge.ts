@@ -8,6 +8,7 @@ import { contextBridge, ipcRenderer } from "electron";
 
 import type {
   FreshWorkbench,
+  ReadingPositionOutcome,
   RepositoryOperationOutcome,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
@@ -35,4 +36,6 @@ contextBridge.exposeInMainWorld("workbench", {
     workspace: WorkbenchWorkspace,
   ): Promise<WorkspaceTransitionOutcome> =>
     ipcRenderer.invoke("workbench:switch-workspace", workspace),
+  openSavedAnnotation: (): Promise<ReadingPositionOutcome> =>
+    ipcRenderer.invoke("workbench:open-saved-annotation"),
 });

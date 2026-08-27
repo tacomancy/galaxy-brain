@@ -1,6 +1,7 @@
 /** Type declaration for the operation-specific API exposed by preload. */
 import type {
   FreshWorkbench,
+  ReadingPositionOutcome,
   RepositoryOperationOutcome,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
@@ -21,6 +22,7 @@ declare global {
       switchWorkspace(
         workspace: WorkbenchWorkspace,
       ): Promise<WorkspaceTransitionOutcome>;
+      openSavedAnnotation(): Promise<ReadingPositionOutcome>;
     };
   }
 }

@@ -387,6 +387,44 @@ describe("file-backed Knowledge Repository contract", () => {
       assert.equal(result.cause instanceof Error, true);
     }
   });
+
+  it("reads the saved source annotation for its Source Record", async () => {
+    const repositoryPath = join(temporaryRoot, "annotation-repository");
+    await cp(
+      resolve(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    assert.deepEqual(
+      await createFileBackedKnowledgeRepository(
+        starterRoot,
+      ).readWorkbenchAnnotation(
+        repositoryPath,
+        "bayesian-statistics-fixture-source",
+      ),
+      {
+        outcome: "found",
+        annotation: {
+          id: "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+          state: "working-material",
+          sourceRecord: {
+            id: "bayesian-statistics-fixture-source",
+            title: "Bayesian statistics fixture source",
+          },
+          sourceLocator: {
+            page: 2,
+            start: 0,
+            end: 54,
+            logical: "page:2#chars=0-54",
+          },
+          text: "Bayesian inference updates prior belief with evidence.",
+          attribution: "source-claim",
+          classification: "source-claim",
+        },
+      },
+    );
+  });
 });
 
 describe("Workbench Session selection contract", () => {
@@ -405,10 +443,14 @@ describe("Workbench Session selection contract", () => {
           outcome: "not-found",
           detail: "No contextual topic is available.",
         }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "not-found",
+          detail: "The source annotation was not found.",
+        }),
       },
       {
-        readSelectedRepository: async () => undefined,
-        writeSelectedRepository: async () => {},
+        readSession: async () => undefined,
+        writeSession: async () => {},
       },
     );
 

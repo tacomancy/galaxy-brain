@@ -1,5 +1,12 @@
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
+import {
+  lstat,
+  mkdir,
+  readFile,
+  readdir,
+  realpath,
+  writeFile,
+} from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 
 import type {
@@ -175,12 +182,14 @@ const parseAnnotation = (contents: string): StructuredAnnotation => {
     throw new InvalidAnnotationError("The annotation metadata is invalid.");
   }
 
+  const text = frontmatter[2].replace(/^\r?\n/, "").replace(/\r?\n$/, "");
+
   return {
     id,
     state: "working-material",
     sourceRecord: { id: sourceRecordId, title: sourceRecordTitle },
     sourceLocator,
-    text: frontmatter[2],
+    text,
     attribution: "source-claim",
     classification: "source-claim",
   };
@@ -269,30 +278,10 @@ const sameFingerprint = (
 export const createFileBackedWorkingMaterialRepository = (
   repositoryPath: string,
   diagnostics?: WorkingMaterialDiagnostics,
-): WorkingMaterialRepository => ({
-  saveAnnotation: async (annotation): Promise<void> => {
-    if (
-      !/^[a-z0-9-]+$/.test(annotation.id) ||
-      !isValidLocator(annotation.sourceLocator)
-    ) {
-      throw new InvalidAnnotationError("The source annotation is invalid.");
-    }
-
-    const canonicalPath = await canonicalRepositoryPath(repositoryPath);
-    await ensureAnnotationDirectory(canonicalPath);
-    const filePath = annotationFilePath(canonicalPath, annotation.id);
-    const existingFingerprint = await fingerprint(filePath);
-    const recheckedFingerprint = await fingerprint(filePath);
-
-    if (!sameFingerprint(existingFingerprint, recheckedFingerprint)) {
-      throw new ExternalAnnotationChangeError(
-        "The source annotation changed while it was being saved.",
-      );
-    }
-
-    await writeFile(filePath, serializeAnnotation(annotation), "utf8");
-  },
-  readAnnotation: async (annotationId): Promise<WorkingMaterialReadOutcome> => {
+): WorkingMaterialRepository => {
+  const readAnnotation = async (
+    annotationId: string,
+  ): Promise<WorkingMaterialReadOutcome> => {
     let canonicalPath: string;
 
     try {
@@ -334,5 +323,96 @@ export const createFileBackedWorkingMaterialRepository = (
         detail: "The source annotation could not be read.",
       };
     }
-  },
-});
+  };
+
+  return {
+    saveAnnotation: async (annotation): Promise<void> => {
+      if (
+        !/^[a-z0-9-]+$/.test(annotation.id) ||
+        !isValidLocator(annotation.sourceLocator)
+      ) {
+        throw new InvalidAnnotationError("The source annotation is invalid.");
+      }
+
+      const canonicalPath = await canonicalRepositoryPath(repositoryPath);
+      await ensureAnnotationDirectory(canonicalPath);
+      const filePath = annotationFilePath(canonicalPath, annotation.id);
+      const existingFingerprint = await fingerprint(filePath);
+      const recheckedFingerprint = await fingerprint(filePath);
+
+      if (!sameFingerprint(existingFingerprint, recheckedFingerprint)) {
+        throw new ExternalAnnotationChangeError(
+          "The source annotation changed while it was being saved.",
+        );
+      }
+
+      await writeFile(filePath, serializeAnnotation(annotation), "utf8");
+    },
+    readAnnotation,
+    readAnnotationForSourceRecord: async (
+      sourceRecordId,
+    ): Promise<WorkingMaterialReadOutcome> => {
+      let canonicalPath: string;
+
+      try {
+        canonicalPath = await canonicalRepositoryPath(repositoryPath);
+      } catch (cause: unknown) {
+        diagnostics?.record(cause);
+        return {
+          outcome: "unavailable",
+          detail: "The Knowledge Repository could not be read.",
+        };
+      }
+
+      const annotationDirectory = resolve(
+        canonicalPath,
+        annotationDirectoryName,
+      );
+
+      try {
+        const entries = await readdir(annotationDirectory, {
+          encoding: "utf8",
+          withFileTypes: true,
+        });
+
+        for (const entry of entries) {
+          if (!entry.isFile() || !entry.name.endsWith(".md")) {
+            continue;
+          }
+
+          const annotationId = entry.name.slice(0, -3);
+          const outcome = await readAnnotation(annotationId);
+
+          if (outcome.outcome === "unavailable") {
+            return outcome;
+          }
+
+          if (
+            outcome.outcome === "found" &&
+            outcome.annotation.sourceRecord.id === sourceRecordId
+          ) {
+            return outcome;
+          }
+        }
+
+        return {
+          outcome: "not-found",
+          detail: "The source annotation was not found.",
+        };
+      } catch (cause: unknown) {
+        if (isErrnoException(cause) && cause.code === "ENOENT") {
+          return {
+            outcome: "not-found",
+            detail: "The source annotation was not found.",
+          };
+        }
+
+        diagnostics?.record(cause);
+        return {
+          outcome: "unavailable",
+          detail: "The source annotation could not be read.",
+        };
+      }
+    },
+  };
+};

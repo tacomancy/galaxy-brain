@@ -32,5 +32,20 @@ export const createInMemoryWorkingMaterialRepository =
               annotation: copyAnnotation(annotation),
             };
       },
+      readAnnotationForSourceRecord: async (sourceRecordId) => {
+        const annotation = [...annotations.values()].find(
+          (candidate) => candidate.sourceRecord.id === sourceRecordId,
+        );
+
+        return annotation === undefined
+          ? {
+              outcome: "not-found" as const,
+              detail: "The source annotation was not found.",
+            }
+          : {
+              outcome: "found" as const,
+              annotation: copyAnnotation(annotation),
+            };
+      },
     };
   };

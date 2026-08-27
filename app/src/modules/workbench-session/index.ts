@@ -1,3 +1,8 @@
+import type {
+  StructuredAnnotation,
+  WorkingMaterialReadOutcome,
+} from "../source-processing";
+
 /** Workspace names exposed by the V1 Workbench shell. */
 export type WorkbenchWorkspace = "atlas" | "studio" | "paper-desk";
 
@@ -11,6 +16,13 @@ export interface WorkbenchTopic {
 export interface WorkbenchSourceRecord {
   id: string;
   title: string;
+}
+
+/** Machine-local position within the currently resumed Source Record. */
+export interface ReadingPosition {
+  sourceRecordId: string;
+  page: number;
+  characterOffset: number;
 }
 
 /**
@@ -34,14 +46,16 @@ export interface WorkbenchState {
   repositoryAccess?: "read-write" | "read-only";
   repositorySelection?: "created" | "opened" | "read-only-compatible";
   context?: WorkbenchContext;
+  /** The saved source claim shown when Paper Desk resumes meaningful work. */
+  sourceAnnotation?: StructuredAnnotation;
+  /** The machine-local reading position for the selected Source Record. */
+  readingPosition?: ReadingPosition;
   /** The remembered root could not be validated; recovery stays unselected. */
   repositoryResumeFailure?: RepositoryResumeFailure;
 }
 
-/** The launch Interface always begins in Atlas. */
-export interface FreshWorkbench extends WorkbenchState {
-  activeWorkspace: "atlas";
-}
+/** Launch state begins in Atlas unless meaningful Paper Desk work resumes. */
+export type FreshWorkbench = WorkbenchState;
 
 /**
  * Caller-visible outcomes for repository selection. Failure outcomes preserve
@@ -86,7 +100,14 @@ export type WorkbenchContextReadOutcome =
  */
 export type WorkspaceTransitionOutcome =
   | { outcome: "transitioned"; workbench: WorkbenchState }
-  | { outcome: "context-unavailable"; detail: string };
+  | { outcome: "context-unavailable"; detail: string }
+  | { outcome: "operation-failed"; detail: string };
+
+/** Caller-visible result of moving Paper Desk to its saved annotation. */
+export type ReadingPositionOutcome =
+  | { outcome: "position-restored"; workbench: WorkbenchState }
+  | { outcome: "context-unavailable"; detail: string }
+  | { outcome: "operation-failed"; detail: string };
 
 /**
  * The Knowledge Repository behavior required by the current Workbench
@@ -103,17 +124,28 @@ export interface KnowledgeRepository {
   readWorkbenchContext(
     repositoryPath: string,
   ): Promise<WorkbenchContextReadOutcome>;
+  /** Reads the saved source annotation associated with a Source Record. */
+  readWorkbenchAnnotation(
+    repositoryPath: string,
+    sourceRecordId: string,
+  ): Promise<WorkingMaterialReadOutcome>;
 }
 
 /**
- * Machine-local convenience state for the last explicitly selected root.
+ * Machine-local convenience state for exact-root resume and active work.
  * Implementations must not store this state in the portable repository.
  */
+export interface WorkbenchSessionSnapshot {
+  selectedRepositoryPath: string;
+  activeWorkspace?: WorkbenchWorkspace;
+  readingPosition?: ReadingPosition;
+}
+
 export interface WorkbenchSessionState {
   /** Missing, malformed, or unreadable state is treated as first launch. */
-  readSelectedRepository(): Promise<string | undefined>;
-  /** Rejecting this write means the current selection is not changed. */
-  writeSelectedRepository(repositoryPath: string): Promise<void>;
+  readSession(): Promise<WorkbenchSessionSnapshot | undefined>;
+  /** Rejecting this write leaves the current caller-visible state unchanged. */
+  writeSession(snapshot: WorkbenchSessionSnapshot): Promise<void>;
 }
 
 /**
@@ -122,13 +154,13 @@ export interface WorkbenchSessionState {
  * state decisions from the renderer.
  */
 export interface WorkbenchSession {
-  /** Validates the remembered root once, then returns Atlas-facing state. */
+  /** Validates the remembered root once, then returns launch or resume state. */
   openFreshWorkbench(): Promise<FreshWorkbench>;
   /** A session-state write failure returns operation-failed and preserves selection. */
   createRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
   /** A session-state write failure returns operation-failed and preserves selection. */
   openRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
-  /** Carries a known topic into Studio without persisting launch state. */
+  /** Carries a known topic into Studio and persists active-work state. */
   openTopicInStudio(topicId: string): Promise<WorkspaceTransitionOutcome>;
   /** Carries the selected Source Record and its topic into Paper Desk. */
   openSourceRecordInPaperDesk(
@@ -138,12 +170,15 @@ export interface WorkbenchSession {
   switchWorkspace(
     workspace: WorkbenchWorkspace,
   ): Promise<WorkspaceTransitionOutcome>;
+  /** Moves Paper Desk to the saved annotation and persists its position. */
+  openSavedAnnotation(): Promise<ReadingPositionOutcome>;
 }
 
 /**
  * Composes repository and machine-local session Adapters behind the
- * Workbench Session Interface. It keeps selection and in-session context in
- * memory and does not persist active workspace navigation.
+ * Workbench Session Interface. It keeps repository context in memory and
+ * persists only exact-root resume and machine-local active-work convenience
+ * state.
  */
 export const createWorkbenchSession = (
   knowledgeRepository: KnowledgeRepository,
@@ -159,11 +194,14 @@ export const createWorkbenchSession = (
           WorkbenchContextReadOutcome,
           { outcome: "unavailable" }
         >;
+        sourceAnnotation?: StructuredAnnotation;
       }
     | undefined;
 
   let hasRestoredSession = false;
   let repositoryResumeFailure: RepositoryResumeFailure | undefined;
+  let activeWorkspace: WorkbenchWorkspace = "atlas";
+  let readingPosition: ReadingPosition | undefined;
 
   const readWorkbenchContext = async (
     repositoryPath: string,
@@ -185,7 +223,8 @@ export const createWorkbenchSession = (
     }
 
     hasRestoredSession = true;
-    const rememberedPath = await sessionState.readSelectedRepository();
+    const rememberedSession = await sessionState.readSession();
+    const rememberedPath = rememberedSession?.selectedRepositoryPath;
 
     if (rememberedPath === undefined) {
       return;
@@ -211,6 +250,46 @@ export const createWorkbenchSession = (
           ? { contextReadFailure: contextReadOutcome }
           : {}),
       };
+
+      const rememberedWorkspace = rememberedSession?.activeWorkspace;
+      const rememberedPosition = rememberedSession?.readingPosition;
+
+      if (
+        rememberedWorkspace === "atlas" ||
+        (rememberedWorkspace === "studio" &&
+          contextReadOutcome.outcome === "available") ||
+        (rememberedWorkspace === "paper-desk" &&
+          contextReadOutcome.outcome === "available")
+      ) {
+        activeWorkspace = rememberedWorkspace;
+      }
+
+      if (
+        rememberedPosition !== undefined &&
+        contextReadOutcome.outcome === "available" &&
+        rememberedPosition.sourceRecordId ===
+          contextReadOutcome.context.sourceRecord.id
+      ) {
+        readingPosition = rememberedPosition;
+      }
+
+      if (
+        activeWorkspace === "paper-desk" &&
+        contextReadOutcome.outcome === "available"
+      ) {
+        const annotationOutcome =
+          await knowledgeRepository.readWorkbenchAnnotation(
+            outcome.repositoryPath,
+            contextReadOutcome.context.sourceRecord.id,
+          );
+
+        if (annotationOutcome.outcome === "found") {
+          selectedRepository.sourceAnnotation = annotationOutcome.annotation;
+        } else {
+          activeWorkspace = "atlas";
+          readingPosition = undefined;
+        }
+      }
       return;
     }
 
@@ -232,7 +311,10 @@ export const createWorkbenchSession = (
     >,
   ): Promise<RepositoryOperationOutcome> => {
     try {
-      await sessionState.writeSelectedRepository(outcome.repositoryPath);
+      await sessionState.writeSession({
+        selectedRepositoryPath: outcome.repositoryPath,
+        activeWorkspace: "atlas",
+      });
     } catch {
       return {
         outcome: "operation-failed",
@@ -255,6 +337,8 @@ export const createWorkbenchSession = (
         ? { contextReadFailure: contextReadOutcome }
         : {}),
     };
+    activeWorkspace = "atlas";
+    readingPosition = undefined;
     repositoryResumeFailure = undefined;
 
     return outcome;
@@ -284,6 +368,31 @@ export const createWorkbenchSession = (
       workbench.context = repository.context;
     }
 
+    if (workspace === "paper-desk" && repository.context !== undefined) {
+      if (repository.sourceAnnotation === undefined) {
+        const annotationOutcome =
+          await knowledgeRepository.readWorkbenchAnnotation(
+            repository.path,
+            repository.context.sourceRecord.id,
+          );
+
+        if (annotationOutcome.outcome === "found") {
+          repository.sourceAnnotation = annotationOutcome.annotation;
+        }
+      }
+
+      if (repository.sourceAnnotation !== undefined) {
+        workbench.sourceAnnotation = repository.sourceAnnotation;
+      }
+    }
+
+    if (
+      readingPosition !== undefined &&
+      readingPosition.sourceRecordId === repository.context?.sourceRecord.id
+    ) {
+      workbench.readingPosition = readingPosition;
+    }
+
     if (workspace !== "atlas" && workbench.context === undefined) {
       return {
         outcome: "context-unavailable",
@@ -292,6 +401,21 @@ export const createWorkbenchSession = (
           "The selected workspace context is not available.",
       };
     }
+
+    try {
+      await sessionState.writeSession({
+        selectedRepositoryPath: repository.path,
+        activeWorkspace: workspace,
+        ...(readingPosition === undefined ? {} : { readingPosition }),
+      });
+    } catch {
+      return {
+        outcome: "operation-failed",
+        detail: "The Workbench session could not be saved.",
+      };
+    }
+
+    activeWorkspace = workspace;
 
     return { outcome: "transitioned", workbench };
   };
@@ -303,8 +427,8 @@ export const createWorkbenchSession = (
       await restoreSelectedRepository();
 
       const workbench: FreshWorkbench = {
-        // A new session always begins in Atlas for orientation.
-        activeWorkspace: "atlas",
+        // A new session begins in Atlas unless meaningful work was restored.
+        activeWorkspace,
         repositoryStatus:
           selectedRepository === undefined ? "not-selected" : "selected",
       };
@@ -316,6 +440,18 @@ export const createWorkbenchSession = (
 
         if (selectedRepository.context !== undefined) {
           workbench.context = selectedRepository.context;
+        }
+
+        if (selectedRepository.sourceAnnotation !== undefined) {
+          workbench.sourceAnnotation = selectedRepository.sourceAnnotation;
+        }
+
+        if (
+          readingPosition !== undefined &&
+          readingPosition.sourceRecordId ===
+            selectedRepository.context?.sourceRecord.id
+        ) {
+          workbench.readingPosition = readingPosition;
         }
       }
 
@@ -382,5 +518,55 @@ export const createWorkbenchSession = (
       return transitionToWorkspace("paper-desk");
     },
     switchWorkspace: (workspace) => transitionToWorkspace(workspace),
+    openSavedAnnotation: async (): Promise<ReadingPositionOutcome> => {
+      const repository = selectedRepository;
+
+      if (
+        repository === undefined ||
+        repository.context === undefined ||
+        repository.sourceAnnotation === undefined
+      ) {
+        return {
+          outcome: "context-unavailable",
+          detail: "The saved source annotation is not available.",
+        };
+      }
+
+      const nextReadingPosition: ReadingPosition = {
+        sourceRecordId: repository.sourceAnnotation.sourceRecord.id,
+        page: repository.sourceAnnotation.sourceLocator.page,
+        characterOffset: repository.sourceAnnotation.sourceLocator.start,
+      };
+
+      try {
+        await sessionState.writeSession({
+          selectedRepositoryPath: repository.path,
+          activeWorkspace: "paper-desk",
+          readingPosition: nextReadingPosition,
+        });
+      } catch {
+        return {
+          outcome: "operation-failed",
+          detail: "The Workbench session could not be saved.",
+        };
+      }
+
+      readingPosition = nextReadingPosition;
+      activeWorkspace = "paper-desk";
+
+      return {
+        outcome: "position-restored",
+        workbench: {
+          activeWorkspace: "paper-desk",
+          repositoryStatus: "selected",
+          repositoryPath: repository.path,
+          repositoryAccess: repository.access,
+          repositorySelection: repository.selection,
+          context: repository.context,
+          sourceAnnotation: repository.sourceAnnotation,
+          readingPosition: nextReadingPosition,
+        },
+      };
+    },
   };
 };

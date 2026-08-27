@@ -2,7 +2,7 @@
  * Electron composition root for the Knowledge Workbench.
  *
  * This process owns privileged operations and wires the renderer-facing
- * bridge to application Modules. Tracer Bullets 2 through 4 compose the
+ * bridge to application Modules. Tracer Bullets 2 through 6 compose the
  * production file-backed repository and machine-local session-state Adapters
  * while remaining independent of Git, network, and provider state.
  */
@@ -211,6 +211,14 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.switchWorkspace(workspace);
   });
 
+  ipcMain.handle("workbench:open-saved-annotation", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return workbenchSession.openSavedAnnotation();
+  });
+
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
@@ -219,6 +227,7 @@ const createWindow = async (): Promise<void> => {
     ipcMain.removeHandler("workbench:open-topic-in-studio");
     ipcMain.removeHandler("workbench:open-source-record-in-paper-desk");
     ipcMain.removeHandler("workbench:switch-workspace");
+    ipcMain.removeHandler("workbench:open-saved-annotation");
   });
 
   if (MAIN_WINDOW_WEBPACK_ENTRY.startsWith("file:")) {

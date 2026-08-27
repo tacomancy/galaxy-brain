@@ -40,10 +40,26 @@ const assertWorkingMaterialContract = async (
     outcome: "found",
     annotation: expectedAnnotation,
   });
+  assert.deepEqual(
+    await repository.readAnnotationForSourceRecord(
+      expectedAnnotation.sourceRecord.id,
+    ),
+    {
+      outcome: "found",
+      annotation: expectedAnnotation,
+    },
+  );
   assert.deepEqual(await repository.readAnnotation("missing-annotation"), {
     outcome: "not-found",
     detail: "The source annotation was not found.",
   });
+  assert.deepEqual(
+    await repository.readAnnotationForSourceRecord("missing-source-record"),
+    {
+      outcome: "not-found",
+      detail: "The source annotation was not found.",
+    },
+  );
 };
 
 describe("Source Processing Adapter contracts", () => {
