@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 4 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 5 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -159,7 +159,21 @@ At S3, prove that capturing the known PDF passage produces a source-claim Struct
 
 ### 6. Reopen the capture
 
-Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite), including the TB6-specific preparation task below.
+
+#### TB6 preparation task — before implementation
+
+Before starting implementation, review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), [Test Strategy](test-strategy.md), applicable ADRs, and the completed TB1–TB5 delivery records. Then create a guidance-compliant `tracer-bullet-6-spec.md` brief that:
+
+- names the confirmed S1 packaged desktop seam and the minimum vertical path from the accepted TB5 annotation to Paper Desk;
+- states the first Public Behavior and the literal Source Record, annotation, Source Locator, captured text, provenance, material state, workspace, and reading-position values;
+- identifies the fixture, the machine-local session-state boundary, and the repository/Working Material Adapter boundaries;
+- preserves the distinction among Source Records, Structured Annotations, Working Material, Governed Knowledge, and machine-local convenience state; and
+- records explicit scope boundaries, deferrals, acceptance evidence, and any decision that requires an ADR or user confirmation.
+
+Do not begin TB6 implementation until the documentation review is complete and the TB6 brief has been checked against those authorities.
+
+The guidance-compliant [Tracer Bullet 6 brief](tracer-bullet-6-spec.md) is now the implementation entry point for this slice.
 
 At S1, prove that the saved annotation and reading position are restored through the public desktop workflow. This joins the source-processing behavior to real session and repository behavior without querying storage from the test.
 

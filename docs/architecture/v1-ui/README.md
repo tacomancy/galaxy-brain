@@ -19,6 +19,7 @@ This package follows the project-wide [documentation authority map](../../README
 - [Tracer Bullet 3 implementation brief](tracer-bullet-3-spec.md) records the accepted exact-repository resume slice and its delivery evidence.
 - [Tracer Bullet 4 implementation brief](tracer-bullet-4-spec.md) records the accepted contextual workspace-transfer slice.
 - [Tracer Bullet 5 implementation brief](tracer-bullet-5-spec.md) coordinates the located source-claim capture slice.
+- [Tracer Bullet 6 implementation brief](tracer-bullet-6-spec.md) coordinates reopening the captured source claim with its reading position.
 - [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
 - [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
 - [Engineering glossary](../../engineering/glossary.md) defines the codebase-design and test-driven-development vocabulary used by this package.
