@@ -50,7 +50,7 @@ Proposal application is a recoverable filesystem transaction. It rechecks target
 
 ## Starter and fixture
 
-The public starter skeleton is empty of subject-matter knowledge and is stored under `app/templates/knowledge-repository/`. Synthetic test data is stored under `app/tests/fixtures/knowledge-repository/` and is never derived from a private repository.
+The public starter skeleton is empty of subject-matter knowledge and is stored under `app/templates/knowledge-repository/`; its checked-in [inventory](starter-inventory.md) is the independent expected tree for creation tests. Synthetic test data is stored under `app/tests/fixtures/knowledge-repository/` and is never derived from a private repository.
 
 ## Future work
 
