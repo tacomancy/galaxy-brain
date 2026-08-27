@@ -46,6 +46,8 @@ Use S1, the packaged desktop workflow, with the real Electron main process, prel
 3. Validate the remembered root through the existing Knowledge Repository Adapter before exposing it as selected.
 4. Keep cancellation and failed replacement state-preserving, and keep the renderer dependent only on caller-facing Workbench outcomes.
 
+If the machine-local session-state write fails after repository creation or opening succeeds, Workbench Session returns `operation-failed` and preserves the prior in-memory selection. The repository operation may already have created or opened files; the caller surfaces the save failure so the person can retry or choose another repository rather than treating the new root as durably remembered.
+
 Do not persist active workspace, Working Set, reading position, or contextual navigation until the next behavior cycle gives one of those values an independently observable meaning.
 
 ## Acceptance gate

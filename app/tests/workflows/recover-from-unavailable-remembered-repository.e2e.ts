@@ -42,8 +42,8 @@ describe("Recover from an unavailable remembered Knowledge Repository", () => {
 
     await repositoryError.waitForDisplayed();
     assert.equal(
-      await repositoryError.getText(),
-      "The selected Knowledge Repository is unavailable.",
+      await repositoryError.getAttribute("data-workbench-outcome"),
+      "target-unavailable",
     );
     assert.equal(await $("#atlas-empty-state").isExisting(), true);
     assert.equal(await $("#repository-status").isExisting(), false);

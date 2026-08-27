@@ -9,6 +9,7 @@ export interface FreshWorkbench {
   repositoryPath?: string;
   repositoryAccess?: "read-write" | "read-only";
   repositorySelection?: "created" | "opened" | "read-only-compatible";
+  /** The remembered root could not be validated; recovery stays unselected. */
   repositoryResumeFailure?: RepositoryResumeFailure;
 }
 
@@ -23,6 +24,7 @@ export type RepositoryOperationOutcome =
   | { outcome: "unsupported-format"; detail: string }
   | { outcome: "operation-failed"; detail: string };
 
+/** Outcomes that leave the Workbench unselected and require recovery choices. */
 export type RepositoryResumeFailure = Extract<
   RepositoryOperationOutcome,
   {
@@ -50,7 +52,9 @@ export interface KnowledgeRepository {
  * Implementations must not store this state in the portable repository.
  */
 export interface WorkbenchSessionState {
+  /** Missing, malformed, or unreadable state is treated as first launch. */
   readSelectedRepository(): Promise<string | undefined>;
+  /** Rejecting this write means the current selection is not changed. */
   writeSelectedRepository(repositoryPath: string): Promise<void>;
 }
 
@@ -60,8 +64,11 @@ export interface WorkbenchSessionState {
  * state decisions from the renderer.
  */
 export interface WorkbenchSession {
+  /** Validates the remembered root once, then returns Atlas-facing state. */
   openFreshWorkbench(): Promise<FreshWorkbench>;
+  /** A session-state write failure returns operation-failed and preserves selection. */
   createRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
+  /** A session-state write failure returns operation-failed and preserves selection. */
   openRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
 }
 

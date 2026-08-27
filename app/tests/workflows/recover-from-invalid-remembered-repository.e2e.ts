@@ -1,6 +1,6 @@
 /** S1 behavior test for an invalid remembered repository root. */
 import { strict as assert } from "node:assert";
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -23,6 +23,10 @@ describe("Recover from an invalid remembered Knowledge Repository", () => {
       await realpath(temporaryRoot),
       "remembered-repository",
     );
+    const siblingRepositoryPath = join(
+      await realpath(temporaryRoot),
+      "sibling-repository",
+    );
     const dialog = await browser.electron.mock("dialog", "showOpenDialog");
 
     await dialog.mockResolvedValue({
@@ -32,6 +36,11 @@ describe("Recover from an invalid remembered Knowledge Repository", () => {
 
     await $("#create-repository").click();
     await $("#repository-status-heading").waitForDisplayed();
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      siblingRepositoryPath,
+      { recursive: true },
+    );
     await writeFile(
       join(repositoryPath, "galaxy-brain.yaml"),
       "not a repository\n",
@@ -43,8 +52,8 @@ describe("Recover from an invalid remembered Knowledge Repository", () => {
 
     await repositoryError.waitForDisplayed();
     assert.equal(
-      await repositoryError.getText(),
-      "The selected target is not a valid Knowledge Repository.",
+      await repositoryError.getAttribute("data-workbench-outcome"),
+      "invalid-format",
     );
     assert.equal(await $("#atlas-empty-state").isExisting(), true);
     assert.equal(await $("#repository-status").isExisting(), false);

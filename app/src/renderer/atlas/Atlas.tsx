@@ -84,8 +84,13 @@ export const Atlas = ({
           </button>
         </section>
       )}
+      {/* Stable outcome is exposed separately from explanatory copy for S1. */}
       {lastOutcome !== undefined && "detail" in lastOutcome ? (
-        <p id="repository-error" role="alert">
+        <p
+          id="repository-error"
+          role="alert"
+          data-workbench-outcome={lastOutcome.outcome}
+        >
           {lastOutcome.detail}
         </p>
       ) : null}

@@ -56,6 +56,8 @@ export const config: Options.Testrunner &
 
     rmSync(workerSessionStatePath, { force: true });
 
+    // WDIO's requested capability type omits the Electron service's converted
+    // Chrome options, so this assertion is limited to the field we mutate.
     const chromeOptions = (
       capabilities as Capabilities.W3CCapabilities & {
         "goog:chromeOptions"?: { args?: string[] };

@@ -14,6 +14,8 @@ const isPersistedWorkbenchSession = (
     return false;
   }
 
+  // The object check above narrows only to object; this local structural
+  // assertion is the smallest shape needed to validate untrusted JSON.
   const selectedRepositoryPath = (value as { selectedRepositoryPath?: unknown })
     .selectedRepositoryPath;
 
