@@ -20,6 +20,7 @@ import {
   createFileBackedKnowledgeRepository,
   type KnowledgeRepositoryFileSystem,
 } from "../../src/adapters/knowledge-repository/file-backed-knowledge-repository";
+import { createWorkbenchSession } from "../../src/modules/workbench-session";
 
 const canonicalRoots = [
   "assets",
@@ -63,6 +64,67 @@ const starterInventory = [
   "templates/web.md",
 ] as const;
 
+const expectedStarterEntries = [
+  ".gitattributes",
+  "README.md",
+  "assets",
+  "assets/README.md",
+  "galaxy-brain.yaml",
+  "knowledge",
+  "knowledge/README.md",
+  "knowledge/registries",
+  "knowledge/registries/glossary.yaml",
+  "knowledge/registries/math-macros.yaml",
+  "knowledge/registries/tags.yaml",
+  "projects",
+  "projects/README.md",
+  "proposals",
+  "proposals/README.md",
+  "proposals/applied",
+  "proposals/applied/README.md",
+  "scratch",
+  "scratch/README.md",
+  "sources",
+  "sources/README.md",
+  "sources/books",
+  "sources/books/.gitkeep",
+  "sources/courses",
+  "sources/courses/.gitkeep",
+  "sources/papers",
+  "sources/papers/.gitkeep",
+  "sources/web",
+  "sources/web/.gitkeep",
+  "templates",
+  "templates/README.md",
+  "templates/book.md",
+  "templates/course.md",
+  "templates/decision.md",
+  "templates/other.md",
+  "templates/paper.md",
+  "templates/practice.md",
+  "templates/project.md",
+  "templates/proposal.md",
+  "templates/scratch.md",
+  "templates/topic.md",
+  "templates/web.md",
+] as const;
+
+const listEntries = async (root: string, current = ""): Promise<string[]> => {
+  const entries = await readdir(join(root, current), { withFileTypes: true });
+  const paths: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = join(current, entry.name);
+    paths.push(entryPath);
+
+    if (entry.isDirectory()) {
+      paths.push(...(await listEntries(root, entryPath)));
+    }
+  }
+
+  return paths.sort();
+};
+
 describe("file-backed Knowledge Repository contract", () => {
   let temporaryRoot: string;
   const starterRoot = resolve(
@@ -92,6 +154,8 @@ describe("file-backed Knowledge Repository contract", () => {
       await readFile(join(repositoryPath, "galaxy-brain.yaml"), "utf8"),
       "format: galaxy-brain\nformat_version: 1\n",
     );
+
+    assert.deepEqual(await listEntries(repositoryPath), expectedStarterEntries);
 
     for (const root of canonicalRoots) {
       assert.equal(
@@ -134,6 +198,39 @@ describe("file-backed Knowledge Repository contract", () => {
     );
   });
 
+  it("accepts compatible YAML presentation without rewriting unknown content", async () => {
+    const repositoryPath = join(temporaryRoot, "presentation-repository");
+    const unknownPath = join(repositoryPath, "knowledge", "user-extension.txt");
+    await cp(
+      resolve(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    const manifest =
+      "# A harmless comment\nformat_version: 1 # still V1\nformat: galaxy-brain\nextra: preserved\n";
+    await writeFile(join(repositoryPath, "galaxy-brain.yaml"), manifest);
+    await writeFile(unknownPath, "preserve this content\n");
+
+    assert.deepEqual(
+      await createFileBackedKnowledgeRepository(starterRoot).openAt(
+        repositoryPath,
+      ),
+      {
+        outcome: "opened",
+        repositoryPath: await realpath(repositoryPath),
+      },
+    );
+    assert.equal(
+      await readFile(join(repositoryPath, "galaxy-brain.yaml"), "utf8"),
+      manifest,
+    );
+    assert.equal(
+      await readFile(unknownPath, "utf8"),
+      "preserve this content\n",
+    );
+  });
+
   it("rejects unsafe entries without selecting the repository", async () => {
     const repositoryPath = join(temporaryRoot, "unsafe-repository");
     await cp(
@@ -171,6 +268,24 @@ describe("file-backed Knowledge Repository contract", () => {
         detail: "The selected Knowledge Repository is unavailable.",
       },
     );
+  });
+
+  it("rejects a non-empty creation target without mutating it", async () => {
+    const repositoryPath = join(temporaryRoot, "non-empty-repository");
+    await mkdir(repositoryPath);
+    const sentinelPath = join(repositoryPath, "sentinel.txt");
+    await writeFile(sentinelPath, "keep me\n");
+
+    assert.deepEqual(
+      await createFileBackedKnowledgeRepository(starterRoot).createAt(
+        repositoryPath,
+      ),
+      {
+        outcome: "operation-failed",
+        detail: "The Knowledge Repository could not be created.",
+      },
+    );
+    assert.equal(await readFile(sentinelPath, "utf8"), "keep me\n");
   });
 
   it("opens newer valid formats read-only and rejects ambiguous manifests", async () => {
@@ -245,5 +360,44 @@ describe("file-backed Knowledge Repository contract", () => {
       ),
       [],
     );
+  });
+});
+
+describe("Workbench Session selection contract", () => {
+  it("preserves the selected repository after a failed replacement", async () => {
+    const session = createWorkbenchSession({
+      createAt: async () => ({
+        outcome: "created",
+        repositoryPath: "/created-repository",
+      }),
+      openAt: async () => ({
+        outcome: "invalid-format",
+        detail: "invalid",
+      }),
+    });
+
+    assert.deepEqual(await session.createRepository("/requested-repository"), {
+      outcome: "created",
+      repositoryPath: "/created-repository",
+    });
+    assert.deepEqual(session.openFreshWorkbench(), {
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: "/created-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "created",
+    });
+
+    assert.deepEqual(await session.openRepository("/invalid-repository"), {
+      outcome: "invalid-format",
+      detail: "invalid",
+    });
+    assert.deepEqual(session.openFreshWorkbench(), {
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: "/created-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "created",
+    });
   });
 });

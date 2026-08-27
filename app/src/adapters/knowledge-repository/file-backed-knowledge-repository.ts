@@ -86,6 +86,114 @@ const copyStarterContents = async (
   }
 };
 
+const stripYamlComment = (line: string): string => {
+  let quote: "single" | "double" | undefined;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    const previousCharacter = line[index - 1];
+
+    if (quote === "double" && character === "\\") {
+      index += 1;
+      continue;
+    }
+
+    if (
+      character === "'" &&
+      quote === undefined &&
+      (previousCharacter === undefined || /\s|:/.test(previousCharacter))
+    ) {
+      quote = "single";
+      continue;
+    }
+
+    if (
+      character === '"' &&
+      quote === undefined &&
+      (previousCharacter === undefined || /\s|:/.test(previousCharacter))
+    ) {
+      quote = "double";
+      continue;
+    }
+
+    if (character === "'" && quote === "single") {
+      if (line[index + 1] === "'") {
+        index += 1;
+      } else {
+        quote = undefined;
+      }
+      continue;
+    }
+
+    if (character === '"' && quote === "double") {
+      quote = undefined;
+      continue;
+    }
+
+    if (
+      character === "#" &&
+      (previousCharacter === undefined || /\s/.test(previousCharacter))
+    ) {
+      return line.slice(0, index);
+    }
+  }
+
+  if (quote !== undefined) {
+    throw new InvalidRepositoryFormatError(
+      "The repository manifest contains an unterminated scalar.",
+    );
+  }
+
+  return line;
+};
+
+const parseYamlScalar = (value: string): string => {
+  const trimmedValue = value.trim();
+
+  if (
+    trimmedValue === "" ||
+    trimmedValue.startsWith("[") ||
+    trimmedValue.startsWith("{") ||
+    trimmedValue.startsWith("&") ||
+    trimmedValue.startsWith("*") ||
+    trimmedValue.startsWith("!") ||
+    trimmedValue.startsWith("|") ||
+    trimmedValue.startsWith(">")
+  ) {
+    throw new InvalidRepositoryFormatError(
+      "The repository manifest contains a non-scalar value.",
+    );
+  }
+
+  if (trimmedValue.startsWith("'")) {
+    if (!trimmedValue.endsWith("'") || trimmedValue.length < 2) {
+      throw new InvalidRepositoryFormatError(
+        "The repository manifest contains an invalid quoted scalar.",
+      );
+    }
+
+    return trimmedValue.slice(1, -1).replace(/''/g, "'");
+  }
+
+  if (trimmedValue.startsWith('"')) {
+    try {
+      const parsedValue: unknown = JSON.parse(trimmedValue);
+
+      if (typeof parsedValue !== "string") {
+        throw new Error("The quoted value is not a string.");
+      }
+
+      return parsedValue;
+    } catch {
+      throw new InvalidRepositoryFormatError(
+        "The repository manifest contains an invalid quoted scalar.",
+      );
+    }
+  }
+
+  return trimmedValue;
+};
+
 const parseManifest = (
   manifest: string,
 ): {
@@ -93,41 +201,27 @@ const parseManifest = (
   formatVersion: number;
 } => {
   const entries = new Map<string, string>();
+  const manifestWithoutBom = manifest.replace(/^\uFEFF/, "");
 
-  for (const line of manifest.split(/\r?\n/)) {
-    const trimmedLine = line.trim();
+  for (const line of manifestWithoutBom.split(/\r?\n/)) {
+    const content = stripYamlComment(line).trim();
 
-    if (trimmedLine === "") {
+    if (content === "") {
       continue;
     }
 
-    const match =
-      /^(?<key>[A-Za-z_][A-Za-z0-9_-]*):[ \t]+(?<value>[^#]+?)[ \t]*$/.exec(
-        trimmedLine,
+    if (content === "---" || content === "...") {
+      throw new InvalidRepositoryFormatError(
+        "The repository manifest contains multiple YAML documents.",
       );
+    }
+
+    const match =
+      /^(?<key>[A-Za-z_][A-Za-z0-9_-]*):(?:[ \t]+(?<value>.*))?$/.exec(content);
 
     if (match?.groups?.key === undefined || match.groups.value === undefined) {
       throw new InvalidRepositoryFormatError(
         "The repository manifest is malformed.",
-      );
-    }
-
-    const value = match.groups.value.trim();
-
-    if (
-      value === "" ||
-      value.startsWith("[") ||
-      value.startsWith("{") ||
-      value.startsWith("&") ||
-      value.startsWith("*") ||
-      value.startsWith("!") ||
-      value.startsWith("|") ||
-      value.startsWith(">") ||
-      value.includes("'") ||
-      value.includes('"')
-    ) {
-      throw new InvalidRepositoryFormatError(
-        "The repository manifest contains a non-scalar value.",
       );
     }
 
@@ -137,7 +231,7 @@ const parseManifest = (
       );
     }
 
-    entries.set(match.groups.key, value);
+    entries.set(match.groups.key, parseYamlScalar(match.groups.value));
   }
 
   const format = entries.get("format");
@@ -166,10 +260,21 @@ const parseManifest = (
   return { format, formatVersion };
 };
 
-const readManifest = async (repositoryPath: string): Promise<string> => {
+const readManifest = async (
+  repositoryPath: string,
+): Promise<{
+  format: string;
+  formatVersion: number;
+}> => {
   try {
-    return await readFile(join(repositoryPath, "galaxy-brain.yaml"), "utf8");
-  } catch {
+    return parseManifest(
+      await readFile(join(repositoryPath, "galaxy-brain.yaml"), "utf8"),
+    );
+  } catch (error: unknown) {
+    if (error instanceof InvalidRepositoryFormatError) {
+      throw error;
+    }
+
     throw new InvalidRepositoryFormatError(
       "The repository manifest is missing or unreadable.",
     );
@@ -199,9 +304,7 @@ const validateRepositoryRoots = async (
 };
 
 const validateStagedRepository = async (stagedPath: string): Promise<void> => {
-  const { format, formatVersion } = parseManifest(
-    await readManifest(stagedPath),
-  );
+  const { format, formatVersion } = await readManifest(stagedPath);
 
   if (format !== "galaxy-brain" || formatVersion !== 1) {
     throw new InvalidRepositoryFormatError(
@@ -419,10 +522,7 @@ export const createFileBackedKnowledgeRepository = (
       }
 
       await validateNoSymlinks(canonicalRoot);
-
-      const { format, formatVersion } = parseManifest(
-        await readManifest(canonicalRoot),
-      );
+      const { format, formatVersion } = await readManifest(canonicalRoot);
 
       if (format !== "galaxy-brain") {
         throw new UnsupportedRepositoryFormatError();

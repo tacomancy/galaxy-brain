@@ -11,6 +11,7 @@ This package follows the project-wide [documentation authority map](../../README
 - [Product decisions](product-decisions.md) records the accepted experience, scope, and deferrals.
 - [Architecture](architecture.md) defines modules, interfaces, state ownership, and system seams.
 - [Repository Format](repository-format.md) defines the portable, versioned Knowledge Repository contract.
+- [Starter inventory](starter-inventory.md) records the independent expected contents of the public V1 skeleton.
 - [Code map](code-map.md) maps architectural responsibilities to live or explicitly planned source locations.
 - [Test strategy](test-strategy.md) defines the confirmed public seams through which behavior is verified.
 - [Delivery plan](delivery-plan.md) orders vertical tracer bullets for red-to-green implementation.
