@@ -5,7 +5,7 @@ How the engineering skills should consume this repository's domain documentation
 ## Before exploring, read these
 
 - `CONTEXT.md` at the repository root.
-- Relevant ADRs under `app/docs/adr/`.
+- Relevant ADRs under `docs/adr/`.
 
 If these files do not exist, proceed silently. The `domain-modeling` skill creates them lazily when terminology or decisions are resolved.
 

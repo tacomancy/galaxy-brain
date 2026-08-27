@@ -11,19 +11,19 @@ aliases:
   - Use portable files with optional external version control
   - Define the Repository Format
 targets:
-  - app/docs/adr/0005-use-portable-files-with-optional-external-version-control.md
-  - app/docs/adr/0006-keep-knowledge-repositories-application-independent.md
-  - app/docs/architecture/v1-ui/repository-format.md
+  - docs/adr/0005-use-portable-files-with-optional-external-version-control.md
+  - docs/adr/0006-keep-knowledge-repositories-application-independent.md
+  - docs/architecture/v1-ui/repository-format.md
   - CONTEXT.md
-  - app/docs/architecture/v1-ui/README.md
-  - app/docs/architecture/v1-ui/product-decisions.md
-  - app/docs/architecture/v1-ui/architecture.md
-  - app/docs/architecture/v1-ui/test-strategy.md
-  - app/docs/architecture/v1-ui/delivery-plan.md
-  - app/docs/architecture/v1-ui/code-map.md
-  - app/docs/agents/knowledge-base.md
-  - app/docs/agents/software-development.md
-  - app/docs/agents/workbench.md
+  - docs/architecture/v1-ui/README.md
+  - docs/architecture/v1-ui/product-decisions.md
+  - docs/architecture/v1-ui/architecture.md
+  - docs/architecture/v1-ui/test-strategy.md
+  - docs/architecture/v1-ui/delivery-plan.md
+  - docs/architecture/v1-ui/code-map.md
+  - docs/agents/knowledge-base.md
+  - docs/agents/software-development.md
+  - docs/agents/workbench.md
   - README.md
   - app/README.md
   - app/templates/knowledge-repository/

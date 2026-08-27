@@ -4,7 +4,7 @@ status: accepted
 
 # Use a machine-local `.env` for V1 provider configuration
 
-The V1 Agent Provider is the OpenAI API. The Workbench reads `OPENAI_API_KEY` from a `.env` file in its machine-local application configuration directory. The committed [`app/.env.example`](../../.env.example) lists the required variable and setup steps without containing a secret. The real `.env` is excluded from version control and never belongs in the selected Knowledge Repository. This integration uses OpenAI API access, not ChatGPT consumer-account login or ChatGPT OAuth; see the [official OpenAI API reference](https://developers.openai.com/api/reference/overview).
+The V1 Agent Provider is the OpenAI API. The Workbench reads `OPENAI_API_KEY` from a `.env` file in its machine-local application configuration directory. The committed [`app/.env.example`](../../app/.env.example) lists the required variable and setup steps without containing a secret. The real `.env` is excluded from version control and never belongs in the selected Knowledge Repository. This integration uses OpenAI API access, not ChatGPT consumer-account login or ChatGPT OAuth; see the [official OpenAI API reference](https://developers.openai.com/api/reference/overview).
 
 The file is optional to the application: local repository, reading, editing, source, annotation, and governance workflows remain available without it. Agentic Capabilities that need a missing variable return `agent-provider-unavailable` and do not block startup or mutate local knowledge.
 

@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Restrict packaged renderer execution to its own local resources. -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; base-uri 'none'; object-src 'none'"
@@ -9,6 +10,7 @@
     <title>Galaxy Brain</title>
   </head>
   <body>
+    <!-- React mounts the Workbench shell into this stable document root. -->
     <div id="root"></div>
   </body>
 </html>

@@ -15,7 +15,7 @@ This package follows the project-wide [documentation authority map](../../README
 - [Test strategy](test-strategy.md) defines the confirmed public seams through which behavior is verified.
 - [Delivery plan](delivery-plan.md) orders vertical tracer bullets for red-to-green implementation.
 - [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
-- [Project language](../../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
+- [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
 - [Engineering glossary](../../engineering/glossary.md) defines the codebase-design and test-driven-development vocabulary used by this package.
 - [Agent implementation guide](../../agents/workbench.md) defines the required Red-to-Green execution and handoff procedure for Workbench changes.
 
@@ -42,4 +42,4 @@ The hard-to-reverse decisions are recorded separately:
 
 The S1–S5 Test Seams in [Test strategy](test-strategy.md) were confirmed on August 26, 2026. Implementation may test at those seams and no others without a documented and confirmed amendment. Delivery proceeds one behavior at a time: write one failing test at an agreed seam, observe the failure, add the minimum implementation that passes it, and then choose the next slice using what the previous cycle taught.
 
-The existing files under `app/prototype/knowledge-workbench/` remain throwaway comparison material. They are evidence for the accepted interaction direction, not a production foundation or an implementation constraint.
+The existing files under `prototype/knowledge-workbench/` remain throwaway comparison material. They are evidence for the accepted interaction direction, not a production foundation or an implementation constraint.

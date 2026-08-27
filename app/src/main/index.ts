@@ -1,3 +1,11 @@
+/**
+ * Electron composition root for the Knowledge Workbench.
+ *
+ * This process owns privileged operations and wires the renderer-facing
+ * bridge to application Modules. The first tracer bullet uses an in-memory
+ * repository so startup can prove the real desktop path without filesystem,
+ * Git, network, or provider state.
+ */
 import { app, BrowserWindow, ipcMain, protocol } from "electron";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, extname, resolve, sep } from "node:path";
@@ -9,6 +17,8 @@ import { createWorkbenchSession } from "../modules/workbench-session";
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
+// A custom secure scheme lets packaged renderer assets load without exposing
+// a broad file:// surface to the sandboxed renderer.
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "galaxy-brain",
@@ -24,8 +34,11 @@ const workbenchSession = createWorkbenchSession(
   createInMemoryKnowledgeRepository(),
 );
 
+// Forge can recreate the main process during development. Registering the
+// handler only once prevents duplicate protocol registrations in that path.
 let isRendererProtocolInstalled = false;
 
+/** Maps the small set of packaged renderer assets to safe response types. */
 const contentTypeFor = (path: string): string => {
   switch (extname(path)) {
     case ".html":
@@ -37,6 +50,10 @@ const contentTypeFor = (path: string): string => {
   }
 };
 
+/**
+ * Serves packaged renderer assets through the allow-listed custom scheme.
+ * Requests outside the renderer root are rejected before any file is read.
+ */
 const installRendererProtocol = (rendererEntry: string): void => {
   if (isRendererProtocolInstalled) {
     return;
@@ -47,6 +64,8 @@ const installRendererProtocol = (rendererEntry: string): void => {
   protocol.handle("galaxy-brain", async (request) => {
     const requestUrl = new URL(request.url);
 
+    // Only the Workbench host is valid; this avoids turning the scheme into a
+    // general-purpose local file server.
     if (requestUrl.hostname !== "workbench") {
       return new Response("Not found", { status: 404 });
     }
@@ -54,6 +73,7 @@ const installRendererProtocol = (rendererEntry: string): void => {
     const requestedPath = decodeURIComponent(requestUrl.pathname);
     const resolvedPath = resolve(rendererRoot, `.${requestedPath}`);
 
+    // The prefix check prevents traversal outside the compiled renderer tree.
     if (
       !resolvedPath.startsWith(`${rendererRoot}${sep}`) &&
       resolvedPath !== rendererEntry
@@ -75,6 +95,7 @@ const installRendererProtocol = (rendererEntry: string): void => {
   isRendererProtocolInstalled = true;
 };
 
+/** Creates the single BrowserWindow used by the current desktop shell. */
 const createWindow = async (): Promise<void> => {
   const mainWindow = new BrowserWindow({
     width: 1_200,
@@ -87,6 +108,9 @@ const createWindow = async (): Promise<void> => {
     },
   });
 
+  // IPC is operation-specific and the sender is checked before the Module is
+  // invoked, keeping renderer input from becoming arbitrary main-process
+  // authority.
   ipcMain.handle("workbench:open-fresh", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
@@ -96,6 +120,7 @@ const createWindow = async (): Promise<void> => {
   });
 
   mainWindow.once("closed", () => {
+    // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
   });
 
@@ -103,6 +128,8 @@ const createWindow = async (): Promise<void> => {
     const rendererEntry = fileURLToPath(MAIN_WINDOW_WEBPACK_ENTRY);
     installRendererProtocol(MAIN_WINDOW_WEBPACK_ENTRY);
 
+    // Packaged builds use the custom scheme; development builds can load the
+    // Forge-provided entry directly.
     await mainWindow.loadURL(
       `galaxy-brain://workbench/main_window/${basename(rendererEntry)}`,
     );
@@ -112,15 +139,20 @@ const createWindow = async (): Promise<void> => {
   await mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
 
+// Wait for Electron's lifecycle before creating windows or registering window
+// content that depends on the ready application state.
 app.whenReady().then(createWindow);
 
 app.on("window-all-closed", () => {
+  // macOS conventionally keeps the application alive until explicitly quit.
   if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
 app.on("activate", () => {
+  // Recreate the window when the user reactivates the app after closing it on
+  // macOS, while preserving the normal single-window behavior.
   if (BrowserWindow.getAllWindows().length === 0) {
     void createWindow();
   }

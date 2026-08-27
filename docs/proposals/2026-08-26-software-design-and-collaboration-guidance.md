@@ -9,8 +9,8 @@ tags: []
 targets:
   - AGENTS.md
   - README.md
-  - app/docs/agents/software-design.md
-  - app/docs/agents/collaboration.md
+  - docs/agents/software-design.md
+  - docs/agents/collaboration.md
 ---
 
 # Add software design and human-agent collaboration guidance
@@ -23,8 +23,8 @@ The project adopted repository-owned guidance for software design and human-agen
 
 - `AGENTS.md` now routes material design and collaboration work through the relevant guidance.
 - `README.md` exposes the collaboration and software-design guides to human readers.
-- `app/docs/agents/software-design.md` defines the shared design principles: design for people, start from behavior, build deep Modules, place evidence-based Seams, direct dependencies inward, reuse before inventing, give state one authority, keep policy human-configurable, develop test-first, and write source for human readers.
-- `app/docs/agents/collaboration.md` defines authority, approval, shared context, reversibility, and handoff rules.
+- `docs/agents/software-design.md` defines the shared design principles: design for people, start from behavior, build deep Modules, place evidence-based Seams, direct dependencies inward, reuse before inventing, give state one authority, keep policy human-configurable, develop test-first, and write source for human readers.
+- `docs/agents/collaboration.md` defines authority, approval, shared context, reversibility, and handoff rules.
 
 The guidance does not add a domain concept or change an architectural decision. The exact historical diff remains recoverable in Git commit `d6a403c`.
 

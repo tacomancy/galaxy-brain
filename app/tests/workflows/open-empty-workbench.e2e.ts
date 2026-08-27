@@ -1,7 +1,16 @@
+/**
+ * S1 behavior test for the packaged desktop Workbench.
+ *
+ * The assertions intentionally use visible, accessible content rather than
+ * React state, IPC details, or repository storage. The expected strings and
+ * absent fixture term are independent facts about a fresh session.
+ */
 import { strict as assert } from "node:assert";
 import { $ } from "@wdio/globals";
 
 describe("Open the real empty Workbench", () => {
+  // This is the first vertical workflow: packaged Electron app through the
+  // main process, preload bridge, Workbench Session, and Atlas Adapter.
   it("opens Atlas with the authentic empty state and no demonstration data", async () => {
     const atlas = await $('main[aria-labelledby="atlas-heading"]');
 

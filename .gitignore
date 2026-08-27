@@ -63,7 +63,7 @@ instance/
 .scrapy
 
 # Documentation and build tools
-app/docs/_build/
+docs/_build/
 .pybuilder/
 target/
 /site

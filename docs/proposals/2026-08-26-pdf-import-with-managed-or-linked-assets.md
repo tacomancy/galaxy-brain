@@ -12,13 +12,13 @@ aliases:
   - Import PDF
 targets:
   - CONTEXT.md
-  - app/docs/architecture/v1-ui/product-decisions.md
-  - app/docs/architecture/v1-ui/architecture.md
-  - app/docs/architecture/v1-ui/test-strategy.md
-  - app/docs/architecture/v1-ui/delivery-plan.md
-  - app/docs/architecture/v1-ui/code-map.md
-  - app/docs/agents/knowledge-base.md
-  - app/docs/agents/software-development.md
+  - docs/architecture/v1-ui/product-decisions.md
+  - docs/architecture/v1-ui/architecture.md
+  - docs/architecture/v1-ui/test-strategy.md
+  - docs/architecture/v1-ui/delivery-plan.md
+  - docs/architecture/v1-ui/code-map.md
+  - docs/agents/knowledge-base.md
+  - docs/agents/software-development.md
   - app/templates/knowledge-repository/templates/paper.md
   - app/tests/fixtures/knowledge-repository/templates/paper.md
 ---

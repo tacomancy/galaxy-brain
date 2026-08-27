@@ -6,7 +6,7 @@ Use this guide for implementation, testing, review, or architecture changes to t
 
 Read these before choosing a test or changing code:
 
-1. [`CONTEXT.md`](../../../CONTEXT.md) and every applicable accepted [ADR](../adr/).
+1. [`CONTEXT.md`](../../CONTEXT.md) and every applicable accepted [ADR](../adr/).
 2. The [V1 architecture package](../architecture/v1-ui/README.md), including its product decisions, architecture, confirmed Test Seams, and delivery plan.
 3. The [software development conventions](software-development.md) and the current [code map](../architecture/v1-ui/code-map.md).
 4. The [engineering glossary](../engineering/glossary.md) for canonical development vocabulary.
@@ -14,7 +14,7 @@ Read these before choosing a test or changing code:
 
 This step is complete when you can state the current Tracer Bullet, its confirmed Test Seam, the single missing Public Behavior, its independently known expected outcome, and every External System Seam the slice crosses.
 
-The architecture package is the accepted design authority. The files under `app/prototype/knowledge-workbench/` are disposable comparison evidence, not a production foundation or an Interface contract.
+The architecture package is the accepted design authority. The files under `prototype/knowledge-workbench/` are disposable comparison evidence, not a production foundation or an Interface contract.
 
 ## Establish the slice
 
@@ -64,7 +64,7 @@ Review is complete when the suite remains Green, the test would survive an inter
 - Preserve rich/source semantic equivalence and portable repository text; a chosen editor engine remains replaceable behind the Knowledge Authoring Interface.
 - Treat repository access as local file access. Galaxy Brain may scaffold and mutate a validated repository, but never requires or invokes Git, Git LFS, GitHub, credentials, or network connectivity. Users manage version control and backups externally.
 - Resume only an exact repository root previously selected by the user and stored in machine-local session state. Validate it at launch; if it is unavailable or invalid, present Open/Create choices rather than discovering or substituting a repository.
-- Treat Agent Provider configuration as optional. The initial V1 path reads recognized variables from the machine-local application `.env` described by [`app/.env.example`](../../.env.example); the Workbench must remain usable without that file or an API key, and Agentic Capabilities should explain their unavailable state without blocking non-agentic workflows or prompting for credentials at startup. Never place `.env` in a Knowledge Repository or commit it.
+- Treat Agent Provider configuration as optional. The initial V1 path reads recognized variables from the machine-local application `.env` described by [`app/.env.example`](../../app/.env.example); the Workbench must remain usable without that file or an API key, and Agentic Capabilities should explain their unavailable state without blocking non-agentic workflows or prompting for credentials at startup. Never place `.env` in a Knowledge Repository or commit it.
 - Provider-dependent operations use the shared `agent-provider-unavailable` outcome. Keep Search, Jump, reading, annotation, local editing, and Proposal review usable, and preserve captured material when agent-assisted work cannot run.
 - Require explicit per-operation confirmation before every OpenAI request, including a user-only prompt. Show a concise summary and an inspectable exact payload, allow removal of whole context items with regenerated previews, expand small requests by default when practical, make cancellation request-free and state-preserving, and never add context after approval. Do not add arbitrary inline redaction, blanket consent, remembered consent, silent background requests, or whole-repository upload behavior in V1. Configurable confirmation policies are deferred.
 - Do not retain OpenAI request or response payloads automatically. Show results transiently; persist them only when the user explicitly saves a Working Material item, Proposal, or other repository artifact. Keep prompts, selected context, and responses out of logs, caches, audit records, and support files.

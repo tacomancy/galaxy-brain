@@ -7,23 +7,24 @@ Galaxy Brain combines a human-owned knowledge base for personal research and con
 ## Start here
 
 - [Synthetic repository fixture](app/tests/fixtures/knowledge-repository/knowledge/README.md)
-- [Project documentation](app/docs/README.md)
-- [V1 Knowledge Workbench architecture](app/docs/architecture/v1-ui/README.md)
-- [Human-agent collaboration](app/docs/agents/collaboration.md)
-- [Knowledge-base guidance](app/docs/agents/knowledge-base.md)
-- [Research guidance](app/docs/agents/research.md)
-- [Software design principles](app/docs/agents/software-design.md)
-- [Code guidance](app/docs/agents/code.md)
-- [Software development conventions](app/docs/agents/software-development.md)
-- [Engineering glossary](app/docs/engineering/glossary.md)
+- [Application build and run instructions](app/README.md#build-and-run)
+- [Project documentation](docs/README.md)
+- [V1 Knowledge Workbench architecture](docs/architecture/v1-ui/README.md)
+- [Human-agent collaboration](docs/agents/collaboration.md)
+- [Knowledge-base guidance](docs/agents/knowledge-base.md)
+- [Research guidance](docs/agents/research.md)
+- [Software design principles](docs/agents/software-design.md)
+- [Code guidance](docs/agents/code.md)
+- [Software development conventions](docs/agents/software-development.md)
+- [Engineering glossary](docs/engineering/glossary.md)
 
 ## Structure
 
 This public development repository contains application-project material, a synthetic repository fixture, and a starter skeleton. Keep their roles distinct:
 
 - `app/`: the Galaxy Brain application project
-  - `app/docs/`: application architecture, ADRs, guidance, proposals, and review records
-  - `app/prototype/`: temporary, disposable GUI explorations
+  - `docs/`: application architecture, ADRs, guidance, proposals, and review records
+  - `prototype/`: temporary, disposable GUI explorations
   - `app/templates/knowledge-repository/`: empty starter skeleton for a new user repository
   - `app/tests/fixtures/knowledge-repository/`: synthetic fixture for tests and development; it is not user knowledge
 

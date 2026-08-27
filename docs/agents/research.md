@@ -1,6 +1,6 @@
 # Evidence-backed research
 
-Follow `app/docs/agents/knowledge-base.md` whenever research writes to the repository. The user owns the knowledge; the agent gathers, evaluates, challenges, and proposes.
+Follow `docs/agents/knowledge-base.md` whenever research writes to the repository. The user owns the knowledge; the agent gathers, evaluates, challenges, and proposes.
 
 ## 1. Frame the question
 

@@ -10,7 +10,7 @@ Classify the request before writing:
 - **Knowledge-base research**: create and update relevant non-core working notes under the selected repository's `sources/`, `projects/`, or `scratch/` roots, and place repository-held supporting files under its `assets/` root. State the working paths and report every changed file.
 - **Core integration**: investigate and prepare an exact knowledge-base proposal under the selected repository's `proposals/`, then stop for final sign-off. An instruction to integrate establishes intent, not approval of an unseen change.
 
-Documentation about the Galaxy Brain application belongs under `app/docs/`, with application proposals under `app/docs/proposals/` and durable reviews under `app/docs/reviews/`; none belongs under a selected repository's `projects/` or `proposals/` roots. Disposable GUI exploration belongs under `app/prototype/`.
+Documentation about the Galaxy Brain application belongs under `docs/`, with application proposals under `docs/proposals/` and durable reviews under `docs/reviews/`; none belongs under a selected repository's `projects/` or `proposals/` roots. Disposable GUI exploration belongs under `prototype/`.
 
 Edit existing human-authored working notes only when the task clearly calls for it. Preserve prior content. Use a companion note or proposal when ownership or intent is unclear. Deletion and broad restructuring require explicit authorization.
 
@@ -18,8 +18,8 @@ Edit existing human-authored working notes only when the task clearly calls for 
 
 ```text
 Application project
-app/docs/     Galaxy Brain application and project documentation; never knowledge-base content
-app/prototype/ temporary, disposable GUI exploration
+docs/         Galaxy Brain application and project documentation; never knowledge-base content
+prototype/    temporary, disposable GUI exploration
 
 Knowledge base
 <repository-root>/assets/          local images, reference documents, and other knowledge-supporting files
@@ -43,7 +43,7 @@ Prefer an existing topic when it can absorb the material without losing cohesion
 
 ## Core gate
 
-Everything under the selected repository's `knowledge/` is core. Governed registries and templates use the same gate. Project guidance remains under `app/docs/`; when it requires an exact proposal, that proposal also remains under `app/docs/`. Before changing any governed file, present:
+Everything under the selected repository's `knowledge/` is core. Governed registries and templates use the same gate. Project guidance remains under `docs/`; when it requires an exact proposal, that proposal also remains under `docs/`. Before changing any governed file, present:
 
 1. Exact target files and diff.
 2. Rationale for the change.
@@ -173,7 +173,7 @@ Retain prior agent-result versions by default through ordinary artifact history.
 
 Galaxy Brain may create repository files, audit records under `proposals/applied/`, and targeted rollback data through recoverable filesystem transactions. It never requires or invokes Git, Git LFS, GitHub, credentials, remotes, or network connectivity. Users manage initialization, commits, branching, synchronization, and backups externally. After a local save, the Workbench reports that the change is saved locally without claiming it is committed or backed up.
 
-Agent Provider configuration is not Knowledge Repository content. For the initial V1 provider path, the user declares recognized variables in the machine-local application `.env` described by [`app/.env.example`](../../.env.example); the real file must never be placed in a Knowledge Repository or committed. Missing API keys or provider configuration must not prevent local reading, editing, source, annotation, governance, or repository work. Agentic Capabilities may be unavailable and should say so clearly; never write provider credentials, prompts, or machine-local provider paths into repository content, audit records, or ordinary knowledge notes.
+Agent Provider configuration is not Knowledge Repository content. For the initial V1 provider path, the user declares recognized variables in the machine-local application `.env` described by [`app/.env.example`](../../app/.env.example); the real file must never be placed in a Knowledge Repository or committed. Missing API keys or provider configuration must not prevent local reading, editing, source, annotation, governance, or repository work. Agentic Capabilities may be unavailable and should say so clearly; never write provider credentials, prompts, or machine-local provider paths into repository content, audit records, or ordinary knowledge notes.
 
 Before any Agentic Capability sends any request to OpenAI, including a user-entered prompt without repository-derived material, the Workbench must show a concise summary plus an inspectable exact outbound payload and obtain explicit confirmation. Users may remove whole context items before approval, after which the Workbench regenerates both views; arbitrary inline redaction is not available in V1. Small requests may show the payload expanded by default; large requests may collapse it only if every part remains available for inspection. The confirmed payload is final: do not add context afterward. V1 does not use blanket or remembered consent, send whole repositories, or make silent background requests. A declined request makes no network call and leaves local knowledge and Working Material unchanged; Search, Jump, reading, annotation, editing, and governance remain local and do not require this confirmation. Configurable confirmation settings are future work.
 

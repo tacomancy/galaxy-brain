@@ -24,7 +24,7 @@ logical_locator:
 
 # Git-backed knowledge repositories with Git LFS and GitHub
 
-> **Historical design research:** This note preserves source evidence gathered while considering a Git-backed repository. Its product recommendation is superseded by the current VCS-neutral, local-first design. Use the [Repository Format](../../../../../docs/architecture/v1-ui/repository-format.md) and [Product Decisions](../../../../../docs/architecture/v1-ui/product-decisions.md) as the current project authority. The source claims below remain historical evidence, not requirements for Galaxy Brain.
+> **Historical design research:** This note preserves source evidence gathered while considering a Git-backed repository. Its product recommendation is superseded by the current VCS-neutral, local-first design. Use the [Repository Format](../../../../../../docs/architecture/v1-ui/repository-format.md) and [Product Decisions](../../../../../../docs/architecture/v1-ui/product-decisions.md) as the current project authority. The source claims below remain historical evidence, not requirements for Galaxy Brain.
 
 ## Citation
 
