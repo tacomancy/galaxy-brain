@@ -24,7 +24,9 @@ The architecture package is the accepted design authority. The files under `prot
 4. Define a small Fixture and Independent Expected Value without reproducing the intended Implementation.
 5. Identify the minimum vertical path and the real Adapters it needs.
 
-Proceed to Red only when all five statements are concrete. When the behavior needs an unconfirmed Test Seam, update the test-strategy rationale and obtain explicit confirmation before writing the test. When it forces a hard-to-reverse, surprising trade-off, record the decision and rationale in an ADR before allowing it to spread across Module Interfaces.
+6. Review the governing documentation and applicable ADRs, and create or update a guidance-compliant tracer-bullet spec that records the behavior, seam, expected values, vertical path, boundaries, deferrals, acceptance evidence, and any required confirmation.
+
+Proceed to Red only when all six statements are concrete. When the behavior needs an unconfirmed Test Seam, update the test-strategy rationale and obtain explicit confirmation before writing the test. When it forces a hard-to-reverse, surprising trade-off, record the decision and rationale in an ADR before allowing it to spread across Module Interfaces.
 
 ## Run one Red-to-Green Cycle
 
