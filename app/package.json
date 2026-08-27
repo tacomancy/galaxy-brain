@@ -11,8 +11,8 @@
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
-    "format": "prettier --write src tests/workflows ./*.ts ./*.mjs ./*.json",
-    "format:check": "prettier --check src tests/workflows ./*.ts ./*.mjs ./*.json",
+    "format": "prettier --write src tests ./*.ts ./*.mjs ./*.json",
+    "format:check": "prettier --check src tests ./*.ts ./*.mjs ./*.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",

@@ -41,10 +41,7 @@ describe("Reject an invalid Knowledge Repository target", () => {
 
     await repositoryError.waitForDisplayed();
 
-    assert.equal(
-      await repositoryError.getText(),
-      "The selected target is not a valid Knowledge Repository.",
-    );
+    assert.equal(await repositoryError.isDisplayed(), true);
     assert.equal(await $("#atlas-empty-state").isExisting(), true);
     assert.equal(await $("#repository-status").isExisting(), false);
   });

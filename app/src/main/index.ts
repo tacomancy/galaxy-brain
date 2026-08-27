@@ -2,9 +2,9 @@
  * Electron composition root for the Knowledge Workbench.
  *
  * This process owns privileged operations and wires the renderer-facing
- * bridge to application Modules. The first tracer bullet uses an in-memory
- * repository so startup and local creation can prove the real desktop path
- * without Git, network, or provider state.
+ * bridge to application Modules. Tracer Bullet 2 composes the production
+ * file-backed repository Adapter while remaining independent of Git, network,
+ * and provider state.
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import { readFile } from "node:fs/promises";

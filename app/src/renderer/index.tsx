@@ -28,30 +28,22 @@ const WorkbenchShell = ({
   const [workbench, setWorkbench] = useState(initialWorkbench);
   const [lastOutcome, setLastOutcome] = useState<RepositoryOperationOutcome>();
 
+  const refreshWorkbench = async (): Promise<void> => {
+    // React owns only this presentation projection; the main-process Session
+    // remains the authority for repository selection and access.
+    setWorkbench(await window.workbench.openFreshWorkbench());
+  };
+
   const createRepository = async (): Promise<void> => {
     const outcome = await window.workbench.createRepository();
     setLastOutcome(outcome);
-
-    if (outcome.outcome === "created") {
-      setWorkbench({
-        activeWorkspace: "atlas",
-        repositoryStatus: "selected",
-        repositoryPath: outcome.repositoryPath,
-      });
-    }
+    await refreshWorkbench();
   };
 
   const openRepository = async (): Promise<void> => {
     const outcome = await window.workbench.openRepository();
     setLastOutcome(outcome);
-
-    if (outcome.outcome === "opened") {
-      setWorkbench({
-        activeWorkspace: "atlas",
-        repositoryStatus: "selected",
-        repositoryPath: outcome.repositoryPath,
-      });
-    }
+    await refreshWorkbench();
   };
 
   return (
