@@ -32,7 +32,7 @@ The existing [code map](code-map.md) remains the source for live and planned pro
 Given the fixture Source Record `bayesian-statistics-fixture-source`, capturing the known passage on page 2 produces one persisted Structured Annotation with:
 
 - **Source Record:** `bayesian-statistics-fixture-source` / `Bayesian statistics fixture source`.
-- **Source Locator:** page `2`, character range `0..58`, with logical locator `page:2#chars=0-58`.
+- **Source Locator:** page `2`, character range `0..54` (end exclusive), with logical locator `page:2#chars=0-54`.
 - **Captured source text:** `Bayesian inference updates prior belief with evidence.`
 - **Attribution and classification:** `source-claim`.
 - **Material state:** `working-material`; it is not Governed Knowledge and does not create a Proposal.
