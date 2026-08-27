@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/tacomancy/galaxy-brain/compare/v0.2.0...v0.3.0) (2026-08-27)
+
+
+### Features
+
+* implement TB5 source claim capture ([#15](https://github.com/tacomancy/galaxy-brain/issues/15)) ([d3fb2ec](https://github.com/tacomancy/galaxy-brain/commit/d3fb2ec2f0bf3d3278069f16c8fdd9aeb54f45c5))
+
 ## [0.2.0](https://github.com/tacomancy/galaxy-brain/compare/v0.1.0...v0.2.0) (2026-08-27)
 
 
