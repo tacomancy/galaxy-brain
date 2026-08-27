@@ -124,6 +124,7 @@ export interface SynthesisSavedResult {
   prompt?: string;
   contextSnapshot?: SynthesisContextSnapshot[];
   contextSnapshotVersion?: number;
+  contextSnapshotRefreshedAt?: string;
   priorContextSnapshots?: SynthesisContextSnapshotVersion[];
   resultVersion?: number;
   priorResults?: SynthesisSavedResult[];
@@ -159,13 +160,18 @@ export interface SynthesisHumanEdit {
 export interface SynthesisResultRepository {
   saveResult(result: SynthesisSavedResult): Promise<void>;
   readResult?(resultId: string): Promise<SynthesisResultReadOutcome>;
-  readResults?(): Promise<SynthesisSavedResult[]>;
+  readResults?(): Promise<SynthesisResultListReadOutcome>;
 }
 
 /** Caller-visible read outcome for one explicitly saved Synthesis result. */
 export type SynthesisResultReadOutcome =
   | { outcome: "found"; result: SynthesisSavedResult }
   | { outcome: "not-found"; detail: string }
+  | { outcome: "unavailable"; detail: string };
+
+/** Caller-visible read outcome for the saved Synthesis result collection. */
+export type SynthesisResultListReadOutcome =
+  | { outcome: "found"; results: SynthesisSavedResult[] }
   | { outcome: "unavailable"; detail: string };
 
 /** Concise and exact views of one pending Synthesis operation. */
@@ -311,6 +317,12 @@ export type WorkingMaterialReadOutcome =
   | { outcome: "not-found"; detail: string }
   | { outcome: "unavailable"; detail: string };
 
+/** Caller-visible read outcome for all annotations bound to one Source Record. */
+export type WorkingMaterialListReadOutcome =
+  | { outcome: "found"; annotations: StructuredAnnotation[] }
+  | { outcome: "not-found"; detail: string }
+  | { outcome: "unavailable"; detail: string };
+
 /** Adapter seam for durable or locally substitutable Working Material. */
 export interface WorkingMaterialRepository {
   /** Persists one source annotation as Working Material. */
@@ -321,6 +333,10 @@ export interface WorkingMaterialRepository {
   readAnnotationForSourceRecord(
     sourceRecordId: string,
   ): Promise<WorkingMaterialReadOutcome>;
+  /** Finds all saved annotations associated with one Source Record. */
+  readAnnotationsForSourceRecord?(
+    sourceRecordId: string,
+  ): Promise<WorkingMaterialListReadOutcome>;
 }
 
 /** Caller-visible result of the first source-claim capture behavior. */
@@ -684,6 +700,7 @@ export const createSourceProcessing = (
               summary: `Selected ${item.classification === "source-claim" ? "source claim" : item.classification} from the ${item.sourceRecord.title}.`,
             })),
             contextSnapshotVersion: 1,
+            contextSnapshotRefreshedAt: input.generatedAt,
           }
         : {}),
     };
@@ -728,8 +745,9 @@ export const createSourceProcessing = (
       } catch (cause: unknown) {
         dependencies.diagnostics?.record(cause);
         return {
-          outcome: "operation-failed",
-          detail: "The saved Synthesis context could not be checked.",
+          outcome: "source-status-unavailable",
+          result: input.result,
+          warning: "source status unavailable",
         };
       }
 
@@ -817,13 +835,16 @@ export const createSourceProcessing = (
         ...(input.result.priorContextSnapshots ?? []),
         {
           version: currentVersion,
-          refreshedAt: input.result.provenance.generatedAt,
+          refreshedAt:
+            input.result.contextSnapshotRefreshedAt ??
+            input.result.provenance.generatedAt,
           snapshot: snapshots.map((snapshot) => ({
             ...snapshot,
             sourceRecord: { ...snapshot.sourceRecord },
           })),
         },
       ],
+      contextSnapshotRefreshedAt: input.refreshedAt,
     };
 
     try {

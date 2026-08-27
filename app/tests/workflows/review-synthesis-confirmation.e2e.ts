@@ -27,7 +27,7 @@ describe("Review a Synthesis request", () => {
 
     assert.equal(
       await $("#studio-synthesis-summary").getText(),
-      'Synthesize 1 selected source claim into "Bayesian statistics" using model "fixture-pinned-model" via OpenAI API; 54 source characters selected.',
+      'Synthesize 2 selected source claims into "Bayesian statistics" using model "fixture-pinned-model" via OpenAI API; 82 source characters selected.',
     );
     assert.equal(
       await $("#studio-synthesis-destination").getText(),
@@ -46,6 +46,22 @@ describe("Review a Synthesis request", () => {
     assert.match(
       await $("#studio-synthesis-payload").getText(),
       /Bayesian inference updates prior belief with evidence\./,
+    );
+    assert.match(
+      await $("#studio-synthesis-payload").getText(),
+      /Evidence updates confidence\./,
+    );
+
+    await $(
+      "#studio-synthesis-remove-annotation-bayesian-statistics-fixture-source-page-2-55-83",
+    ).click();
+    assert.equal(
+      await $("#studio-synthesis-summary").getText(),
+      'Synthesize 1 selected source claim into "Bayesian statistics" using model "fixture-pinned-model" via OpenAI API; 54 source characters selected.',
+    );
+    assert.doesNotMatch(
+      await $("#studio-synthesis-payload").getText(),
+      /Evidence updates confidence\./,
     );
 
     await $("#studio-synthesis-decline").click();

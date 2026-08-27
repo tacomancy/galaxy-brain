@@ -12,6 +12,7 @@ interface StudioProps {
   workbench: WorkbenchState;
   onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
   onPrepareSynthesis: () => Promise<void>;
+  onRemoveSynthesisContextItem: (annotationId: string) => Promise<void>;
   onConfirmSynthesis: (
     confirmation: "confirmed" | "declined" | "canceled",
   ) => Promise<void>;
@@ -30,6 +31,7 @@ export const Studio = ({
   workbench,
   onOpenSourceRecordInPaperDesk,
   onPrepareSynthesis,
+  onRemoveSynthesisContextItem,
   onConfirmSynthesis,
   synthesisPreview,
   synthesisOutcome,
@@ -152,7 +154,7 @@ export const Studio = ({
                 <span className="status-pill">Explicit action</span>
               </div>
               <p>
-                Review the selected source claim and exact request before any
+                Review the selected source claims and exact request before any
                 provider request is considered.
               </p>
               <button
@@ -189,10 +191,28 @@ export const Studio = ({
                     <div>
                       <dt>Selected context</dt>
                       <dd>
-                        {synthesisPreview.payload.context.length} source claim
+                        {synthesisPreview.payload.context.length} source
+                        claim(s)
                       </dd>
                     </div>
                   </dl>
+                  <ul id="studio-synthesis-context" className="context-list">
+                    {synthesisPreview.payload.context.map((item) => (
+                      <li key={item.annotationId}>
+                        <span>{item.text}</span>
+                        <button
+                          id={`studio-synthesis-remove-${item.annotationId}`}
+                          className="button button-quiet"
+                          type="button"
+                          onClick={() =>
+                            onRemoveSynthesisContextItem(item.annotationId)
+                          }
+                        >
+                          Remove context item
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                   <details>
                     <summary>Inspect exact payload</summary>
                     <pre id="studio-synthesis-payload">
@@ -289,6 +309,28 @@ export const Studio = ({
                       <dt>Provider</dt>
                       <dd>
                         {result.provenance.provider} / {result.provenance.model}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Operation</dt>
+                      <dd>{result.provenance.operation}</dd>
+                    </div>
+                    <div>
+                      <dt>Generated</dt>
+                      <dd>{result.provenance.generatedAt}</dd>
+                    </div>
+                    <div>
+                      <dt>Source Record / Locator</dt>
+                      <dd>
+                        {result.provenance.sourceContext.length === 0
+                          ? "None retained"
+                          : result.provenance.sourceContext.map((source) => (
+                              <span key={source.annotationId}>
+                                {source.sourceRecord.title} (
+                                {source.sourceRecord.id}) —{" "}
+                                {source.sourceLocator}
+                              </span>
+                            ))}
                       </dd>
                     </div>
                     <div>

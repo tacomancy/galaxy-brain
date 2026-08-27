@@ -13,6 +13,7 @@ import type {
   SynthesisContextSnapshot,
   SynthesisHumanEdit,
   SynthesisResultReadOutcome,
+  SynthesisResultListReadOutcome,
   SynthesisResultRepository,
   SynthesisSavedResult,
 } from "../../modules/source-processing";
@@ -104,6 +105,13 @@ const isSynthesisSavedResult = (
     (typeof value.contextSnapshotVersion !== "number" ||
       !Number.isSafeInteger(value.contextSnapshotVersion) ||
       value.contextSnapshotVersion <= 0)
+  ) {
+    return false;
+  }
+
+  if (
+    value.contextSnapshotRefreshedAt !== undefined &&
+    !isNonEmptyString(value.contextSnapshotRefreshedAt)
   ) {
     return false;
   }
@@ -212,6 +220,30 @@ const ensureResultDirectory = async (
   return resultDirectory;
 };
 
+const readResultDirectory = async (
+  canonicalPath: string,
+): Promise<string | undefined> => {
+  const resultDirectory = resolve(canonicalPath, resultDirectoryName);
+
+  try {
+    const stats = await lstat(resultDirectory);
+
+    if (stats.isSymbolicLink() || !stats.isDirectory()) {
+      throw new UnsafeSynthesisResultTargetError(
+        "The Synthesis result directory is unsafe.",
+      );
+    }
+
+    return resultDirectory;
+  } catch (cause: unknown) {
+    if (isErrnoException(cause) && cause.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw cause;
+  }
+};
+
 type FileFingerprint = { digest: string } | undefined;
 
 const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
@@ -285,6 +317,15 @@ export const createFileBackedSynthesisResultRepository = (
     }
 
     try {
+      const resultDirectory = await readResultDirectory(canonicalPath);
+
+      if (resultDirectory === undefined) {
+        return {
+          outcome: "not-found",
+          detail: "The Synthesis result was not found.",
+        };
+      }
+
       const result = await readResultFile(
         resultFilePath(canonicalPath, resultId),
         resultId,
@@ -329,34 +370,38 @@ export const createFileBackedSynthesisResultRepository = (
       await writeFile(filePath, serializeResult(result), "utf8");
     },
     readResult,
-    readResults: async (): Promise<SynthesisSavedResult[]> => {
+    readResults: async (): Promise<SynthesisResultListReadOutcome> => {
       let canonicalPath: string;
 
       try {
         canonicalPath = await canonicalRepositoryPath(repositoryPath);
       } catch (cause: unknown) {
         diagnostics?.record(cause);
-        throw new Error("The Knowledge Repository could not be read.", {
-          cause,
-        });
+        return {
+          outcome: "unavailable",
+          detail: "The Knowledge Repository could not be read.",
+        };
       }
 
       let entries: { name: string; isFile(): boolean }[];
 
       try {
-        entries = await readdir(resolve(canonicalPath, resultDirectoryName), {
+        const resultDirectory = await readResultDirectory(canonicalPath);
+
+        if (resultDirectory === undefined) {
+          return { outcome: "found", results: [] };
+        }
+
+        entries = await readdir(resultDirectory, {
           encoding: "utf8",
           withFileTypes: true,
         });
       } catch (cause: unknown) {
-        if (isErrnoException(cause) && cause.code === "ENOENT") {
-          return [];
-        }
-
         diagnostics?.record(cause);
-        throw new Error("The Synthesis results could not be read.", {
-          cause,
-        });
+        return {
+          outcome: "unavailable",
+          detail: "The Synthesis results could not be read.",
+        };
       }
 
       const results: SynthesisSavedResult[] = [];
@@ -376,13 +421,14 @@ export const createFileBackedSynthesisResultRepository = (
           );
         } catch (cause: unknown) {
           diagnostics?.record(cause);
-          throw new Error("The Synthesis results could not be read.", {
-            cause,
-          });
+          return {
+            outcome: "unavailable",
+            detail: "The Synthesis results could not be read.",
+          };
         }
       }
 
-      return results;
+      return { outcome: "found", results };
     },
   };
 };

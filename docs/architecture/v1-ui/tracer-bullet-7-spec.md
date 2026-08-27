@@ -12,7 +12,7 @@ The first vertical behavior is **prepare a Synthesis preview**. From the fixture
 - an inspectable exact outbound payload containing only the selected annotation and target topic context; and
 - a preview state that has made no Agent Provider request and has not changed local Working Material.
 
-Later vertical cycles extend this same behavior to whole-context-item removal and preview regeneration, explicit confirmation, the literal draft Proposal fixture returned by a confirmed provider response, decline/cancel preservation, unavailable-provider handling, non-retention, explicit save, an explicit versioned context refresh that preserves the prior snapshot without regenerating the result, confirmed result regeneration as a new version, restore as a new current version without a provider request, human edits that add authorship without erasing agent provenance, and packaged S1 review of the request and saved result history.
+Later vertical cycles extend this same behavior to whole-context-item removal and preview regeneration, explicit confirmation, the literal draft Proposal fixture returned by a confirmed provider response, decline/cancel preservation, unavailable-provider handling, non-retention, explicit save, an explicit versioned context refresh that preserves the prior snapshot without regenerating the result, confirmed result regeneration as a new version, restore as a new current version without a provider request, human edits that add authorship without erasing agent provenance, and packaged S1 review of the request and saved result history. The packaged review keeps the exact preview in the main process through confirmation, exposes each removable context item, and renders operation, timestamp, and Source Record/locator provenance for saved results.
 
 ## Test Seam and expected values
 
@@ -61,7 +61,7 @@ The following V1 work remains outside this completed TB7 implementation: a produ
 
 ## Acceptance evidence
 
-Implementation evidence is complete: focused S3 coverage exercises the confirmation, privacy, provider, save, snapshot, regeneration, restore, and provenance rules; the S5 result Adapter round-trips portable history; the packaged S1 workflow presents the exact request, confirmation choices, provider-unavailable state, provenance/version metadata, and restore control; the full `check` gate and packaged workflow suite pass. Human acceptance must still confirm that the operation, destination, model, selected context, content category, request size, exact payload, whole-item removal, regenerated preview, confirmation, decline, unavailable, saved-result, provenance, version, and restore states are legible and keyboard-operable.
+Implementation evidence is complete: focused S3 coverage exercises the confirmation, privacy, provider, save, snapshot, regeneration, restore, and provenance rules; the S5 result Adapter round-trips portable history; the packaged S1 workflow presents the exact request, whole-item removal with regenerated preview, confirmation choices, provider-unavailable state, provenance/version metadata, and restore control; the full `check` gate and packaged workflow suite pass. Human acceptance must still confirm that the operation, destination, model, selected context, content category, request size, exact payload, whole-item removal, regenerated preview, confirmation, decline, unavailable, saved-result, provenance, version, and restore states are legible and keyboard-operable.
 
 ## Required confirmation
 

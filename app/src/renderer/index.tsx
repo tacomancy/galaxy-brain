@@ -73,7 +73,10 @@ const WorkbenchShell = ({
     // React owns only this presentation projection; the main-process Session
     // remains the authority for repository selection and access.
     setWorkbench(await window.workbench.openFreshWorkbench());
-    setSavedSynthesisResults(await window.workbench.readSynthesisResults());
+    const outcome = await window.workbench.readSynthesisResults();
+    setSavedSynthesisResults(
+      outcome.outcome === "found" ? outcome.results : [],
+    );
   };
 
   const createRepository = async (): Promise<void> => {
@@ -147,6 +150,24 @@ const WorkbenchShell = ({
     setSynthesisOutcome(await window.workbench.confirmSynthesis(confirmation));
   };
 
+  const removeSynthesisContextItem = async (
+    annotationId: string,
+  ): Promise<void> => {
+    const outcome =
+      await window.workbench.removeSynthesisContextItem(annotationId);
+
+    if (outcome.outcome === "preview-ready") {
+      setSynthesisPreview(outcome.preview);
+      setSynthesisOutcome(undefined);
+      return;
+    }
+
+    setSynthesisOutcome({
+      outcome: "operation-failed",
+      detail: outcome.detail,
+    });
+  };
+
   const restoreSynthesisResult = async (
     resultId: string,
     version: number,
@@ -158,7 +179,10 @@ const WorkbenchShell = ({
     setRestoreOutcome(outcome);
 
     if (outcome.outcome === "restored") {
-      setSavedSynthesisResults(await window.workbench.readSynthesisResults());
+      const refreshed = await window.workbench.readSynthesisResults();
+      setSavedSynthesisResults(
+        refreshed.outcome === "found" ? refreshed.results : [],
+      );
     }
   };
 
@@ -170,6 +194,7 @@ const WorkbenchShell = ({
           onOpenSourceRecordInPaperDesk={openSourceRecordInPaperDesk}
           onPrepareSynthesis={prepareSynthesis}
           onConfirmSynthesis={confirmSynthesis}
+          onRemoveSynthesisContextItem={removeSynthesisContextItem}
           synthesisPreview={synthesisPreview}
           synthesisOutcome={synthesisOutcome}
           savedSynthesisResults={savedSynthesisResults}
@@ -214,7 +239,9 @@ const WorkbenchShell = ({
 };
 
 void window.workbench.openFreshWorkbench().then(async (workbench) => {
-  const savedSynthesisResults = await window.workbench.readSynthesisResults();
+  const outcome = await window.workbench.readSynthesisResults();
+  const savedSynthesisResults =
+    outcome.outcome === "found" ? outcome.results : [];
   root.render(
     <WorkbenchShell
       initialWorkbench={workbench}

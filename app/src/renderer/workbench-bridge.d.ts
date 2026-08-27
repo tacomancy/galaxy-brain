@@ -9,8 +9,8 @@ import type {
 import type {
   ConfirmSynthesisOutcome,
   PrepareSynthesisOutcome,
+  SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
-  SynthesisSavedResult,
 } from "../modules/source-processing";
 
 declare global {
@@ -30,10 +30,13 @@ declare global {
       ): Promise<WorkspaceTransitionOutcome>;
       openSavedAnnotation(): Promise<ReadingPositionOutcome>;
       prepareSynthesis(): Promise<PrepareSynthesisOutcome>;
+      removeSynthesisContextItem(
+        annotationId: string,
+      ): Promise<PrepareSynthesisOutcome>;
       confirmSynthesis(
         confirmation: "confirmed" | "declined" | "canceled",
       ): Promise<ConfirmSynthesisOutcome>;
-      readSynthesisResults(): Promise<SynthesisSavedResult[]>;
+      readSynthesisResults(): Promise<SynthesisResultListReadOutcome>;
       restoreSynthesisResult(
         resultId: string,
         version: number,

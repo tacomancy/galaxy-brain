@@ -378,10 +378,10 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 
 #### TB7 packaged S1 review surface cycle — August 27, 2026
 
-- **Public Behavior:** Studio presents an explicit Synthesis review action, concise summary, destination/model, selected context, exact payload disclosure, confirm/decline/cancel controls, provider-unavailable feedback, and saved-result provenance/version/restore controls through the real Electron main process and preload bridge.
+- **Public Behavior:** Studio presents an explicit Synthesis review action, concise summary, destination/model, selected context with whole-item removal and regenerated preview, exact payload disclosure, confirm/decline/cancel controls, provider-unavailable feedback, and saved-result provenance/version/restore controls through the real Electron main process and preload bridge. Confirmation sends the exact preview retained by the main process, and saved-result reads preserve explicit availability outcomes.
 - **Test Seam:** S1 packaged Electron workflow through the real main process, preload bridge, Studio UI Adapter, file-backed Knowledge Repository, file-backed Working Material Adapters, and the S3 Source Processing Module.
 - **Red evidence:** The first packaged run exposed that the exact payload disclosure was collapsed when asserted; the workflow was corrected to expand the disclosure before checking its contents.
-- **Green evidence:** The focused packaged workflow passed. The full packaged workflow suite passed all 20 WebdriverIO specs. `npm run check` passed formatting, linting, strict type checking, and 39 Vitest tests.
+- **Green evidence:** The focused packaged workflow passed. The full packaged workflow suite passed all 20 WebdriverIO specs, including whole-context-item removal and regenerated preview assertions. `npm run check` passed formatting, linting, strict type checking, and 40 Vitest tests.
 - **Scope confirmed:** The surface does not call a production provider, fabricate a successful draft, apply Governed Knowledge changes, or add a fourth primary workspace. Provider-unavailable behavior remains visible and local workflows remain usable.
 - **Next behavior:** Human acceptance review of the complete TB7 S3/S1 behavior; production provider integration and later Proposal/Governance work remain outside TB7.
 

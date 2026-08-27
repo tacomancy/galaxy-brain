@@ -20,9 +20,10 @@ import { createSourceProcessing } from "../modules/source-processing";
 import type {
   ConfirmSynthesisOutcome,
   PrepareSynthesisOutcome,
+  SynthesisPreview,
+  SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
   SynthesisResultReadOutcome,
-  SynthesisSavedResult,
 } from "../modules/source-processing";
 import { createWorkbenchSession } from "../modules/workbench-session";
 import type { WorkbenchWorkspace } from "../modules/workbench-session";
@@ -130,6 +131,8 @@ const createWindow = async (): Promise<void> => {
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
   );
+  let pendingSynthesis:
+    { repositoryPath: string; preview: SynthesisPreview } | undefined;
   const prepareSynthesisPreview =
     async (): Promise<PrepareSynthesisOutcome> => {
       const workbench = await workbenchSession.openFreshWorkbench();
@@ -145,40 +148,63 @@ const createWindow = async (): Promise<void> => {
         };
       }
 
+      const workingMaterial = createFileBackedWorkingMaterialRepository(
+        workbench.repositoryPath,
+      );
+      let selectedAnnotations = [workbench.sourceAnnotation];
+
+      if (workingMaterial.readAnnotationsForSourceRecord !== undefined) {
+        const annotations =
+          await workingMaterial.readAnnotationsForSourceRecord(
+            workbench.context.sourceRecord.id,
+          );
+
+        if (annotations.outcome === "unavailable") {
+          return {
+            outcome: "invalid-selection",
+            detail: annotations.detail,
+          };
+        }
+
+        if (annotations.outcome === "found" && annotations.annotations.length) {
+          selectedAnnotations = annotations.annotations;
+        }
+      }
+
       return createSourceProcessing({
         pdf: createFixturePdfAdapter(),
-        workingMaterial: createFileBackedWorkingMaterialRepository(
-          workbench.repositoryPath,
-        ),
+        workingMaterial,
         results: createFileBackedSynthesisResultRepository(
           workbench.repositoryPath,
         ),
       }).prepareSynthesis({
         targetTopic: workbench.context.topic,
-        selectedAnnotations: [workbench.sourceAnnotation],
+        selectedAnnotations,
         provider: {
           destination: "OpenAI API",
           model: "fixture-pinned-model",
         },
       });
     };
-  const readSynthesisResults = async (): Promise<SynthesisSavedResult[]> => {
-    const workbench = await workbenchSession.openFreshWorkbench();
+  const readSynthesisResults =
+    async (): Promise<SynthesisResultListReadOutcome> => {
+      const workbench = await workbenchSession.openFreshWorkbench();
 
-    if (workbench.repositoryPath === undefined) {
-      return [];
-    }
+      if (workbench.repositoryPath === undefined) {
+        return { outcome: "found", results: [] };
+      }
 
-    const repository = createFileBackedSynthesisResultRepository(
-      workbench.repositoryPath,
-    );
+      const repository = createFileBackedSynthesisResultRepository(
+        workbench.repositoryPath,
+      );
 
-    try {
-      return (await repository.readResults?.()) ?? [];
-    } catch {
-      return [];
-    }
-  };
+      return (
+        (await repository.readResults?.()) ?? {
+          outcome: "found",
+          results: [],
+        }
+      );
+    };
   const mainWindow = new BrowserWindow({
     width: 1_200,
     height: 800,
@@ -292,8 +318,59 @@ const createWindow = async (): Promise<void> => {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
-    return prepareSynthesisPreview();
+    const prepared = await prepareSynthesisPreview();
+
+    pendingSynthesis =
+      prepared.outcome === "preview-ready"
+        ? {
+            repositoryPath:
+              (await workbenchSession.openFreshWorkbench()).repositoryPath ??
+              "",
+            preview: prepared.preview,
+          }
+        : undefined;
+
+    return prepared;
   });
+
+  ipcMain.handle(
+    "workbench:remove-synthesis-context-item",
+    async (event, annotationId: unknown): Promise<PrepareSynthesisOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (typeof annotationId !== "string" || annotationId.length === 0) {
+        throw new Error("Invalid Synthesis context item.");
+      }
+
+      if (pendingSynthesis === undefined) {
+        return {
+          outcome: "invalid-selection",
+          detail: "Prepare the Synthesis request again before editing it.",
+        };
+      }
+
+      const updated = await createSourceProcessing({
+        pdf: createFixturePdfAdapter(),
+        workingMaterial: createFileBackedWorkingMaterialRepository(
+          pendingSynthesis.repositoryPath,
+        ),
+      }).removeSynthesisContextItem({
+        preview: pendingSynthesis.preview,
+        annotationId,
+      });
+
+      if (updated.outcome === "preview-ready") {
+        pendingSynthesis = {
+          ...pendingSynthesis,
+          preview: updated.preview,
+        };
+      }
+
+      return updated;
+    },
+  );
 
   ipcMain.handle(
     "workbench:confirm-synthesis",
@@ -306,22 +383,38 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Synthesis confirmation.");
       }
 
-      const prepared = await prepareSynthesisPreview();
-
-      if (prepared.outcome !== "preview-ready") {
+      if (pendingSynthesis === undefined) {
         return {
           outcome: "operation-failed",
-          detail: prepared.detail,
+          detail:
+            "The Synthesis preview is no longer available. Prepare it again.",
         };
       }
+
+      const workbench = await workbenchSession.openFreshWorkbench();
+
+      if (
+        workbench.repositoryPath === undefined ||
+        workbench.repositoryPath !== pendingSynthesis.repositoryPath
+      ) {
+        pendingSynthesis = undefined;
+        return {
+          outcome: "operation-failed",
+          detail:
+            "The Synthesis preview is no longer available. Prepare it again.",
+        };
+      }
+
+      const preview = pendingSynthesis.preview;
+      pendingSynthesis = undefined;
 
       return createSourceProcessing({
         pdf: createFixturePdfAdapter(),
         workingMaterial: createFileBackedWorkingMaterialRepository(
-          (await workbenchSession.openFreshWorkbench()).repositoryPath ?? "",
+          workbench.repositoryPath,
         ),
       }).confirmSynthesis({
-        preview: prepared.preview,
+        preview,
         confirmation,
       });
     },
@@ -402,6 +495,7 @@ const createWindow = async (): Promise<void> => {
     ipcMain.removeHandler("workbench:switch-workspace");
     ipcMain.removeHandler("workbench:open-saved-annotation");
     ipcMain.removeHandler("workbench:prepare-synthesis");
+    ipcMain.removeHandler("workbench:remove-synthesis-context-item");
     ipcMain.removeHandler("workbench:confirm-synthesis");
     ipcMain.removeHandler("workbench:read-synthesis-results");
     ipcMain.removeHandler("workbench:restore-synthesis-result");

@@ -16,8 +16,8 @@ import type {
 import type {
   ConfirmSynthesisOutcome,
   PrepareSynthesisOutcome,
+  SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
-  SynthesisSavedResult,
 } from "../modules/source-processing";
 
 contextBridge.exposeInMainWorld("workbench", {
@@ -46,11 +46,15 @@ contextBridge.exposeInMainWorld("workbench", {
     ipcRenderer.invoke("workbench:open-saved-annotation"),
   prepareSynthesis: (): Promise<PrepareSynthesisOutcome> =>
     ipcRenderer.invoke("workbench:prepare-synthesis"),
+  removeSynthesisContextItem: (
+    annotationId: string,
+  ): Promise<PrepareSynthesisOutcome> =>
+    ipcRenderer.invoke("workbench:remove-synthesis-context-item", annotationId),
   confirmSynthesis: (
     confirmation: "confirmed" | "declined" | "canceled",
   ): Promise<ConfirmSynthesisOutcome> =>
     ipcRenderer.invoke("workbench:confirm-synthesis", confirmation),
-  readSynthesisResults: (): Promise<SynthesisSavedResult[]> =>
+  readSynthesisResults: (): Promise<SynthesisResultListReadOutcome> =>
     ipcRenderer.invoke("workbench:read-synthesis-results"),
   restoreSynthesisResult: (
     resultId: string,

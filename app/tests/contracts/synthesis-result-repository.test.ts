@@ -96,7 +96,10 @@ describe("Synthesis result Repository Adapter", () => {
         outcome: "found",
         result,
       });
-      assert.deepEqual(await repository.readResults?.(), [result]);
+      assert.deepEqual(await repository.readResults?.(), {
+        outcome: "found",
+        results: [result],
+      });
       assert.deepEqual(await repository.readResult?.("missing-result"), {
         outcome: "not-found",
         detail: "The Synthesis result was not found.",
