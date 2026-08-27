@@ -30,8 +30,8 @@
     "@electron-forge/plugin-webpack": "7.11.2",
     "@types/mocha": "10.0.10",
     "@types/node": "24.10.1",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
     "@wdio/cli": "9.31.3",
     "@wdio/electron-service": "10.2.0",
     "@wdio/globals": "9.31.3",
@@ -40,14 +40,14 @@
     "electron": "44.0.0",
     "eslint": "9.39.2",
     "eslint-plugin-jsx-a11y": "6.10.2",
-    "eslint-plugin-react-hooks": "7.0.1",
-    "prettier": "3.7.4",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "prettier": "3.9.6",
     "puppeteer-core": "24.43.1",
-    "ts-loader": "9.5.4",
-    "tsx": "4.21.0",
+    "ts-loader": "9.6.2",
+    "tsx": "4.23.12",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.53.0",
+    "typescript-eslint": "8.67.0",
     "vitest": "4.1.11",
-    "webpack": "5.104.1"
+    "webpack": "5.109.2"
   }
 }
