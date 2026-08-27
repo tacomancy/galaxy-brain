@@ -95,13 +95,14 @@ export interface RemoveSynthesisContextItemInput {
 /** User decision applied immediately before an external Synthesis request. */
 export interface ConfirmSynthesisInput {
   preview: SynthesisPreview;
-  confirmation: "confirmed" | "declined";
+  confirmation: "confirmed" | "declined" | "canceled";
 }
 
 /** Caller-visible outcome after the confirmation boundary. */
 export type ConfirmSynthesisOutcome =
   | SynthesisModelOutcome
   | { outcome: "declined" }
+  | { outcome: "canceled" }
   | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome of preparing a Synthesis preview. */
@@ -355,8 +356,12 @@ export const createSourceProcessing = (
   const confirmSynthesis = async (
     input: ConfirmSynthesisInput,
   ): Promise<ConfirmSynthesisOutcome> => {
-    if (input.confirmation !== "confirmed") {
+    if (input.confirmation === "declined") {
       return { outcome: "declined" };
+    }
+
+    if (input.confirmation === "canceled") {
+      return { outcome: "canceled" };
     }
 
     if (dependencies.model === undefined) {

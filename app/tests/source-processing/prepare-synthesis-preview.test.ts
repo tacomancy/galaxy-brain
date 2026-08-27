@@ -210,4 +210,97 @@ describe("Synthesize selected evidence", () => {
     );
     assert.deepEqual(requests, [preview.preview.payload]);
   });
+
+  it("preserves the preview and makes no request when declined or canceled", async () => {
+    const requests: unknown[] = [];
+    const model: SynthesisModelAdapter = {
+      requestSynthesis: async (payload) => {
+        requests.push(payload);
+        return {
+          outcome: "draft-proposal",
+          draft: {
+            title: "Bayesian statistics synthesis",
+            text: "Bayesian inference updates prior belief with evidence.",
+          },
+        };
+      },
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model,
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "declined",
+      }),
+      { outcome: "declined" },
+    );
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "canceled",
+      }),
+      { outcome: "canceled" },
+    );
+    assert.deepEqual(requests, []);
+    assert.deepEqual(preview.preview.payload.context, [
+      {
+        kind: "structured-annotation",
+        annotationId:
+          "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+        text: "Bayesian inference updates prior belief with evidence.",
+        sourceRecord: {
+          id: "bayesian-statistics-fixture-source",
+          title: "Bayesian statistics fixture source",
+        },
+        sourceLocator: "page:2#chars=0-54",
+        attribution: "source-claim",
+        classification: "source-claim",
+        state: "working-material",
+      },
+    ]);
+  });
+
+  it("reports provider unavailable without changing selected evidence", async () => {
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "confirmed",
+      }),
+      {
+        outcome: "agent-provider-unavailable",
+        detail: "Synthesis requires a configured Agent Provider.",
+      },
+    );
+    assert.equal(
+      preview.preview.payload.context[0]?.text,
+      expectedAnnotation.text,
+    );
+  });
 });

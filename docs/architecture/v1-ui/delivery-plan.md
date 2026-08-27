@@ -257,8 +257,25 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow Model Adapter at the external system seam.
 - **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `confirmSynthesis` was not implemented.
 - **Green evidence:** The focused preview, removal, and confirmed-handoff tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 25 Vitest tests.
-- **Scope confirmed:** The cycle adds only the explicit confirmed handoff and fixed draft-result contract. It does not add a real network provider, S1 confirmation UI, decline/cancel coverage, automatic retention, explicit save, or Governance application.
+- **Scope confirmed:** The cycle adds only the explicit confirmed handoff and fixed draft-result contract. It does not add a real network provider, S1 confirmation UI, automatic retention, explicit save, or Governance application.
 - **Next behavior:** Add explicit decline/cancel coverage and prove that no Model Adapter request occurs without confirmation.
+
+#### TB7 decline/cancel cycle — August 27, 2026
+
+- **Public Behavior:** Declining or canceling a pending Synthesis operation makes no Model Adapter request and preserves the exact preview and selected Working Material.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow request-observation Model Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first exposed that cancellation was incorrectly returned as `declined`.
+- **Green evidence:** The focused preview, removal, confirmed-handoff, and decline/cancel tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 26 Vitest tests.
+- **Scope confirmed:** The cycle adds no network request, provider configuration, payload persistence, result save, Proposal application, or S1 confirmation presentation.
+- **Next behavior:** Prove the shared `agent-provider-unavailable` outcome when no Model Adapter is configured, while preserving selected Working Material.
+
+#### TB7 provider-unavailable cycle — August 27, 2026
+
+- **Public Behavior:** Confirmed Synthesis without a configured Model Adapter returns the shared `agent-provider-unavailable` outcome and preserves the selected evidence and prepared payload.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with no Model Adapter configured.
+- **Green evidence:** The focused preview, removal, confirmed-handoff, decline/cancel, and provider-unavailable tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 27 Vitest tests.
+- **Scope confirmed:** This cycle proves graceful unavailability only. It does not add provider configuration loading, a real network Adapter, automatic payload/result retention, explicit save, Proposal application, or S1 presentation.
+- **Next behavior:** Prove that confirmed result and request bodies are not retained automatically, while explicit save remains a separate user action.
 
 ### 8. Apply one governed change
 
