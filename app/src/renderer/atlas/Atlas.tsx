@@ -35,74 +35,148 @@ export const Atlas = ({
   }
 
   return (
-    <main aria-labelledby="atlas-heading">
-      <h1 id="atlas-heading">Atlas</h1>
-      {/* Keep the empty state explicit and accessible while the user chooses a
-          repository. */}
-      {workbench.repositoryStatus === "not-selected" ? (
-        <section id="atlas-empty-state" aria-labelledby="atlas-empty-heading">
-          <h2 id="atlas-empty-heading">No Knowledge Repository is open.</h2>
-          <p>
-            {lastOutcome === undefined
-              ? "Open or create one to begin."
-              : "Choose Open or Create to recover this Workbench session."}
+    <main className="workspace-page atlas-page" aria-labelledby="atlas-heading">
+      <header className="workspace-header">
+        <div className="brand-lockup">
+          <span className="brand-mark" aria-hidden="true">
+            GB
+          </span>
+          <span>Galaxy Brain</span>
+        </div>
+        <div className="workspace-label">
+          <span className="eyebrow">Local workspace</span>
+          <strong>Atlas</strong>
+        </div>
+      </header>
+      <div className="workspace-content">
+        <div className="page-intro">
+          <span className="eyebrow">Knowledge atlas</span>
+          <h1 id="atlas-heading">Atlas</h1>
+          <p className="page-intro-copy">
+            Orient yourself in the work already in motion and choose the next
+            place to continue.
           </p>
-          <button id="open-repository" type="button" onClick={onOpenRepository}>
-            Open a Knowledge Repository
-          </button>
-          <button
-            id="create-repository"
-            type="button"
-            onClick={onCreateRepository}
+        </div>
+        {/* Keep the empty state explicit and accessible while the user chooses a
+            repository. */}
+        {workbench.repositoryStatus === "not-selected" ? (
+          <section
+            id="atlas-empty-state"
+            className="empty-state-card"
+            aria-labelledby="atlas-empty-heading"
           >
-            Create a Knowledge Repository
-          </button>
-        </section>
-      ) : (
-        <section
-          id="repository-status"
-          aria-labelledby="repository-status-heading"
-        >
-          <h2 id="repository-status-heading">
-            {workbench.repositorySelection === "opened"
-              ? "Knowledge Repository opened and selected."
-              : workbench.repositorySelection === "read-only-compatible"
-                ? "Knowledge Repository opened read-only."
-                : "Knowledge Repository created and selected."}
-          </h2>
-          <p id="repository-location">{workbench.repositoryPath}</p>
-          {workbench.repositoryAccess === "read-only" ? (
-            <p id="repository-access">
-              Read-only: this repository uses a newer format version.
+            <span className="card-kicker">Start here</span>
+            <h2 id="atlas-empty-heading">No Knowledge Repository is open.</h2>
+            <p>
+              {lastOutcome === undefined
+                ? "Open or create one to begin."
+                : "Choose Open or Create to recover this Workbench session."}
             </p>
-          ) : null}
-          <button id="open-repository" type="button" onClick={onOpenRepository}>
-            Open another Knowledge Repository
-          </button>
-          <button
-            id="create-repository"
-            type="button"
-            onClick={onCreateRepository}
-          >
-            Create another Knowledge Repository
-          </button>
-          {workbench.context === undefined ? null : (
-            <section id="atlas-topic" aria-labelledby="atlas-topic-heading">
-              <h2 id="atlas-topic-heading">Continue working</h2>
-              <p id="atlas-topic-title">{workbench.context.topic.title}</p>
+            <div className="action-row">
               <button
-                id="atlas-topic-open-studio"
+                id="open-repository"
+                className="button button-primary"
                 type="button"
-                onClick={() =>
-                  onOpenTopicInStudio(workbench.context?.topic.id ?? "")
-                }
+                onClick={onOpenRepository}
               >
-                Open in Studio
+                Open a Knowledge Repository
               </button>
+              <button
+                id="create-repository"
+                className="button button-secondary"
+                type="button"
+                onClick={onCreateRepository}
+              >
+                Create a Knowledge Repository
+              </button>
+            </div>
+          </section>
+        ) : (
+          <div className="atlas-layout">
+            <section
+              id="repository-status"
+              className="repository-card"
+              aria-labelledby="repository-status-heading"
+            >
+              <div className="card-header-row">
+                <div>
+                  <span className="card-kicker">Active repository</span>
+                  <h2 id="repository-status-heading">
+                    {workbench.repositorySelection === "opened"
+                      ? "Knowledge Repository opened and selected."
+                      : workbench.repositorySelection === "read-only-compatible"
+                        ? "Knowledge Repository opened read-only."
+                        : "Knowledge Repository created and selected."}
+                  </h2>
+                </div>
+                <span className="status-pill">
+                  {workbench.repositoryAccess === "read-only"
+                    ? "Read only"
+                    : "Local"}
+                </span>
+              </div>
+              <p id="repository-location" className="repository-location">
+                {workbench.repositoryPath}
+              </p>
+              {workbench.repositoryAccess === "read-only" ? (
+                <p id="repository-access" className="notice-copy">
+                  Read-only: this repository uses a newer format version.
+                </p>
+              ) : null}
+              <div className="action-row action-row-compact">
+                <button
+                  id="open-repository"
+                  className="button button-secondary"
+                  type="button"
+                  onClick={onOpenRepository}
+                >
+                  Open another Knowledge Repository
+                </button>
+                <button
+                  id="create-repository"
+                  className="button button-quiet"
+                  type="button"
+                  onClick={onCreateRepository}
+                >
+                  Create another Knowledge Repository
+                </button>
+              </div>
             </section>
-          )}
-        </section>
-      )}
+            {workbench.context === undefined ? null : (
+              <section
+                id="atlas-continue-surface"
+                className="atlas-continue-card"
+                aria-labelledby="atlas-continue-heading"
+              >
+                <div className="continue-card-mark" aria-hidden="true">
+                  →
+                </div>
+                <span className="card-kicker">Continue working</span>
+                <h2 id="atlas-continue-heading">Continue working</h2>
+                <p id="atlas-topic-title" className="topic-display-title">
+                  {workbench.context.topic.title}
+                </p>
+                <p className="topic-display-support">
+                  Current Source Record
+                  <strong id="atlas-topic-source-record-title">
+                    {workbench.context.sourceRecord.title}
+                  </strong>
+                </p>
+                <button
+                  id="atlas-topic-open-studio"
+                  className="button button-light"
+                  type="button"
+                  onClick={() =>
+                    onOpenTopicInStudio(workbench.context?.topic.id ?? "")
+                  }
+                >
+                  Open in Studio
+                </button>
+              </section>
+            )}
+          </div>
+        )}
+      </div>
       {/* Stable outcome is exposed separately from explanatory copy for S1. */}
       {lastOutcome !== undefined && "detail" in lastOutcome ? (
         <p

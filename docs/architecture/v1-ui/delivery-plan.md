@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 complete and accepted on August 27, 2026; TB6.1–TB6.3 implementation complete pending user acceptance; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -186,9 +186,38 @@ At S1, prove that the saved annotation and reading position are restored through
 - **Scope confirmed:** The implementation restores machine-local active Paper Desk state and reading position while preserving the portable TB5 annotation. It does not select a production PDF engine, add Git/network/provider behavior, create a Proposal, invoke Synthesis, mutate Governed Knowledge, or implement import, arbitrary reading, relinking, or broader Working Set restoration.
 - **Acceptance:** User reviewed the running TB6 behavior and accepted the restoration result on August 27, 2026.
 
+#### TB6 UI follow-up implementation records
+
+#### TB6.1 implementation completion record — August 27, 2026
+
+- **Public Behavior:** The packaged Atlas presents a real Continue working surface for the Bayesian statistics topic and its associated Source Record, with an accessible action that opens Studio.
+- **Test Seam:** S1 packaged desktop workflow through the real Workbench Session, repository Adapter, preload bridge, and Atlas UI Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/promote-atlas-view.e2e.ts` first failed because the promoted `#atlas-continue-surface` was absent.
+- **Green evidence:** The focused packaged TB6.1 workflow passed; the complete packaged workflow later passed all 19 WebdriverIO specs.
+- **Scope confirmed:** The slice promotes presentation only. It does not add metrics, learning progress, proposal queues, Search, Ask, Jump, generated dashboard data, or new Atlas domain rules.
+- **Acceptance:** User review of the promoted Atlas behavior remains pending.
+
+#### TB6.2 implementation completion record — August 27, 2026
+
+- **Public Behavior:** The packaged Studio presents the Bayesian statistics topic, its associated Source Record, and the saved source claim as supporting Working Material with a keyboard-operable Paper Desk action.
+- **Test Seam:** S1 packaged desktop workflow through Workbench Session, Source Processing state, the preload bridge, and Studio UI Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/promote-studio-view.e2e.ts` first failed because the promoted `#studio-topic-surface` was absent.
+- **Green evidence:** The focused packaged TB6.2 workflow passed; `npm run check` passed formatting, linting, strict type checking, and 22 Vitest tests; the complete packaged workflow passed all 19 WebdriverIO specs.
+- **Scope confirmed:** The slice promotes presentation and loads existing source-claim state for display. It does not implement authoring, autosave, Synthesis, Proposal creation, Governance, agent-generated content, or invented metrics and relationships.
+- **Acceptance:** User review of the promoted Studio behavior remains pending.
+
+#### TB6.3 implementation completion record — August 27, 2026
+
+- **Public Behavior:** The packaged Paper Desk presents a source-first fixture preview, Source Record identity, saved annotation provenance, and the TB6 reading-position action while preserving relaunch behavior.
+- **Test Seam:** S1 packaged desktop workflow through Workbench Session, Source Processing state, Working Material Adapter, preload bridge, and Paper Desk UI Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/promote-paper-desk-view.e2e.ts` first failed because the promoted `#paper-desk-reading-surface` was absent.
+- **Green evidence:** The focused packaged TB6.3 workflow passed; the existing TB6 relaunch workflow passed; the complete packaged workflow passed all 19 WebdriverIO specs.
+- **Scope confirmed:** The slice promotes presentation only. It does not select a production PDF engine, implement arbitrary text selection, import PDFs, choose Source Asset modes, relink sources, add capture controls, or invoke Synthesis, Proposal, Governance, Git, network, or Agent Provider behavior.
+- **Acceptance:** User review of the promoted Paper Desk behavior remains pending.
+
 #### TB6 UI follow-up slices
 
-After TB6 is accepted, the prototype-informed UI promotion is split into three independently reviewable S1 slices. Before each implementation slice, complete the [documentation prerequisite](#documentation-prerequisite), review the applicable accepted authorities and preceding delivery evidence, and check the corresponding guidance-compliant brief before writing behavior tests or implementation code.
+After TB6 was accepted, the prototype-informed UI promotion was split into three independently reviewable S1 slices. Before each implementation slice, the [documentation prerequisite](#documentation-prerequisite), applicable accepted authorities, preceding delivery evidence, and corresponding guidance-compliant brief were reviewed before behavior tests and implementation code were written.
 
 1. [TB6.1 — Promote the Atlas view](tracer-bullet-6-1-atlas-ui-spec.md): replace the minimal Atlas selected-repository presentation with a real continuation surface while preserving repository recovery and Atlas → Studio behavior.
 2. [TB6.2 — Promote the Studio view](tracer-bullet-6-2-studio-ui-spec.md): replace the minimal Studio contextual presentation with a real topic/source-claim surface while preserving Studio → Paper Desk behavior and Working Material labeling.
