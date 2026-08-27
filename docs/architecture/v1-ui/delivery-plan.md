@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullet 1 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed; Tracer Bullet 2 is next.
+Status: Tracer Bullets 1 and 2 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed; Tracer Bullet 3 is in progress.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -48,9 +48,28 @@ Implement this tracer bullet in these behavior-named cycles, stopping to observe
 
 The [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), and [Test Strategy](test-strategy.md) documents own the behavior, structure, file contract, and verification details for this slice. The [Tracer Bullet 2 brief](tracer-bullet-2-spec.md) coordinates those authorities without restating them.
 
+#### Tracer Bullet 2 completion record — August 27, 2026
+
+- **Public Behavior:** A person can create a Knowledge Repository from the bundled starter skeleton at a new or explicitly empty path, open an existing valid repository, and receive explicit safe outcomes for cancellation, invalid, unsafe, unavailable, unsupported, or newer read-only targets.
+- **Test Seams:** S1 desktop workflow through the real packaged Electron application and S5 repository Adapter contracts against isolated temporary roots.
+- **Automated evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 12 Vitest tests. `npm run test:workflow` packaged the macOS arm64 application and passed all 11 WebdriverIO workflow specs.
+- **Scope confirmed:** The lifecycle remains local and provider-free; Galaxy Brain does not invoke Git, Git LFS, GitHub, credentials, or network services. Session resume, workspace context, and later knowledge workflows remain subsequent slices.
+- **Acceptance:** The user directed formal closeout after the implementation and packaged workflow evidence were reviewed.
+
 ### 3. Resume meaningful work
 
+Status: in progress; the first behavior cycle is exact repository resume.
+
 At S1, prove that reopening a known session validates and resumes the last explicitly selected repository, active workspace, and context, while a first launch opens without a repository and an unavailable or invalid remembered path presents explicit Open/Create choices. Do not scan for sibling repositories. Add only the machine-local session persistence needed for the worked fixture.
+
+#### Tracer Bullet 3 cycle 1 record — August 27, 2026
+
+- **Public Behavior:** After creating a Knowledge Repository, relaunching the Workbench reopens and visibly selects the exact same validated root.
+- **Test Seam:** S1 packaged desktop workflow through the real Electron main process, preload bridge, Workbench Session, Atlas UI Adapter, and file-backed Knowledge Repository and session-state Adapters.
+- **Red evidence:** The new `resume-selected-knowledge-repository.e2e.ts` workflow failed before implementation because the relaunch returned the Atlas empty state instead of the selected repository.
+- **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 12 Vitest tests. `npm run test:workflow` packaged the macOS arm64 application and passed all 12 WebdriverIO workflow specs.
+- **Scope confirmed:** Only the last explicitly selected repository root is persisted outside the portable Knowledge Repository. Active workspace, Working Set, reading position, contextual navigation, and remembered-root recovery remain subsequent cycles.
+- **Next behavior:** First-launch/no-remembered-root behavior, followed by unavailable or invalid remembered-root recovery without discovery or substitution.
 
 ### 4. Carry context between workspaces
 

@@ -365,22 +365,28 @@ describe("file-backed Knowledge Repository contract", () => {
 
 describe("Workbench Session selection contract", () => {
   it("preserves the selected repository after a failed replacement", async () => {
-    const session = createWorkbenchSession({
-      createAt: async () => ({
-        outcome: "created",
-        repositoryPath: "/created-repository",
-      }),
-      openAt: async () => ({
-        outcome: "invalid-format",
-        detail: "invalid",
-      }),
-    });
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created",
+          repositoryPath: "/created-repository",
+        }),
+        openAt: async () => ({
+          outcome: "invalid-format",
+          detail: "invalid",
+        }),
+      },
+      {
+        readSelectedRepository: async () => undefined,
+        writeSelectedRepository: async () => {},
+      },
+    );
 
     assert.deepEqual(await session.createRepository("/requested-repository"), {
       outcome: "created",
       repositoryPath: "/created-repository",
     });
-    assert.deepEqual(session.openFreshWorkbench(), {
+    assert.deepEqual(await session.openFreshWorkbench(), {
       activeWorkspace: "atlas",
       repositoryStatus: "selected",
       repositoryPath: "/created-repository",
@@ -392,7 +398,7 @@ describe("Workbench Session selection contract", () => {
       outcome: "invalid-format",
       detail: "invalid",
     });
-    assert.deepEqual(session.openFreshWorkbench(), {
+    assert.deepEqual(await session.openFreshWorkbench(), {
       activeWorkspace: "atlas",
       repositoryStatus: "selected",
       repositoryPath: "/created-repository",
