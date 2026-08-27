@@ -155,7 +155,7 @@ At S3, prove that capturing the known PDF passage produces a source-claim Struct
 - **Red evidence:** The focused S3 test first failed because the Source Processing Interface was absent; the persistence cycle then failed because the file-backed Working Material Adapter was absent. Each missing behavior was observed before its implementation.
 - **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, strict type checking, and 19 Vitest tests, including the TB5 S3 behavior and S5 Adapter contract suites.
 - **Scope confirmed:** The implementation is provider-free and does not create a Proposal, invoke Synthesis, mutate Governed Knowledge, invoke Git or network services, or select a production PDF engine. PDF import, Paper Desk controls, reopen, relinking, and Synthesis remain deferred.
-- **Acceptance:** User review and acceptance of the S3 behavior remain pending.
+- **Acceptance:** User reviewed the documented S3 behavior and acceptance checks on August 27, 2026. All five manual checks passed, accepting the S3 behavior at the confirmed Source Processing seam.
 
 ### 6. Reopen the capture
 
