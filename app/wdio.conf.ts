@@ -15,13 +15,10 @@ const packagedBinary = join(
   "Galaxy Brain",
 );
 
-// Keep an isolated session-state file for each workflow run so a reload
-// exercises persistence while separate specs remain independent.
+// Keep isolated session-state files for each workflow worker so a reload
+// exercises persistence while parallel specs remain independent.
 const testSessionStateRoot = mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-"));
-const testSessionStatePath = join(
-  testSessionStateRoot,
-  "workbench-session.json",
-);
+const sessionStateArgumentPrefix = "--galaxy-brain-session-state=";
 
 // S1 launches the unsigned macOS package produced by Electron Forge so the
 // test covers packaging, preload loading, and the real desktop composition.
@@ -41,13 +38,36 @@ export const config: Options.Testrunner &
       "electron",
       {
         appBinaryPath: packagedBinary,
-        appArgs: [`--galaxy-brain-session-state=${testSessionStatePath}`],
+        appArgs: [
+          `${sessionStateArgumentPrefix}${join(
+            testSessionStateRoot,
+            "workbench-session.json",
+          )}`,
+        ],
       },
     ],
   ],
   logLevel: "warn",
-  beforeSession: () => {
-    rmSync(testSessionStatePath, { force: true });
+  beforeSession: (_config, capabilities, _specs, cid) => {
+    const workerSessionStatePath = join(
+      testSessionStateRoot,
+      `workbench-session-${cid}.json`,
+    );
+
+    rmSync(workerSessionStatePath, { force: true });
+
+    const chromeOptions = (
+      capabilities as Capabilities.W3CCapabilities & {
+        "goog:chromeOptions"?: { args?: string[] };
+      }
+    )["goog:chromeOptions"];
+    if (chromeOptions !== undefined) {
+      chromeOptions.args = (chromeOptions.args ?? []).map((argument) =>
+        argument.startsWith(sessionStateArgumentPrefix)
+          ? `${sessionStateArgumentPrefix}${workerSessionStatePath}`
+          : argument,
+      );
+    }
   },
   onComplete: () => {
     rmSync(testSessionStateRoot, { recursive: true, force: true });

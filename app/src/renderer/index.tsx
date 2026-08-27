@@ -26,7 +26,9 @@ const WorkbenchShell = ({
   initialWorkbench: FreshWorkbench;
 }) => {
   const [workbench, setWorkbench] = useState(initialWorkbench);
-  const [lastOutcome, setLastOutcome] = useState<RepositoryOperationOutcome>();
+  const [lastOutcome, setLastOutcome] = useState<
+    RepositoryOperationOutcome | undefined
+  >(initialWorkbench.repositoryResumeFailure);
 
   const refreshWorkbench = async (): Promise<void> => {
     // React owns only this presentation projection; the main-process Session

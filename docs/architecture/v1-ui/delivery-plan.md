@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 and 2 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed; Tracer Bullet 3 is in progress.
+Status: Tracer Bullets 1 and 2 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed; Tracer Bullet 3 implementation is complete and awaits user acceptance.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -58,7 +58,7 @@ The [Product Decisions](product-decisions.md), [Architecture](architecture.md), 
 
 ### 3. Resume meaningful work
 
-Status: in progress; the first behavior cycle is exact repository resume.
+Status: implementation complete for exact repository resume and remembered-root recovery; user acceptance remains open.
 
 At S1, prove that reopening a known session validates and resumes the last explicitly selected repository, active workspace, and context, while a first launch opens without a repository and an unavailable or invalid remembered path presents explicit Open/Create choices. Do not scan for sibling repositories. Add only the machine-local session persistence needed for the worked fixture.
 
@@ -68,8 +68,16 @@ At S1, prove that reopening a known session validates and resumes the last expli
 - **Test Seam:** S1 packaged desktop workflow through the real Electron main process, preload bridge, Workbench Session, Atlas UI Adapter, and file-backed Knowledge Repository and session-state Adapters.
 - **Red evidence:** The new `resume-selected-knowledge-repository.e2e.ts` workflow failed before implementation because the relaunch returned the Atlas empty state instead of the selected repository.
 - **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 12 Vitest tests. `npm run test:workflow` packaged the macOS arm64 application and passed all 12 WebdriverIO workflow specs.
-- **Scope confirmed:** Only the last explicitly selected repository root is persisted outside the portable Knowledge Repository. Active workspace, Working Set, reading position, contextual navigation, and remembered-root recovery remain subsequent cycles.
-- **Next behavior:** First-launch/no-remembered-root behavior, followed by unavailable or invalid remembered-root recovery without discovery or substitution.
+- **Scope confirmed:** Only the last explicitly selected repository root is persisted outside the portable Knowledge Repository. Active workspace, Working Set, reading position, and contextual navigation remain subsequent cycles.
+- **Next behavior:** First concrete active-work context, selected only when it has an independently observable meaning; no speculative workspace-state persistence.
+
+#### Tracer Bullet 3 recovery completion record — August 27, 2026
+
+- **Public Behavior:** A first launch remains in the authentic Atlas empty state. If the remembered root is unavailable or invalid, the Workbench remains unselected, reports the validation outcome, and offers explicit Open/Create recovery choices without discovery or substitution.
+- **Test Seam:** S1 packaged desktop workflow through the real Electron main process, preload bridge, Workbench Session, Atlas UI Adapter, and file-backed repository and session-state Adapters.
+- **Automated evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 12 Vitest tests. `npm run test:workflow` packaged the macOS arm64 application and passed all 14 WebdriverIO workflow specs, including `open-empty-workbench.e2e.ts`, `recover-from-invalid-remembered-repository.e2e.ts`, and `recover-from-unavailable-remembered-repository.e2e.ts`.
+- **Process note:** The first full-suite run exposed shared machine-local test state between parallel WebdriverIO workers. The harness now assigns each worker its own session-state file while preserving reload persistence within that worker; the rerun passed without failures.
+- **Scope confirmed:** Recovery preserves the unselected state and does not scan sibling repositories. Active workspace, Working Set, reading position, and contextual navigation remain deferred until a concrete behavior requires them.
 
 ### 4. Carry context between workspaces
 

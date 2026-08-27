@@ -9,6 +9,7 @@ export interface FreshWorkbench {
   repositoryPath?: string;
   repositoryAccess?: "read-write" | "read-only";
   repositorySelection?: "created" | "opened" | "read-only-compatible";
+  repositoryResumeFailure?: RepositoryResumeFailure;
 }
 
 export type RepositoryOperationOutcome =
@@ -21,6 +22,18 @@ export type RepositoryOperationOutcome =
   | { outcome: "target-unavailable"; detail: string }
   | { outcome: "unsupported-format"; detail: string }
   | { outcome: "operation-failed"; detail: string };
+
+export type RepositoryResumeFailure = Extract<
+  RepositoryOperationOutcome,
+  {
+    outcome:
+      | "invalid-format"
+      | "unsafe-target"
+      | "target-unavailable"
+      | "unsupported-format"
+      | "operation-failed";
+  }
+>;
 
 /**
  * The Knowledge Repository behavior required by the current Workbench
@@ -65,6 +78,7 @@ export const createWorkbenchSession = (
     | undefined;
 
   let hasRestoredSession = false;
+  let repositoryResumeFailure: RepositoryResumeFailure | undefined;
 
   const restoreSelectedRepository = async (): Promise<void> => {
     if (hasRestoredSession) {
@@ -89,6 +103,17 @@ export const createWorkbenchSession = (
         access: outcome.outcome === "opened" ? "read-write" : "read-only",
         selection: outcome.outcome,
       };
+      return;
+    }
+
+    if (
+      outcome.outcome === "invalid-format" ||
+      outcome.outcome === "unsafe-target" ||
+      outcome.outcome === "target-unavailable" ||
+      outcome.outcome === "unsupported-format" ||
+      outcome.outcome === "operation-failed"
+    ) {
+      repositoryResumeFailure = outcome;
     }
   };
 
@@ -113,6 +138,7 @@ export const createWorkbenchSession = (
         outcome.outcome === "read-only-compatible" ? "read-only" : "read-write",
       selection: outcome.outcome,
     };
+    repositoryResumeFailure = undefined;
 
     return outcome;
   };
@@ -134,6 +160,10 @@ export const createWorkbenchSession = (
         workbench.repositoryPath = selectedRepository.path;
         workbench.repositoryAccess = selectedRepository.access;
         workbench.repositorySelection = selectedRepository.selection;
+      }
+
+      if (repositoryResumeFailure !== undefined) {
+        workbench.repositoryResumeFailure = repositoryResumeFailure;
       }
 
       return workbench;

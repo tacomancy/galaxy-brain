@@ -1,6 +1,6 @@
 # Tracer Bullet 3: Resume meaningful work
 
-Status: draft implementation brief. Exact-root resume cycle 1 is complete; recovery cycles remain.
+Status: draft implementation brief. Exact-root resume and remembered-root recovery are implemented; user acceptance remains open.
 
 This brief coordinates the next tracer bullet in the [delivery plan](delivery-plan.md#3-resume-meaningful-work). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, or testing.
 

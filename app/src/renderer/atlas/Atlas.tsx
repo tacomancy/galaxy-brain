@@ -38,7 +38,11 @@ export const Atlas = ({
       {workbench.repositoryStatus === "not-selected" ? (
         <section id="atlas-empty-state" aria-labelledby="atlas-empty-heading">
           <h2 id="atlas-empty-heading">No Knowledge Repository is open.</h2>
-          <p>Open or create one to begin.</p>
+          <p>
+            {lastOutcome === undefined
+              ? "Open or create one to begin."
+              : "Choose Open or Create to recover this Workbench session."}
+          </p>
           <button id="open-repository" type="button" onClick={onOpenRepository}>
             Open a Knowledge Repository
           </button>
