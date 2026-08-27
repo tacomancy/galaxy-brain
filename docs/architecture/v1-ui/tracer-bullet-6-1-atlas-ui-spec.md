@@ -1,6 +1,6 @@
 # Tracer Bullet 6.1: Promote the Atlas view
 
-Status: implementation complete; user acceptance pending.
+Status: implementation complete and accepted on August 27, 2026.
 
 This follow-up slice promotes the Atlas view from the accepted TB6 functional shell to a prototype-informed production UI. It is a new S1 behavior slice, not a second implementation phase hidden inside TB6.
 

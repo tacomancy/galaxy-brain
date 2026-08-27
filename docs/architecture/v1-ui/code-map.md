@@ -1,6 +1,6 @@
 # V1 code map
 
-Status: Tracer Bullets 1 through 6 are complete and accepted; TB6.1–TB6.3 implementation is complete pending user acceptance; later tracer bullets remain unimplemented.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 are complete and accepted; later tracer bullets remain unimplemented.
 
 This map tells agents where a Public Behavior enters the codebase, which Module owns it, which Adapter supplies external behavior, and which confirmed Test Seam observes it. Update it with live Markdown links in the same change that creates or moves code.
 

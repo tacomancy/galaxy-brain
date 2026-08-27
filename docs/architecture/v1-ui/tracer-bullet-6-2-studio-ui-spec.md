@@ -1,6 +1,6 @@
 # Tracer Bullet 6.2: Promote the Studio view
 
-Status: implementation complete; user acceptance pending.
+Status: implementation complete and accepted on August 27, 2026.
 
 This follow-up slice promotes the Studio view from the accepted TB4/TB6 contextual shell to a prototype-informed production UI. It introduces presentation, not authoring or Synthesis behavior.
 

@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 complete and accepted on August 27, 2026; TB6.1–TB6.3 implementation complete pending user acceptance; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -195,7 +195,7 @@ At S1, prove that the saved annotation and reading position are restored through
 - **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/promote-atlas-view.e2e.ts` first failed because the promoted `#atlas-continue-surface` was absent.
 - **Green evidence:** The focused packaged TB6.1 workflow passed; the complete packaged workflow later passed all 19 WebdriverIO specs.
 - **Scope confirmed:** The slice promotes presentation only. It does not add metrics, learning progress, proposal queues, Search, Ask, Jump, generated dashboard data, or new Atlas domain rules.
-- **Acceptance:** User review of the promoted Atlas behavior remains pending.
+- **Acceptance:** User reviewed the promoted Atlas behavior and accepted TB6.1 on August 27, 2026.
 
 #### TB6.2 implementation completion record — August 27, 2026
 
@@ -204,7 +204,7 @@ At S1, prove that the saved annotation and reading position are restored through
 - **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/promote-studio-view.e2e.ts` first failed because the promoted `#studio-topic-surface` was absent.
 - **Green evidence:** The focused packaged TB6.2 workflow passed; `npm run check` passed formatting, linting, strict type checking, and 22 Vitest tests; the complete packaged workflow passed all 19 WebdriverIO specs.
 - **Scope confirmed:** The slice promotes presentation and loads existing source-claim state for display. It does not implement authoring, autosave, Synthesis, Proposal creation, Governance, agent-generated content, or invented metrics and relationships.
-- **Acceptance:** User review of the promoted Studio behavior remains pending.
+- **Acceptance:** User reviewed the promoted Studio behavior and accepted TB6.2 on August 27, 2026.
 
 #### TB6.3 implementation completion record — August 27, 2026
 
@@ -213,7 +213,7 @@ At S1, prove that the saved annotation and reading position are restored through
 - **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/promote-paper-desk-view.e2e.ts` first failed because the promoted `#paper-desk-reading-surface` was absent.
 - **Green evidence:** The focused packaged TB6.3 workflow passed; the existing TB6 relaunch workflow passed; the complete packaged workflow passed all 19 WebdriverIO specs.
 - **Scope confirmed:** The slice promotes presentation only. It does not select a production PDF engine, implement arbitrary text selection, import PDFs, choose Source Asset modes, relink sources, add capture controls, or invoke Synthesis, Proposal, Governance, Git, network, or Agent Provider behavior.
-- **Acceptance:** User review of the promoted Paper Desk behavior remains pending.
+- **Acceptance:** User reviewed the promoted Paper Desk behavior and accepted TB6.3 on August 27, 2026.
 
 #### TB6 UI follow-up slices
 
