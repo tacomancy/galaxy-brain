@@ -144,6 +144,8 @@ Before starting implementation, review the accepted [Product Decisions](product-
 
 Do not begin TB5 implementation until the documentation review is complete and the TB5 brief has been checked against those authorities.
 
+The guidance-compliant [Tracer Bullet 5 brief](tracer-bullet-5-spec.md) is now the implementation entry point for this slice.
+
 At S3, prove that capturing the known PDF passage produces a source-claim Structured Annotation with the fixture Source Locator and attribution. Implement the minimum PDF adapter and Working Material persistence needed for that outcome.
 
 ### 6. Reopen the capture
