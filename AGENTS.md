@@ -1,5 +1,7 @@
 ## Agent skills
 
+Skill routing: When choosing an agent skill for a task, read `docs/agents/skills.md`; it maps repository-facing skills to their trigger conditions, boundaries, and sequencing.
+
 ### Collaboration
 
 Human-agent collaboration: When a task involves material choices, approval, uncertainty, a change of direction, or a handoff, read `docs/agents/collaboration.md`.
