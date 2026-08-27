@@ -28,30 +28,46 @@ const WorkbenchShell = ({
   const [workbench, setWorkbench] = useState(initialWorkbench);
   const [lastOutcome, setLastOutcome] = useState<RepositoryOperationOutcome>();
 
+  const selectRepository = (
+    outcome:
+      | Extract<
+          RepositoryOperationOutcome,
+          {
+            outcome: "created" | "opened" | "read-only-compatible";
+          }
+        >
+      | undefined,
+  ): void => {
+    if (outcome === undefined) {
+      return;
+    }
+
+    setWorkbench({
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: outcome.repositoryPath,
+      repositoryAccess:
+        outcome.outcome === "read-only-compatible" ? "read-only" : "read-write",
+      repositorySelection: outcome.outcome,
+    });
+  };
+
   const createRepository = async (): Promise<void> => {
     const outcome = await window.workbench.createRepository();
     setLastOutcome(outcome);
 
-    if (outcome.outcome === "created") {
-      setWorkbench({
-        activeWorkspace: "atlas",
-        repositoryStatus: "selected",
-        repositoryPath: outcome.repositoryPath,
-      });
-    }
+    selectRepository(outcome.outcome === "created" ? outcome : undefined);
   };
 
   const openRepository = async (): Promise<void> => {
     const outcome = await window.workbench.openRepository();
     setLastOutcome(outcome);
 
-    if (outcome.outcome === "opened") {
-      setWorkbench({
-        activeWorkspace: "atlas",
-        repositoryStatus: "selected",
-        repositoryPath: outcome.repositoryPath,
-      });
-    }
+    selectRepository(
+      outcome.outcome === "opened" || outcome.outcome === "read-only-compatible"
+        ? outcome
+        : undefined,
+    );
   };
 
   return (

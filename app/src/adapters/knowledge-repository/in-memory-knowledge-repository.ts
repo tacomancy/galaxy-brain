@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import type {
   KnowledgeRepository,
   RepositoryOperationOutcome,
@@ -8,15 +10,34 @@ import type {
  * path. It intentionally contains no selected repository or demonstration
  * data, so the fresh-session behavior cannot accidentally depend on fixtures.
  */
-export const createInMemoryKnowledgeRepository = (): KnowledgeRepository => ({
-  // This Adapter remains useful for session behavior that does not require
-  // durable files. The first file-backed cycle uses the production Adapter.
-  createAt: async (repositoryPath): Promise<RepositoryOperationOutcome> => ({
-    outcome: "created",
-    repositoryPath,
-  }),
-  openAt: async (repositoryPath): Promise<RepositoryOperationOutcome> => ({
-    outcome: "opened",
-    repositoryPath,
-  }),
-});
+export const createInMemoryKnowledgeRepository = (): KnowledgeRepository => {
+  const repositories = new Set<string>();
+
+  return {
+    createAt: async (repositoryPath): Promise<RepositoryOperationOutcome> => {
+      const canonicalPath = resolve(repositoryPath);
+
+      if (repositories.has(canonicalPath)) {
+        return {
+          outcome: "operation-failed",
+          detail: "The Knowledge Repository could not be created.",
+        };
+      }
+
+      repositories.add(canonicalPath);
+      return { outcome: "created", repositoryPath: canonicalPath };
+    },
+    openAt: async (repositoryPath): Promise<RepositoryOperationOutcome> => {
+      const canonicalPath = resolve(repositoryPath);
+
+      if (!repositories.has(canonicalPath)) {
+        return {
+          outcome: "target-unavailable",
+          detail: "The selected Knowledge Repository is unavailable.",
+        };
+      }
+
+      return { outcome: "opened", repositoryPath: canonicalPath };
+    },
+  };
+};

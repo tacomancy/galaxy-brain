@@ -7,15 +7,19 @@ export interface FreshWorkbench {
   activeWorkspace: "atlas";
   repositoryStatus: "not-selected" | "selected";
   repositoryPath?: string;
+  repositoryAccess?: "read-write" | "read-only";
+  repositorySelection?: "created" | "opened" | "read-only-compatible";
 }
 
 export type RepositoryOperationOutcome =
   | { outcome: "canceled" }
   | { outcome: "created"; repositoryPath: string }
   | { outcome: "opened"; repositoryPath: string }
+  | { outcome: "read-only-compatible"; repositoryPath: string }
   | { outcome: "invalid-format"; detail: string }
   | { outcome: "unsafe-target"; detail: string }
   | { outcome: "target-unavailable"; detail: string }
+  | { outcome: "unsupported-format"; detail: string }
   | { outcome: "operation-failed"; detail: string };
 
 /**
@@ -42,7 +46,13 @@ export interface WorkbenchSession {
 export const createWorkbenchSession = (
   knowledgeRepository: KnowledgeRepository,
 ): WorkbenchSession => {
-  let selectedRepositoryPath: string | undefined;
+  let selectedRepository:
+    | {
+        path: string;
+        access: "read-write" | "read-only";
+        selection: "created" | "opened" | "read-only-compatible";
+      }
+    | undefined;
 
   // Keep the Module framework-independent so the same Interface can be used
   // by Electron and deterministic behavior tests.
@@ -52,11 +62,13 @@ export const createWorkbenchSession = (
         // A new session always begins in Atlas for orientation.
         activeWorkspace: "atlas",
         repositoryStatus:
-          selectedRepositoryPath === undefined ? "not-selected" : "selected",
+          selectedRepository === undefined ? "not-selected" : "selected",
       };
 
-      if (selectedRepositoryPath !== undefined) {
-        workbench.repositoryPath = selectedRepositoryPath;
+      if (selectedRepository !== undefined) {
+        workbench.repositoryPath = selectedRepository.path;
+        workbench.repositoryAccess = selectedRepository.access;
+        workbench.repositorySelection = selectedRepository.selection;
       }
 
       return workbench;
@@ -65,7 +77,11 @@ export const createWorkbenchSession = (
       const outcome = await knowledgeRepository.createAt(repositoryPath);
 
       if (outcome.outcome === "created") {
-        selectedRepositoryPath = outcome.repositoryPath;
+        selectedRepository = {
+          path: outcome.repositoryPath,
+          access: "read-write",
+          selection: "created",
+        };
       }
 
       return outcome;
@@ -73,8 +89,15 @@ export const createWorkbenchSession = (
     openRepository: async (repositoryPath) => {
       const outcome = await knowledgeRepository.openAt(repositoryPath);
 
-      if (outcome.outcome === "opened") {
-        selectedRepositoryPath = outcome.repositoryPath;
+      if (
+        outcome.outcome === "opened" ||
+        outcome.outcome === "read-only-compatible"
+      ) {
+        selectedRepository = {
+          path: outcome.repositoryPath,
+          access: outcome.outcome === "opened" ? "read-write" : "read-only",
+          selection: outcome.outcome,
+        };
       }
 
       return outcome;

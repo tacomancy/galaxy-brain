@@ -33,8 +33,8 @@ export const Atlas = ({
   return (
     <main aria-labelledby="atlas-heading">
       <h1 id="atlas-heading">Atlas</h1>
-      {/* Keep the first empty state explicit and accessible until repository
-          open/create actions are introduced by the next tracer bullet. */}
+      {/* Keep the empty state explicit and accessible while the user chooses a
+          repository. */}
       {workbench.repositoryStatus === "not-selected" ? (
         <section id="atlas-empty-state" aria-labelledby="atlas-empty-heading">
           <h2 id="atlas-empty-heading">No Knowledge Repository is open.</h2>
@@ -56,11 +56,28 @@ export const Atlas = ({
           aria-labelledby="repository-status-heading"
         >
           <h2 id="repository-status-heading">
-            {lastOutcome?.outcome === "opened"
+            {workbench.repositorySelection === "opened"
               ? "Knowledge Repository opened and selected."
-              : "Knowledge Repository created and selected."}
+              : workbench.repositorySelection === "read-only-compatible"
+                ? "Knowledge Repository opened read-only."
+                : "Knowledge Repository created and selected."}
           </h2>
           <p id="repository-location">{workbench.repositoryPath}</p>
+          {workbench.repositoryAccess === "read-only" ? (
+            <p id="repository-access">
+              Read-only: this repository uses a newer format version.
+            </p>
+          ) : null}
+          <button id="open-repository" type="button" onClick={onOpenRepository}>
+            Open another Knowledge Repository
+          </button>
+          <button
+            id="create-repository"
+            type="button"
+            onClick={onCreateRepository}
+          >
+            Create another Knowledge Repository
+          </button>
         </section>
       )}
       {lastOutcome !== undefined && "detail" in lastOutcome ? (
