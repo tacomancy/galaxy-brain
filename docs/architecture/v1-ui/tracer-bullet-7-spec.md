@@ -1,6 +1,6 @@
 # Tracer Bullet 7: Synthesize selected evidence explicitly
 
-Status: preview preparation, context removal, confirmed handoff, decline/cancel preservation, provider-unavailable handling, and transient result handling implemented on August 27, 2026; remaining TB7 cycles are pending.
+Status: preview preparation, context removal, confirmed handoff, decline/cancel preservation, provider-unavailable handling, transient result handling, and default explicit save implemented on August 27, 2026; remaining TB7 cycles are pending.
 
 This tracer bullet adds the first provider-dependent Agentic Capability to the accepted provider-free Source Processing path. It makes Synthesis an explicit, inspectable, user-authorized operation over selected Structured Annotations. It does not make an Agent Provider a prerequisite for the Workbench or promote generated output to Governed Knowledge.
 
@@ -31,6 +31,10 @@ The independently known first-cycle fixture values are:
 - Provider destination: `OpenAI API`.
 - First-cycle model fixture: `fixture-pinned-model`.
 - First-cycle summary: `Synthesize 1 selected source claim into "Bayesian statistics" using model "fixture-pinned-model" via OpenAI API; 54 source characters selected.`
+- Default saved result identity: `synthesis-result-bayesian-statistics-fixture`.
+- Default saved result timestamp: `2026-08-27T20:30:00.000Z`.
+- Default saved result remains `working-material` and carries `agent-generated` attribution, provider `OpenAI API`, model `fixture-pinned-model`, operation `synthesize-into-topic`, and the selected Source Record/Source Locator references.
+- The default saved result does not contain the human-facing prompt, full source excerpts, or the hidden request/response payload.
 
 The first-cycle model fixture makes the preview contract deterministic without selecting a production model or exposing model choice to users. The exact pinned OpenAI model identifier is intentionally deferred until the provider-enabled cycle selects and records it, as required by ADR 0011. The preview must nevertheless expose the model field as part of the provider request contract before any request can be confirmed.
 

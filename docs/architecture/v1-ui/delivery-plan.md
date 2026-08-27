@@ -286,6 +286,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle does not add automatic history, caches, logs, audit retention, explicit result save, prompt/context save, provenance metadata, or Proposal application.
 - **Next behavior:** Add an explicit save operation that preserves agent provenance while keeping the result Working Material.
 
+#### TB7 default explicit-save cycle — August 27, 2026
+
+- **Public Behavior:** An explicit save stores the confirmed draft as Working Material with agent-generated attribution, provider/model/timestamp/operation metadata, and Source Record/Source Locator references, while omitting the prompt, full context excerpts, and hidden request/response payload.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow result Repository Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `saveSynthesisResult` was not implemented.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 29 Vitest tests.
+- **Scope confirmed:** The cycle adds only the default explicit-save contract and preserves Working Material status. It does not add file-backed result serialization, prompt/context retention, result versioning, source-change warnings, S1 save UI, or Governance application.
+- **Next behavior:** Add the separately explicit save-with-prompt/context option with concise context snapshots and no full source excerpts or hidden payload retention.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

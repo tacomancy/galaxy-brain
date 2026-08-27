@@ -78,6 +78,40 @@ export interface SynthesisModelAdapter {
   requestSynthesis(payload: SynthesisPayload): Promise<SynthesisModelOutcome>;
 }
 
+/** Provenance references retained by an explicitly saved agent result. */
+export interface SynthesisSourceContextReference {
+  annotationId: string;
+  sourceRecord: SourceRecordReference;
+  sourceLocator: string;
+  attribution: StructuredAnnotation["attribution"];
+  classification: StructuredAnnotation["classification"];
+}
+
+/** Agent provenance retained without promoting the result to authority. */
+export interface SynthesisProvenance {
+  attribution: "agent-generated";
+  provider: string;
+  model: string;
+  generatedAt: string;
+  operation: "synthesize-into-topic";
+  sourceContext: SynthesisSourceContextReference[];
+}
+
+/** Explicitly saved Synthesis result, still held as Working Material. */
+export interface SynthesisSavedResult {
+  id: string;
+  state: "working-material";
+  title: string;
+  text: string;
+  targetTopic: SynthesisTopicReference;
+  provenance: SynthesisProvenance;
+}
+
+/** Repository Adapter for explicit Synthesis result persistence. */
+export interface SynthesisResultRepository {
+  saveResult(result: SynthesisSavedResult): Promise<void>;
+}
+
 /** Concise and exact views of one pending Synthesis operation. */
 export interface SynthesisPreview {
   summary: string;
@@ -97,6 +131,19 @@ export interface ConfirmSynthesisInput {
   preview: SynthesisPreview;
   confirmation: "confirmed" | "declined" | "canceled";
 }
+
+/** Explicit save request for a transient confirmed Synthesis result. */
+export interface SaveSynthesisResultInput {
+  resultId: string;
+  preview: SynthesisPreview;
+  draft: SynthesisDraft;
+  generatedAt: string;
+}
+
+/** Caller-visible result of an explicit Synthesis save. */
+export type SaveSynthesisResultOutcome =
+  | { outcome: "saved"; result: SynthesisSavedResult }
+  | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome after the confirmation boundary. */
 export type ConfirmSynthesisOutcome =
@@ -172,6 +219,10 @@ export interface SourceProcessing {
   confirmSynthesis(
     input: ConfirmSynthesisInput,
   ): Promise<ConfirmSynthesisOutcome>;
+  /** Explicitly persists a confirmed result as attributed Working Material. */
+  saveSynthesisResult(
+    input: SaveSynthesisResultInput,
+  ): Promise<SaveSynthesisResultOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -179,6 +230,7 @@ export interface SourceProcessingDependencies {
   pdf: PdfAdapter;
   workingMaterial: WorkingMaterialRepository;
   model?: SynthesisModelAdapter;
+  results?: SynthesisResultRepository;
   diagnostics?: SourceProcessingDiagnostics;
 }
 
@@ -382,10 +434,60 @@ export const createSourceProcessing = (
     }
   };
 
+  const saveSynthesisResult = async (
+    input: SaveSynthesisResultInput,
+  ): Promise<SaveSynthesisResultOutcome> => {
+    if (
+      input.resultId.length === 0 ||
+      input.generatedAt.length === 0 ||
+      dependencies.results === undefined
+    ) {
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result could not be saved.",
+      };
+    }
+
+    const result: SynthesisSavedResult = {
+      id: input.resultId,
+      state: "working-material",
+      title: input.draft.title,
+      text: input.draft.text,
+      targetTopic: { ...input.preview.payload.targetTopic },
+      provenance: {
+        attribution: "agent-generated",
+        provider: input.preview.provider.destination,
+        model: input.preview.provider.model,
+        generatedAt: input.generatedAt,
+        operation: input.preview.payload.operation,
+        sourceContext: input.preview.payload.context.map((item) => ({
+          annotationId: item.annotationId,
+          sourceRecord: { ...item.sourceRecord },
+          sourceLocator: item.sourceLocator,
+          attribution: item.attribution,
+          classification: item.classification,
+        })),
+      },
+    };
+
+    try {
+      await dependencies.results.saveResult(result);
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result could not be saved.",
+      };
+    }
+
+    return { outcome: "saved", result };
+  };
+
   return {
     captureSourceClaim,
     prepareSynthesis,
     removeSynthesisContextItem,
     confirmSynthesis,
+    saveSynthesisResult,
   };
 };
