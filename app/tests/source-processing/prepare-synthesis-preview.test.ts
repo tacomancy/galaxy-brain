@@ -680,4 +680,60 @@ describe("Synthesize selected evidence", () => {
       },
     ]);
   });
+
+  it("preserves the saved result when source status is unavailable", async () => {
+    const savedResult: SynthesisSavedResult = {
+      id: "synthesis-result-bayesian-statistics-with-context",
+      state: "working-material",
+      title: "Bayesian statistics synthesis",
+      text: "Bayesian inference updates prior belief with evidence.",
+      targetTopic: {
+        id: "bayesian-statistics",
+        title: "Bayesian statistics",
+      },
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:30:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      contextSnapshot: [
+        {
+          annotationId:
+            "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+          sourceRecord: {
+            id: "bayesian-statistics-fixture-source",
+            title: "Bayesian statistics fixture source",
+          },
+          sourceLocator: "page:2#chars=0-54",
+          sourceIdentity: "source-identity-bayesian-statistics-v1",
+          contentIdentity: "content-identity-bayesian-statistics-v1",
+          summary:
+            "Selected source claim from the Bayesian statistics fixture source.",
+        },
+      ],
+    };
+    const sourceIdentity: SynthesisSourceIdentityAdapter = {
+      readIdentity: async () => ({
+        outcome: "unavailable",
+        detail: "The source identity cannot be checked.",
+      }),
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      sourceIdentity,
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.checkSynthesisContext({ result: savedResult }),
+      {
+        outcome: "source-status-unavailable",
+        result: savedResult,
+        warning: "source status unavailable",
+      },
+    );
+  });
 });

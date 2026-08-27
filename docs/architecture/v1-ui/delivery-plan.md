@@ -313,6 +313,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle does not rewrite the saved snapshot, block access, refresh the snapshot, regenerate the result, or implement source-status-unavailable handling.
 - **Next behavior:** Preserve access and report `source status unavailable` when the current Source Record identity cannot be checked or lacks a comparable identity.
 
+#### TB7 unavailable-source-status cycle — August 27, 2026
+
+- **Public Behavior:** When a saved context snapshot cannot be checked or lacks a comparable current identity, the S3 Interface preserves the saved result and reports `source status unavailable` without claiming that the snapshot is current.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a Source Identity Adapter returning an unavailable outcome.
+- **Red evidence:** No separate red command output was captured; the test was written against the required unavailable-source-status outcome after the stale-context path was implemented.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 32 Vitest tests.
+- **Scope confirmed:** The cycle does not refresh or replace the historical snapshot, regenerate the result, or add source relinking or file-backed result persistence.
+- **Next behavior:** Add explicit snapshot refresh as a new version while preserving the original context snapshot.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
