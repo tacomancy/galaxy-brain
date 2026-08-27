@@ -1,0 +1,40 @@
+{
+  "id": "synthesis-result-bayesian-statistics-fixture",
+  "state": "working-material",
+  "title": "Bayesian statistics synthesis",
+  "text": "Bayesian inference updates prior belief with evidence.",
+  "targetTopic": {
+    "id": "bayesian-statistics",
+    "title": "Bayesian statistics"
+  },
+  "provenance": {
+    "attribution": "agent-generated",
+    "provider": "OpenAI API",
+    "model": "fixture-pinned-model",
+    "generatedAt": "2026-08-27T20:30:00.000Z",
+    "operation": "synthesize-into-topic",
+    "sourceContext": []
+  },
+  "resultVersion": 2,
+  "priorResults": [
+    {
+      "id": "synthesis-result-bayesian-statistics-fixture",
+      "state": "working-material",
+      "title": "Bayesian statistics synthesis — first draft",
+      "text": "Bayesian inference updates prior belief.",
+      "targetTopic": {
+        "id": "bayesian-statistics",
+        "title": "Bayesian statistics"
+      },
+      "provenance": {
+        "attribution": "agent-generated",
+        "provider": "OpenAI API",
+        "model": "fixture-pinned-model",
+        "generatedAt": "2026-08-27T20:00:00.000Z",
+        "operation": "synthesize-into-topic",
+        "sourceContext": []
+      },
+      "resultVersion": 1
+    }
+  ]
+}

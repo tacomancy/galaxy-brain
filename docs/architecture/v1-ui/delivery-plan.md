@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation complete on August 27, 2026 pending human acceptance; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -366,6 +366,24 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 38 Vitest tests.
 - **Scope confirmed:** The Adapter stores only explicitly saved result metadata and history. It does not store hidden request/response payloads, initialize Git, contact a provider, or add S1 presentation.
 - **Next behavior:** Expose the saved-result confirmation, provenance, version, and restore controls through the packaged S1 Workbench surface.
+
+#### TB7 user-only no-context confirmation cycle — August 27, 2026
+
+- **Public Behavior:** A Synthesis request with no repository-derived context is valid only with a non-empty user prompt, produces an inspectable zero-context payload, and retains the same explicit confirmation boundary; declining makes no provider request.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow request-observation Model Adapter.
+- **Red evidence:** No separate red command output was captured; the user-only test was added against the required no-context confirmation outcome before running the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 39 Vitest tests.
+- **Scope confirmed:** The cycle does not add repository-wide context, automatic requests, hidden payload retention, provider configuration, or a new user consent mechanism.
+- **Next behavior:** Expose the completed confirmation and saved-result history behaviors through the packaged S1 Workbench surface.
+
+#### TB7 packaged S1 review surface cycle — August 27, 2026
+
+- **Public Behavior:** Studio presents an explicit Synthesis review action, concise summary, destination/model, selected context, exact payload disclosure, confirm/decline/cancel controls, provider-unavailable feedback, and saved-result provenance/version/restore controls through the real Electron main process and preload bridge.
+- **Test Seam:** S1 packaged Electron workflow through the real main process, preload bridge, Studio UI Adapter, file-backed Knowledge Repository, file-backed Working Material Adapters, and the S3 Source Processing Module.
+- **Red evidence:** The first packaged run exposed that the exact payload disclosure was collapsed when asserted; the workflow was corrected to expand the disclosure before checking its contents.
+- **Green evidence:** The focused packaged workflow passed. The full packaged workflow suite passed all 20 WebdriverIO specs. `npm run check` passed formatting, linting, strict type checking, and 39 Vitest tests.
+- **Scope confirmed:** The surface does not call a production provider, fabricate a successful draft, apply Governed Knowledge changes, or add a fourth primary workspace. Provider-unavailable behavior remains visible and local workflows remain usable.
+- **Next behavior:** Human acceptance review of the complete TB7 S3/S1 behavior; production provider integration and later Proposal/Governance work remain outside TB7.
 
 ### 8. Apply one governed change
 

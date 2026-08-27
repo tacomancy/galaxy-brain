@@ -6,6 +6,12 @@ import type {
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
+import type {
+  ConfirmSynthesisOutcome,
+  PrepareSynthesisOutcome,
+  RestoreSynthesisResultOutcome,
+  SynthesisSavedResult,
+} from "../modules/source-processing";
 
 declare global {
   interface Window {
@@ -23,6 +29,15 @@ declare global {
         workspace: WorkbenchWorkspace,
       ): Promise<WorkspaceTransitionOutcome>;
       openSavedAnnotation(): Promise<ReadingPositionOutcome>;
+      prepareSynthesis(): Promise<PrepareSynthesisOutcome>;
+      confirmSynthesis(
+        confirmation: "confirmed" | "declined" | "canceled",
+      ): Promise<ConfirmSynthesisOutcome>;
+      readSynthesisResults(): Promise<SynthesisSavedResult[]>;
+      restoreSynthesisResult(
+        resultId: string,
+        version: number,
+      ): Promise<RestoreSynthesisResultOutcome>;
     };
   }
 }

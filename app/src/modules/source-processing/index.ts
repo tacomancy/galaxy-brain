@@ -410,7 +410,7 @@ const buildSynthesisPreview = (
   prompt?: string,
 ): PrepareSynthesisOutcome => {
   if (
-    context.length === 0 ||
+    (context.length === 0 && (prompt === undefined || prompt.length === 0)) ||
     targetTopic.id.length === 0 ||
     targetTopic.title.length === 0 ||
     provider.destination.length === 0 ||
@@ -426,7 +426,10 @@ const buildSynthesisPreview = (
     (size, item) => size + item.text.length,
     0,
   );
-  const claimLabel = context.length === 1 ? "source claim" : "source claims";
+  const contextSummary =
+    context.length === 0
+      ? "with no repository-derived context"
+      : `${context.length} selected ${context.length === 1 ? "source claim" : "source claims"}`;
   const promptSummary = prompt === undefined ? "" : ` Prompt: "${prompt}".`;
   const payload: SynthesisPayload = {
     operation: "synthesize-into-topic",
@@ -442,7 +445,7 @@ const buildSynthesisPreview = (
   return {
     outcome: "preview-ready",
     preview: {
-      summary: `Synthesize ${context.length} selected ${claimLabel} into "${targetTopic.title}" using model "${provider.model}" via ${provider.destination}; ${estimatedRequestSize} source characters selected.${promptSummary}`,
+      summary: `Synthesize ${contextSummary} into "${targetTopic.title}" using model "${provider.model}" via ${provider.destination}; ${estimatedRequestSize} source characters selected.${promptSummary}`,
       estimatedRequestSize,
       provider: { ...provider },
       ...(prompt === undefined ? {} : { prompt }),

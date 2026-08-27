@@ -13,6 +13,12 @@ import type {
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
+import type {
+  ConfirmSynthesisOutcome,
+  PrepareSynthesisOutcome,
+  RestoreSynthesisResultOutcome,
+  SynthesisSavedResult,
+} from "../modules/source-processing";
 
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
@@ -38,4 +44,17 @@ contextBridge.exposeInMainWorld("workbench", {
     ipcRenderer.invoke("workbench:switch-workspace", workspace),
   openSavedAnnotation: (): Promise<ReadingPositionOutcome> =>
     ipcRenderer.invoke("workbench:open-saved-annotation"),
+  prepareSynthesis: (): Promise<PrepareSynthesisOutcome> =>
+    ipcRenderer.invoke("workbench:prepare-synthesis"),
+  confirmSynthesis: (
+    confirmation: "confirmed" | "declined" | "canceled",
+  ): Promise<ConfirmSynthesisOutcome> =>
+    ipcRenderer.invoke("workbench:confirm-synthesis", confirmation),
+  readSynthesisResults: (): Promise<SynthesisSavedResult[]> =>
+    ipcRenderer.invoke("workbench:read-synthesis-results"),
+  restoreSynthesisResult: (
+    resultId: string,
+    version: number,
+  ): Promise<RestoreSynthesisResultOutcome> =>
+    ipcRenderer.invoke("workbench:restore-synthesis-result", resultId, version),
 });

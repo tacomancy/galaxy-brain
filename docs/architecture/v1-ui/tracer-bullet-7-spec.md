@@ -1,6 +1,6 @@
 # Tracer Bullet 7: Synthesize selected evidence explicitly
 
-Status: preview preparation, context removal, confirmed handoff, decline/cancel preservation, provider-unavailable handling, transient result handling, default explicit save, opt-in prompt/context snapshot, stale-context warning, unavailable-source-status handling, explicit versioned snapshot refresh, confirmed result regeneration, result restore, human-authorship preservation, and file-backed result persistence implemented on August 27, 2026; remaining TB7 cycles are pending.
+Status: implementation complete on August 27, 2026; pending human acceptance of the packaged S3/S1 behavior.
 
 This tracer bullet adds the first provider-dependent Agentic Capability to the accepted provider-free Source Processing path. It makes Synthesis an explicit, inspectable, user-authorized operation over selected Structured Annotations. It does not make an Agent Provider a prerequisite for the Workbench or promote generated output to Governed Knowledge.
 
@@ -12,7 +12,7 @@ The first vertical behavior is **prepare a Synthesis preview**. From the fixture
 - an inspectable exact outbound payload containing only the selected annotation and target topic context; and
 - a preview state that has made no Agent Provider request and has not changed local Working Material.
 
-Later vertical cycles extend this same behavior to whole-context-item removal and preview regeneration, explicit confirmation, the literal draft Proposal fixture returned by a confirmed provider response, decline/cancel preservation, unavailable-provider handling, non-retention, explicit save, an explicit versioned context refresh that preserves the prior snapshot without regenerating the result, confirmed result regeneration as a new version, restore as a new current version without a provider request, and human edits that add authorship without erasing agent provenance.
+Later vertical cycles extend this same behavior to whole-context-item removal and preview regeneration, explicit confirmation, the literal draft Proposal fixture returned by a confirmed provider response, decline/cancel preservation, unavailable-provider handling, non-retention, explicit save, an explicit versioned context refresh that preserves the prior snapshot without regenerating the result, confirmed result regeneration as a new version, restore as a new current version without a provider request, human edits that add authorship without erasing agent provenance, and packaged S1 review of the request and saved result history.
 
 ## Test Seam and expected values
 
@@ -57,11 +57,11 @@ The first-cycle model fixture makes the preview contract deterministic without s
 
 This tracer bullet does not add automatic Synthesis, background requests, blanket or remembered consent, arbitrary inline payload editing, whole-repository upload, dynamic model selection, additional providers, or provider-required startup. It does not apply changes to Governed Knowledge, create an applied Proposal, or bypass Governance. It does not persist request or response bodies automatically, expose hidden API payloads, or place credentials in repository content.
 
-The following are separate later cycles within TB7: no-context user-only confirmation, removal and regenerated previews, exact final-payload confirmation, decline/cancel with no request, provider-unavailable outcomes, result non-retention, default save, explicit save-with-prompt/context, agent provenance through human edits, source-context snapshots, stale-context warnings, explicit snapshot refresh/version history, result versioning/regeneration, and restore. Each new network request requires a fresh confirmation.
+The following V1 work remains outside this completed TB7 implementation: a production OpenAI Adapter, dynamic provider/model configuration, full source import/availability/relinking, and later Proposal/Governance behavior. Each new network request requires a fresh confirmation.
 
 ## Acceptance evidence
 
-The first cycle is accepted only when the S3 behavior test asserts the exact fixture values, preview summary, and exact payload through the public Interface and demonstrates that no provider request or Working Material mutation occurs. The complete TB7 slice additionally requires focused S3 evidence for every confirmation, privacy, provider, save, and snapshot rule, relevant S5 Adapter contracts, the packaged S1 confirmation presentation, the full `check` gate, and the full packaged workflow suite. Manual review must confirm that the operation, destination, model, selected context, content category, request size, exact payload, whole-item removal, regenerated preview, confirmation, decline, and unavailable states are legible and keyboard-operable.
+Implementation evidence is complete: focused S3 coverage exercises the confirmation, privacy, provider, save, snapshot, regeneration, restore, and provenance rules; the S5 result Adapter round-trips portable history; the packaged S1 workflow presents the exact request, confirmation choices, provider-unavailable state, provenance/version metadata, and restore control; the full `check` gate and packaged workflow suite pass. Human acceptance must still confirm that the operation, destination, model, selected context, content category, request size, exact payload, whole-item removal, regenerated preview, confirmation, decline, unavailable, saved-result, provenance, version, and restore states are legible and keyboard-operable.
 
 ## Required confirmation
 

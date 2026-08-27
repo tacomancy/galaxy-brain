@@ -115,6 +115,70 @@ describe("Synthesize selected evidence", () => {
     );
   });
 
+  it("applies the confirmation boundary to a user-only request without context", async () => {
+    let requestCount = 0;
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model: {
+        requestSynthesis: async () => {
+          requestCount += 1;
+          return {
+            outcome: "draft-proposal" as const,
+            draft: {
+              title: "User-only Synthesis",
+              text: "This result should not be produced before confirmation.",
+            },
+          };
+        },
+      },
+    });
+
+    const preview = await sourceProcessing.prepareSynthesis({
+      targetTopic: synthesisInput.targetTopic,
+      selectedAnnotations: [],
+      provider: synthesisInput.provider,
+      prompt: "Explain Bayesian inference in one sentence.",
+    });
+
+    assert.deepEqual(preview, {
+      outcome: "preview-ready",
+      preview: {
+        summary:
+          'Synthesize with no repository-derived context into "Bayesian statistics" using model "fixture-pinned-model" via OpenAI API; 0 source characters selected. Prompt: "Explain Bayesian inference in one sentence.".',
+        estimatedRequestSize: 0,
+        provider: {
+          destination: "OpenAI API",
+          model: "fixture-pinned-model",
+        },
+        prompt: "Explain Bayesian inference in one sentence.",
+        payload: {
+          operation: "synthesize-into-topic",
+          model: "fixture-pinned-model",
+          targetTopic: {
+            id: "bayesian-statistics",
+            title: "Bayesian statistics",
+          },
+          context: [],
+          prompt: "Explain Bayesian inference in one sentence.",
+        },
+      },
+    });
+
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "declined",
+      }),
+      { outcome: "declined" },
+    );
+    assert.equal(requestCount, 0);
+  });
+
   it("removes one whole context item and regenerates the preview", async () => {
     const sourceProcessing = createSourceProcessing({
       pdf: createFixturePdfAdapter(),
