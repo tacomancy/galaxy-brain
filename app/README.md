@@ -49,3 +49,7 @@ npm run test:workflow
 ```
 
 The workflow test currently targets the macOS Electron package and therefore requires macOS as well as the pinned Node.js version. The first-run Workbench does not require an API key or Agent Provider configuration.
+
+## Dependency security
+
+`package.json` contains narrowly scoped npm overrides for patched transitive build and test dependencies. They address vulnerable archive extraction, temporary-directory, archive parsing, object-merging, serialization, and browser-download paths without downgrading the accepted Electron Forge or WebdriverIO toolchain. Keep the overrides and `package-lock.json` together; after dependency changes, run `npm audit`, `npm audit --omit=dev`, `npm run check`, `npm run package`, and the packaged workflow test. The remaining audit findings are moderate Webpack development-tool findings and are tracked separately from the resolved high and critical advisories.
