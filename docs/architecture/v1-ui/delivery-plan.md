@@ -322,6 +322,15 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Scope confirmed:** The cycle does not refresh or replace the historical snapshot, regenerate the result, or add source relinking or file-backed result persistence.
 - **Next behavior:** Add explicit snapshot refresh as a new version while preserving the original context snapshot.
 
+#### TB7 explicit snapshot refresh cycle — August 27, 2026
+
+- **Public Behavior:** An explicit refresh reads the current Source Record and content identities, saves the refreshed context as a new version, preserves the prior snapshot in version history, and leaves the generated result text, provenance, and prompt unchanged without contacting the Model Adapter.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface, a Source Identity Adapter at the external source-status seam, and a narrow result Repository Adapter.
+- **Red evidence:** No separate red command output was captured; the test was written against the required refresh/version outcome before the refresh capability was implemented.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 33 Vitest tests.
+- **Scope confirmed:** The cycle adds explicit context refresh and prior-snapshot retention only. It does not regenerate the result, contact the Model Adapter, mutate source files, auto-refresh, add file-backed result serialization, or implement S1 refresh UI.
+- **Next behavior:** Add result regeneration as a separate new result version that preserves the prior generated result and requires fresh confirmation before a new provider request.
+
 ### 8. Apply one governed change
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

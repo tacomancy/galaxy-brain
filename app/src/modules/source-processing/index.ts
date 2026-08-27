@@ -123,6 +123,8 @@ export interface SynthesisSavedResult {
   provenance: SynthesisProvenance;
   prompt?: string;
   contextSnapshot?: SynthesisContextSnapshot[];
+  contextSnapshotVersion?: number;
+  priorContextSnapshots?: SynthesisContextSnapshotVersion[];
 }
 
 /** Concise, point-in-time context retained only with explicit opt-in. */
@@ -133,6 +135,13 @@ export interface SynthesisContextSnapshot {
   sourceIdentity: string;
   contentIdentity: string;
   summary: string;
+}
+
+/** Prior point-in-time context retained when an explicit refresh is saved. */
+export interface SynthesisContextSnapshotVersion {
+  version: number;
+  refreshedAt: string;
+  snapshot: SynthesisContextSnapshot[];
 }
 
 /** Repository Adapter for explicit Synthesis result persistence. */
@@ -175,6 +184,12 @@ export interface CheckSynthesisContextInput {
   result: SynthesisSavedResult;
 }
 
+/** Explicit request to refresh source identities without regenerating text. */
+export interface RefreshSynthesisContextInput {
+  result: SynthesisSavedResult;
+  refreshedAt: string;
+}
+
 /** Caller-visible result of an explicit Synthesis save. */
 export type SaveSynthesisResultOutcome =
   | { outcome: "saved"; result: SynthesisSavedResult }
@@ -193,6 +208,11 @@ export type CheckSynthesisContextOutcome =
       result: SynthesisSavedResult;
       warning: string;
     }
+  | { outcome: "operation-failed"; detail: string };
+
+/** Caller-visible outcome of an explicit Synthesis context refresh. */
+export type RefreshSynthesisContextOutcome =
+  | { outcome: "refreshed"; result: SynthesisSavedResult }
   | { outcome: "operation-failed"; detail: string };
 
 /** Caller-visible outcome after the confirmation boundary. */
@@ -277,6 +297,10 @@ export interface SourceProcessing {
   checkSynthesisContext(
     input: CheckSynthesisContextInput,
   ): Promise<CheckSynthesisContextOutcome>;
+  /** Refreshes saved source identities while preserving the generated result. */
+  refreshSynthesisContext(
+    input: RefreshSynthesisContextInput,
+  ): Promise<RefreshSynthesisContextOutcome>;
 }
 
 /** Concrete Adapters composed around the Source Processing policy. */
@@ -585,6 +609,7 @@ export const createSourceProcessing = (
               sourceLocator: item.sourceLocator,
               summary: `Selected ${item.classification === "source-claim" ? "source claim" : item.classification} from the ${item.sourceRecord.title}.`,
             })),
+            contextSnapshotVersion: 1,
           }
         : {}),
     };
@@ -658,6 +683,88 @@ export const createSourceProcessing = (
     return { outcome: "current", result: input.result };
   };
 
+  const refreshSynthesisContext = async (
+    input: RefreshSynthesisContextInput,
+  ): Promise<RefreshSynthesisContextOutcome> => {
+    const snapshots = input.result.contextSnapshot;
+    const currentVersion = input.result.contextSnapshotVersion;
+
+    if (
+      snapshots === undefined ||
+      snapshots.length === 0 ||
+      currentVersion === undefined ||
+      input.refreshedAt.length === 0 ||
+      dependencies.results === undefined ||
+      dependencies.sourceIdentity === undefined
+    ) {
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis context cannot be refreshed.",
+      };
+    }
+
+    const refreshedSnapshots: SynthesisContextSnapshot[] = [];
+
+    for (const snapshot of snapshots) {
+      let identity: SynthesisSourceIdentityOutcome;
+
+      try {
+        identity = await dependencies.sourceIdentity.readIdentity(
+          snapshot.sourceRecord.id,
+        );
+      } catch (cause: unknown) {
+        dependencies.diagnostics?.record(cause);
+        return {
+          outcome: "operation-failed",
+          detail: "The Synthesis source context could not be checked.",
+        };
+      }
+
+      if (identity.outcome === "unavailable") {
+        return {
+          outcome: "operation-failed",
+          detail: "The Synthesis source context could not be checked.",
+        };
+      }
+
+      refreshedSnapshots.push({
+        ...snapshot,
+        sourceRecord: { ...snapshot.sourceRecord },
+        sourceIdentity: identity.sourceIdentity,
+        contentIdentity: identity.contentIdentity,
+      });
+    }
+
+    const refreshedResult: SynthesisSavedResult = {
+      ...input.result,
+      contextSnapshotVersion: currentVersion + 1,
+      contextSnapshot: refreshedSnapshots,
+      priorContextSnapshots: [
+        ...(input.result.priorContextSnapshots ?? []),
+        {
+          version: currentVersion,
+          refreshedAt: input.result.provenance.generatedAt,
+          snapshot: snapshots.map((snapshot) => ({
+            ...snapshot,
+            sourceRecord: { ...snapshot.sourceRecord },
+          })),
+        },
+      ],
+    };
+
+    try {
+      await dependencies.results.saveResult(refreshedResult);
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis result could not be saved.",
+      };
+    }
+
+    return { outcome: "refreshed", result: refreshedResult };
+  };
+
   return {
     captureSourceClaim,
     prepareSynthesis,
@@ -665,5 +772,6 @@ export const createSourceProcessing = (
     confirmSynthesis,
     saveSynthesisResult,
     checkSynthesisContext,
+    refreshSynthesisContext,
   };
 };
