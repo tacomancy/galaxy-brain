@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 and 2 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed; Tracer Bullet 3 implementation is complete and awaits user acceptance.
+Status: Tracer Bullets 1, 2, and 3 complete and accepted on August 27, 2026; TB4 implementation is complete and awaits user acceptance; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -58,9 +58,9 @@ The [Product Decisions](product-decisions.md), [Architecture](architecture.md), 
 
 ### 3. Resume meaningful work
 
-Status: implementation complete for exact repository resume and remembered-root recovery; user acceptance remains open.
+Status: implementation complete and accepted on August 27, 2026 for exact repository resume and remembered-root recovery.
 
-At S1, prove that reopening a known session validates and resumes the last explicitly selected repository, active workspace, and context, while a first launch opens without a repository and an unavailable or invalid remembered path presents explicit Open/Create choices. Do not scan for sibling repositories. Add only the machine-local session persistence needed for the worked fixture.
+At S1, prove that reopening a known session validates and resumes the last explicitly selected repository, while a first launch opens without a repository and an unavailable or invalid remembered path presents explicit Open/Create choices. Do not scan for sibling repositories. Add only the machine-local session persistence needed for the worked fixture; active workspace and contextual navigation begin with TB4.
 
 #### Tracer Bullet 3 cycle 1 record — August 27, 2026
 
@@ -81,9 +81,31 @@ At S1, prove that reopening a known session validates and resumes the last expli
 - **Scope confirmed:** Recovery preserves the unselected state and does not scan sibling repositories. Active workspace, Working Set, reading position, and contextual navigation remain deferred until a concrete behavior requires them.
 - **Failure policy:** If machine-local session state cannot be written after repository creation or opening succeeds, Workbench Session returns `operation-failed` and preserves the prior in-memory selection; the caller surfaces that the new root was not durably remembered.
 
+#### Tracer Bullet 3 completion record — August 27, 2026
+
+- **Public Behavior:** After an explicit repository selection, the Workbench resumes the exact validated root on relaunch; first launch remains in Atlas without a repository; unavailable or invalid remembered roots remain unselected and expose Open/Create recovery choices.
+- **Test Seam:** S1 packaged desktop workflow through the real Electron main process, preload bridge, Workbench Session, Atlas UI Adapter, and file-backed repository and session-state Adapters.
+- **Automated evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 12 Vitest tests. `npm run test:workflow` packaged the macOS arm64 application and passed all 14 WebdriverIO workflow specs, including exact-root resume, first-launch, and unavailable/invalid remembered-root recovery.
+- **Scope confirmed:** Only the last explicitly selected repository root is persisted outside the portable Knowledge Repository. Active workspace, Working Set, reading position, and contextual navigation are carried forward to TB4 and later slices rather than being claimed here.
+- **Acceptance:** The user reviewed the completed TB3 behavior and accepted the tracer bullet.
+
 ### 4. Carry context between workspaces
 
+Status: implementation complete; user acceptance remains open.
+
 At S1, prove a contextual transition from an Atlas item to Studio and then to its Source Record in Paper Desk without losing the topic relationship. Add the compact global switcher only to the extent this behavior needs it.
+
+The [Tracer Bullet 4 brief](tracer-bullet-4-spec.md) coordinates this slice against the accepted Product Decisions, Architecture, and Test Strategy documents.
+
+#### Tracer Bullet 4 implementation completion record — August 27, 2026
+
+- **Public Behavior:** A selected fixture topic can move from Atlas into Studio, its associated Source Record can move into Paper Desk, and the compact workspace switcher moves among Atlas, Studio, and Paper Desk without dropping the topic relationship.
+- **Test Seam:** S1 packaged desktop workflow through the real Electron main process, preload bridge, Workbench Session, and Atlas, Studio, and Paper Desk UI Adapters.
+- **Red evidence:** The focused workflow first failed because `#atlas-topic-open-studio`, then `#studio-source-record-open-paper-desk`, and finally `#workspace-switcher` were absent, with each failure observed before its corresponding implementation.
+- **Green evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow -- --spec ./tests/workflows/carry-context-between-workspaces.e2e.ts` passed all 3 TB4 behavior cases.
+- **Automated evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, type checking, and 12 Vitest tests. The full packaged workflow passed all 15 WebdriverIO workflow specs.
+- **Scope confirmed:** Context transfer is in-session only. Active workspace, Working Set, reading position, and contextual navigation are not persisted across relaunch; PDF rendering, capture, Synthesis, authoring, Governance, and Discovery remain deferred.
+- **Acceptance:** User review of the running TB4 behavior remains open.
 
 ### 5. Capture one located source claim
 

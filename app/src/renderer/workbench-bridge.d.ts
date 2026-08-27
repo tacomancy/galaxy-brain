@@ -2,6 +2,8 @@
 import type {
   FreshWorkbench,
   RepositoryOperationOutcome,
+  WorkbenchWorkspace,
+  WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
 
 declare global {
@@ -12,6 +14,13 @@ declare global {
       openFreshWorkbench(): Promise<FreshWorkbench>;
       createRepository(): Promise<RepositoryOperationOutcome>;
       openRepository(): Promise<RepositoryOperationOutcome>;
+      openTopicInStudio(topicId: string): Promise<WorkspaceTransitionOutcome>;
+      openSourceRecordInPaperDesk(
+        sourceRecordId: string,
+      ): Promise<WorkspaceTransitionOutcome>;
+      switchWorkspace(
+        workspace: WorkbenchWorkspace,
+      ): Promise<WorkspaceTransitionOutcome>;
     };
   }
 }

@@ -9,11 +9,20 @@ import {
   rm,
   writeFile,
 } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import {
+  basename,
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+} from "node:path";
 
 import type {
   KnowledgeRepository,
   RepositoryOperationOutcome,
+  WorkbenchContext,
 } from "../../modules/workbench-session";
 
 const canonicalRoots = [
@@ -279,6 +288,123 @@ const readManifest = async (
       "The repository manifest is missing or unreadable.",
     );
   }
+};
+
+const readMarkdownMetadata = async (
+  markdownPath: string,
+): Promise<Map<string, string> | undefined> => {
+  const markdown = await readFile(markdownPath, "utf8");
+  const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(markdown);
+
+  if (frontmatter?.[1] === undefined) {
+    return undefined;
+  }
+
+  const entries = new Map<string, string>();
+
+  for (const line of frontmatter[1].split(/\r?\n/)) {
+    const content = stripYamlComment(line).trim();
+
+    if (content === "") {
+      continue;
+    }
+
+    const match =
+      /^(?<key>[A-Za-z_][A-Za-z0-9_-]*):(?:[ \t]+(?<value>.*))?$/.exec(content);
+
+    if (match?.groups?.key === undefined || match.groups.value === undefined) {
+      return undefined;
+    }
+
+    if (entries.has(match.groups.key)) {
+      return undefined;
+    }
+
+    try {
+      entries.set(match.groups.key, parseYamlScalar(match.groups.value));
+    } catch {
+      return undefined;
+    }
+  }
+
+  return entries;
+};
+
+const findMarkdownMetadata = async (
+  root: string,
+  type: string,
+): Promise<Map<string, string> | undefined> => {
+  try {
+    const entries = await readdir(root, {
+      encoding: "utf8",
+      withFileTypes: true,
+    });
+
+    for (const entry of entries) {
+      if (!entry.isFile() || extname(entry.name) !== ".md") {
+        continue;
+      }
+
+      const metadata = await readMarkdownMetadata(join(root, entry.name));
+
+      if (metadata?.get("type") === type) {
+        return metadata;
+      }
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+};
+
+const readWorkbenchContext = async (
+  repositoryPath: string,
+): Promise<WorkbenchContext | undefined> => {
+  const topicMetadata = await findMarkdownMetadata(
+    join(repositoryPath, "knowledge"),
+    "topic",
+  );
+  const topicId = topicMetadata?.get("id");
+  const topicTitle = topicMetadata?.get("title");
+  const sourceReference = topicMetadata?.get("source_record");
+
+  if (
+    topicId === undefined ||
+    topicTitle === undefined ||
+    sourceReference === undefined ||
+    isAbsolute(sourceReference)
+  ) {
+    return undefined;
+  }
+
+  const sourcePath = resolve(repositoryPath, sourceReference);
+  const relativeSourcePath = relative(repositoryPath, sourcePath);
+
+  if (
+    relativeSourcePath === "" ||
+    relativeSourcePath.startsWith("..") ||
+    isAbsolute(relativeSourcePath)
+  ) {
+    return undefined;
+  }
+
+  const sourceMetadata = await readMarkdownMetadata(sourcePath);
+  const sourceId = sourceMetadata?.get("id");
+  const sourceTitle = sourceMetadata?.get("title");
+
+  if (
+    sourceMetadata?.get("type") !== "source" ||
+    sourceId === undefined ||
+    sourceTitle === undefined
+  ) {
+    return undefined;
+  }
+
+  return {
+    topic: { id: topicId, title: topicTitle },
+    sourceRecord: { id: sourceId, title: sourceTitle },
+  };
 };
 
 const validateRepositoryRoots = async (
@@ -556,6 +682,15 @@ export const createFileBackedKnowledgeRepository = (
       }
 
       return openingFailed();
+    }
+  },
+  readWorkbenchContext: async (
+    repositoryPath,
+  ): Promise<WorkbenchContext | undefined> => {
+    try {
+      return await readWorkbenchContext(repositoryPath);
+    } catch {
+      return undefined;
     }
   },
 });
