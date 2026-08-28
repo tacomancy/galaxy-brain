@@ -823,7 +823,7 @@ Completion requires the focused Red/Green evidence, full automated gates, proof 
 
 ## Required sixth cycle: apply an edited dependent change
 
-This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the completed first five TB9 cycles. The edited-dependent representation and caller-visible behavior below are proposed for confirmation before implementation.
+This is the sixth TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the completed first five TB9 cycles. The user confirmed the edited-dependent representation and caller-visible behavior below before implementation.
 
 ### Scope
 
@@ -831,7 +831,7 @@ The sixth TB9 cycle proves that an edited change may depend on another Proposal 
 
 This cycle reuses the fifth-cycle `editedChanges` Judgment representation and the existing dependency-closure rule. It uses a two-change graph whose prerequisite appears before its dependent in Proposal order, and whose dependent `before` text is present in the reviewed base version. It does not add generic dependency reordering, post-prerequisite exact-change matching, multi-level dependency graphs, durable edited-decision provenance, Judgment revision, the S1 Proposal Review route, or a new Repository Format representation.
 
-### Documentation prerequisite for this cycle
+### Documentation prerequisite for this cycle — complete
 
 Before writing the Red test or implementation code, explicitly complete these to-do items:
 
@@ -842,9 +842,9 @@ Before writing the Red test or implementation code, explicitly complete these to
 5. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
 6. Obtain explicit human confirmation of the dependency-closed edited application, Proposal-order boundary, literal fixture, failure outcome, and explicit deferrals.
 
-Implementation must not begin until this sixth-cycle documentation review and confirmation task is complete. A new decision representation, dependency policy, persistent representation, or Test Seam requires stopping and revising this brief before proceeding.
+Implementation began only after this sixth-cycle documentation review and confirmation task was complete. A new decision representation, dependency policy, persistent representation, or Test Seam would require stopping and revising this brief before proceeding.
 
-### Proposed public behavior
+### Public behavior
 
 Given the current `bayesian-statistics-v1` version and a Proposal containing a prerequisite and a dependent change:
 
@@ -857,7 +857,7 @@ Given the current `bayesian-statistics-v1` version and a Proposal containing a p
 
 The dependency is a Governance dependency between labeled Proposal changes. This first edited-dependent slice intentionally keeps the dependent `before` text present in `bayesian-statistics-v1`; it does not infer or synthesize a dependent replacement from the content produced by its prerequisite. Proposal order is the application order for this slice, so an out-of-order dependency is outside the confirmed behavior rather than silently reordered.
 
-### Proposed Interface and ownership
+### Interface and ownership
 
 No new public type is required. Reuse:
 
@@ -974,7 +974,7 @@ The following alternatives are discarded or deferred for this cycle:
 
 ### Acceptance evidence and required confirmation
 
-This sixth cycle is not implementation-ready until the user confirms:
+The user confirmed these implementation decisions on August 28, 2026:
 
 - reuse of `editedChanges` for a dependent Proposal change;
 - effective accepted-subset closure including edited IDs;
@@ -982,4 +982,13 @@ This sixth cycle is not implementation-ready until the user confirms:
 - the valid and invalid literal outcomes above; and
 - the explicit deferrals and discarded alternatives.
 
-After confirmation, completion requires focused Red/Green evidence, full automated gates, proof that the valid path mutates storage once and the invalid path does not mutate storage, and human confirmation that the edited dependent content is current while the original version remains retrievable. Acceptance will not approve generic dependency ordering, post-prerequisite exact matching, multi-level graphs, or persistent edited-decision provenance.
+Completion requires focused Red/Green evidence, full automated gates, proof that the valid path mutates storage once and the invalid path does not mutate storage, and human confirmation that the edited dependent content is current while the original version remains retrievable. Acceptance will not approve generic dependency ordering, post-prerequisite exact matching, multi-level graphs, or persistent edited-decision provenance.
+
+### Sixth-cycle implementation evidence
+
+- **Confirmation:** The user confirmed reuse of `editedChanges`, effective dependency closure including edited IDs, authored Proposal order, the literal valid and invalid outcomes, and the explicit deferrals before implementation on August 28, 2026.
+- **Red evidence:** The focused test first failed because the existing classification validator required a non-empty `acceptedChangeIds` array even when an edited change was the only effective accepted change.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 71 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.27% statements, 73.28% branches, and 97.40% functions. `npm run lint:complexity` passed. `python scripts/test_public_docs.py` passed under the documented Python 3.11 environment.
+- **Behavior evidence:** `apply-edited-dependent-change-decision.test.ts` proves the accepted prerequisite and reviewer-edited dependent are applied in Proposal order, the original dependent Proposal replacement is absent, storage mutation occurs once, and the prior version remains retrievable. It also proves a rejected prerequisite produces `invalid-dependency-subset` before mutation.
+- **Compatibility evidence:** Existing single-change, stale-Judgment, invalid-dependency-subset, independent-decision, deferred-decision, edited-change, and file-backed contract tests pass. Generic dependency reordering and persistent edited multi-change provenance remain deferred as specified.
+- **Status:** Implementation is complete and human acceptance is pending. The next manual review must confirm the edited dependent result and the no-mutation missing-prerequisite result.

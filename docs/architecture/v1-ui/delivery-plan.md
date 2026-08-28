@@ -497,15 +497,18 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Deferred work:** Edited dependent changes, Judgment revision, dependency-graph mutation, persistent edited multi-change provenance, UI behavior, Agent Provider use, Git, and network behavior remain explicitly deferred. Durable provenance must preserve both original and edited exact changes before the file-backed representation is expanded.
 - **Next behavior:** Repeat the documentation prerequisite and specify the edited dependent-change behavior before implementation.
 
-#### TB9 edited dependent change cycle — specification drafted August 28, 2026
+#### TB9 edited dependent change cycle — implementation complete, human acceptance pending August 28, 2026
 
 - **Public Behavior:** A Judgment accepts one Proposal prerequisite unchanged and edits a dependent Proposal change. Governance applies both because the effective accepted subset is dependency-closed, using the reviewer-supplied exact replacement for the dependent change.
 - **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
 - **Shape confirmed from the prior slice:** Reuse `editedChanges`; no new Judgment representation is proposed. The dependent edited ID joins the effective accepted subset, while `dependsOn` continues to reference Proposal change IDs.
 - **Scope:** This cycle proves one edited dependent change with a two-change graph. The fixture keeps the prerequisite before the dependent in Proposal order and keeps the dependent `before` text present in the reviewed base version. Generic dependency reordering, post-prerequisite exact replacements, multi-level graphs, persistent edited provenance, and UI behavior remain deferred.
 - **Failure behavior:** If the Judgment edits the dependent change but rejects its prerequisite, Governance returns `invalid-dependency-subset` before storage mutation.
-- **Status:** The implementation specification is drafted and requires explicit human confirmation of the dependency-closure behavior, Proposal-order constraint, literal fixture, and deferrals before the Red test or implementation begins.
-- **Next behavior:** Confirm this specification, then run the focused Red-to-Green cycle for edited dependent changes.
+- **Red evidence:** The focused test first failed because the existing classification validator required a non-empty `acceptedChangeIds` array, even when an edited change was the only effective accepted change; it returned the generic incomplete-classification result instead of allowing the dependency-closure check.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 71 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.27% statements, 73.28% branches, and 97.40% functions. `npm run lint:complexity` passed. Public documentation validation passed with `python scripts/test_public_docs.py` under the documented Python 3.11 environment.
+- **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and human acceptance remains pending.
+- **Deferred work:** Generic dependency reordering, post-prerequisite exact replacements, multi-level graphs, edited prerequisites combined with edited dependents, Judgment revision, persistent edited multi-change provenance, and UI behavior remain explicitly deferred.
+- **Next behavior:** Complete the manual acceptance review for edited dependent changes before selecting out-of-order dependency handling, multi-level graphs, or persistent edited-decision provenance.
 
 ### 10. Review through the desktop interface
 
