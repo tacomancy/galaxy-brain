@@ -89,6 +89,10 @@ export interface ApplyVersionInput {
   target: GovernedTarget;
   content: string;
   parentVersionId: string;
+  expectedBaseContent: string;
+  proposal: Proposal;
+  judgment: Judgment;
+  appliedRecordId: string;
 }
 
 /** Result returned by a version storage Adapter after a successful application. */
@@ -225,6 +229,7 @@ export const createGovernance = (
   dependencies: GovernanceDependencies,
 ): Governance => {
   const proposals = new Map<string, Proposal>();
+  const proposalBaseContents = new Map<string, string>();
   const judgments = new Map<string, Judgment>();
   const appliedProposalIds = new Set<string>();
 
@@ -299,6 +304,7 @@ export const createGovernance = (
     };
 
     proposals.set(proposal.id, copyProposal(proposal));
+    proposalBaseContents.set(proposal.id, currentVersion.content);
     return { outcome: "proposal-created", proposal: copyProposal(proposal) };
   };
 
@@ -420,6 +426,10 @@ export const createGovernance = (
         target: proposal.target,
         content: proposedContent,
         parentVersionId: currentVersion.id,
+        expectedBaseContent: proposalBaseContents.get(proposal.id) ?? "",
+        proposal: copyProposal(proposal),
+        judgment: copyJudgment(judgment),
+        appliedRecordId: `applied-${proposal.id}`,
       });
       const appliedRecord: AppliedRecord = {
         id: `applied-${proposal.id}`,

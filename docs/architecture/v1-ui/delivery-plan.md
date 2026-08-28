@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance and packaged-runtime verification pending; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -409,7 +409,7 @@ The first S2 cycle uses opaque test-store version identifiers only. A required l
 
 The first S2 cycle also supplies a literal in-memory Working Material draft to Governance. Durable draft serialization, draft reopening/history, autosave, rich/source editing, and the Knowledge Authoring UI remain deferred to the authoring tracer bullet.
 
-The required next TB8 cycle is the S5 file-backed persistence path. Its proposed applied-record JSON, targeted rollback, stable version mapping, transaction staging, fingerprint checks, and recovery behavior are documented in the [TB8 brief](tracer-bullet-8-spec.md#required-second-cycle-persist-one-governed-change-through-s5) and require explicit confirmation before implementation because they establish the first concrete applied-version schema within Repository Format v1.
+The required next TB8 cycle is the S5 file-backed persistence path. Its applied-record JSON, targeted rollback, stable version mapping, transaction staging, fingerprint checks, and recovery behavior are documented in the [TB8 brief](tracer-bullet-8-spec.md#required-second-cycle-persist-one-governed-change-through-s5) and were explicitly confirmed before implementation because they establish the first concrete applied-version schema within Repository Format v1.
 
 #### TB8 first S2 application cycle — August 28, 2026
 
@@ -421,6 +421,18 @@ The required next TB8 cycle is the S5 file-backed persistence path. Its proposed
 - **Deferred work:** The required later S5 cycle still owns persisted version records and ID mapping/allocation/lineage across reopen, applied audit records, targeted rollback data, fingerprint checks, recoverable filesystem transactions, external-edit detection, and Repository Format/code-map updates for those Adapters. Durable Working Material drafts, autosave, reopening/history, rich/source editing, and the Knowledge Authoring UI remain deferred to the authoring tracer bullet.
 - **Acceptance:** Human review is pending. The user must confirm the current version stayed unchanged until explicit application and the prior version remained retrievable afterward before this first cycle is accepted.
 - **Next behavior:** Before adding the next TB8 behavior, repeat the documentation prerequisite. The next planned TB8 cycle is the required file-backed persistence/S5 contract work; TB9 owns stale and incoherent application rejection.
+
+#### TB8 required S5 file-backed persistence cycle — August 28, 2026
+
+- **Public Behavior:** The file-backed Governance Adapter loads the fixture as `bayesian-statistics-v1`, applies the accepted exact-version Proposal, writes the approved target, immutable applied audit JSON, and exact-byte targeted rollback through a recoverable local transaction, then reopens with `bayesian-statistics-v2` current and `bayesian-statistics-v1` retrievable.
+- **Test Seam:** S5 file-backed Governance version-storage Adapter contract plus the existing public S2 Governance Interface. The contract inspects portable repository artifacts; Governance assertions observe current/history and application outcomes through the public Interface.
+- **Red evidence:** `npm test -- --run tests/contracts/governance-version-store.test.ts` first failed because `file-backed-governance-store` did not exist.
+- **Green evidence:** The focused S5/S2 suite passed 6 tests. `npm run check` passed formatting, linting, strict type checking, and 65 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 80.67% statements, 72.64% branches, and 97.14% functions.
+- **Failure/recovery evidence:** The contract covers external target-edit rejection without overwrite, recovery after target replacement interruption, recovery after audit-install interruption with transaction cleanup, and exact prior-target restoration when interrupted audit content is invalid. It also asserts exact persisted audit JSON, exact rollback bytes, stable reopen history, and preservation of unrelated repository content.
+- **Scope confirmed:** The cycle adds only the confirmed one-target `v1` → `v2` file-backed persistence path. General version allocation, branching/multi-target lineage, schema migration, broad indexing, unknown-staging cleanup, UI rollback/recovery, stale/incoherent Judgment policy, Proposal Review, authoring, Agent Provider use, Git, and network behavior remain deferred as documented in the TB8 brief.
+- **Environment note:** `npm run test:workflow` was attempted but stopped at the repository Node guard because this host has Node `v26.7.0` and the project requires Node `v24.19.0`; the packaged workflow result is therefore pending a compatible Node runtime and is not claimed as passing.
+- **Acceptance:** Human review of the persisted artifacts, reopen behavior, external-edit handling, interruption recovery, and rollback restoration remains pending. TB8 is not accepted until that review and compatible-runtime packaged evidence are complete.
+- **Next behavior:** Re-run the packaged workflow with Node `24.19.0`, complete human S5 review, then select the next TB8/TB9 behavior only after the documentation prerequisite is repeated.
 
 ### 9. Reject stale and incoherent applications
 

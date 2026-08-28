@@ -1,6 +1,6 @@
 # Tracer Bullet 8: Apply one governed change
 
-Status: first S2 implementation cycle complete and merged on August 28, 2026; S5 persistence design pending confirmation.
+Status: first S2 implementation cycle complete and merged on August 28, 2026; S5 implementation complete on August 28, 2026, with packaged-runtime verification and human acceptance pending.
 
 This brief coordinates the first Governance implementation slice in the [delivery plan](delivery-plan.md#8-apply-one-governed-change). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, testing, or accepted ADR decisions.
 
@@ -18,7 +18,7 @@ Before writing behavior tests or implementation code, and again before each late
 2. Create or update this guidance-compliant `tracer-bullet-8-spec.md` with the Public Behavior, confirmed Test Seam, literal expected values, fixtures and External System Seams, minimum vertical path, boundaries, deferrals, acceptance evidence, and required confirmation recorded below.
 3. Check the proposed behavior against those authorities before the Red test run. If implementation reveals a conflict or an unconfirmed seam, stop, update the owning document and this brief, and obtain the required human confirmation before continuing.
 
-This prerequisite was completed for the first cycle on August 28, 2026. The reviewed authorities are listed below so a future cycle can repeat the check rather than relying on memory. The first S2 Red-to-Green cycle is complete; the user-facing behavior remains pending explicit human acceptance.
+This prerequisite was completed for the first cycle and repeated for the S5 persistence cycle on August 28, 2026. The reviewed authorities are listed below so a future cycle can repeat the check rather than relying on memory. The S2 and S5 Red-to-Green implementation cycles are complete; the resulting behavior remains pending explicit human acceptance and compatible-runtime packaged verification.
 
 ## Authoritative decisions
 
@@ -254,7 +254,7 @@ Use the confirmed S5 file-backed Governance storage Adapter contract plus the pu
 
 The first S5 behavior test copies `app/tests/fixtures/knowledge-repository/` into an isolated temporary repository, uses the literal S2 Proposal/Judgment, applies through Governance, creates a new Governance instance over the same root, and asserts the literal current/prior versions and applied identity. It must also assert that the original fixture's unrelated files remain present and that the applied audit and rollback paths contain the expected exact values.
 
-The storage seam should extend the existing Governance version-store contract with one application operation that receives the already-validated Proposal/Judgment and writes the target, rollback bytes, and audit record as one recoverable unit. Governance retains policy ownership; the Adapter owns serialization, fingerprints, staging, recovery, and filesystem failure translation. The in-memory Adapter remains deterministic and continues to satisfy the S2 behavior test.
+The storage seam extends the existing Governance version-store contract with one application operation that receives the already-validated Proposal/Judgment, the Proposal's captured base content for the final external-edit check, and the approved application identity. It writes the target, rollback bytes, and audit record as one recoverable unit. Governance retains policy ownership; the Adapter owns serialization, fingerprints, staging, recovery, and filesystem failure translation. The in-memory Adapter remains deterministic and continues to satisfy the S2 behavior test.
 
 Minimum path:
 
@@ -275,7 +275,7 @@ The failure cycles for external edits, interrupted writes, recovery cleanup, and
 
 ### Acceptance evidence and confirmation
 
-Completion requires literal S5 round-trip evidence, applied-record and rollback contract evidence, preservation of unrelated repository content, focused and full automated gates, and explicit human confirmation that reopening returns `bayesian-statistics-v2` while `bayesian-statistics-v1` remains retrievable. TB8 remains incomplete until the required failure cycles and their recovery evidence are recorded.
+The S5 implementation now has literal round-trip evidence, applied-record and rollback contract evidence, preservation of unrelated repository content, focused and full automated gates, and the required external-edit, interrupted-target, interrupted-audit, cleanup, and rollback-restoration evidence. `npm run test:workflow` remains pending a Node `24.19.0` runtime because the current host is running Node `v26.7.0` and no compatible installation is available. Explicit human confirmation that reopening returns `bayesian-statistics-v2` while `bayesian-statistics-v1` remains retrievable is still required before TB8 acceptance.
 
 The concrete Repository Format representation above was confirmed by the user before implementation. If implementation exposes a contradiction with the accepted applied-record, rollback, version-mapping, or transaction layout, stop, update this brief and `repository-format.md`, and obtain renewed confirmation before changing the S5 test or code.
 
