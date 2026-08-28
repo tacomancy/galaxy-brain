@@ -1,14 +1,13 @@
 import { createHash } from "node:crypto";
-import {
-  lstat,
-  mkdir,
-  readFile,
-  readdir,
-  realpath,
-  writeFile,
-} from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 
+import {
+  discardAbandonedTemporaryFiles,
+  defaultAtomicFileSystem,
+  type AtomicFileSystem,
+  writeFileAtomically,
+} from "../file-backed-atomic-write";
 import type {
   SynthesisContextSnapshot,
   SynthesisHumanEdit,
@@ -28,8 +27,6 @@ const resultDirectoryName = join("scratch", "synthesis-results");
 class InvalidSynthesisResultError extends Error {}
 
 class UnsafeSynthesisResultTargetError extends Error {}
-
-class ExternalSynthesisResultChangeError extends Error {}
 
 const isErrnoException = (error: unknown): error is NodeJS.ErrnoException =>
   error instanceof Error && "code" in error;
@@ -247,7 +244,7 @@ const readResultDirectory = async (
   }
 };
 
-type FileFingerprint = { digest: string } | undefined;
+type FileFingerprint = string | undefined;
 
 const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
   try {
@@ -260,7 +257,7 @@ const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
     }
 
     const contents = await readFile(filePath);
-    return { digest: createHash("sha256").update(contents).digest("hex") };
+    return createHash("sha256").update(contents).digest("hex");
   } catch (cause: unknown) {
     if (isErrnoException(cause) && cause.code === "ENOENT") {
       return undefined;
@@ -269,11 +266,6 @@ const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
     throw cause;
   }
 };
-
-const sameFingerprint = (
-  left: FileFingerprint,
-  right: FileFingerprint,
-): boolean => left?.digest === right?.digest;
 
 const readResultFile = async (
   filePath: string,
@@ -303,6 +295,7 @@ const readResultFile = async (
 export const createFileBackedSynthesisResultRepository = (
   repositoryPath: string,
   diagnostics?: SynthesisResultDiagnostics,
+  filesystem: AtomicFileSystem = defaultAtomicFileSystem,
 ): SynthesisResultRepository => {
   const readResult = async (
     resultId: string,
@@ -328,6 +321,12 @@ export const createFileBackedSynthesisResultRepository = (
           detail: "The Synthesis result was not found.",
         };
       }
+
+      await discardAbandonedTemporaryFiles(
+        resultDirectory,
+        resultFilePath(canonicalPath, resultId),
+        filesystem,
+      );
 
       const result = await readResultFile(
         resultFilePath(canonicalPath, resultId),
@@ -362,15 +361,15 @@ export const createFileBackedSynthesisResultRepository = (
       await ensureResultDirectory(canonicalPath);
       const filePath = resultFilePath(canonicalPath, result.id);
       const existingFingerprint = await fingerprint(filePath);
-      const recheckedFingerprint = await fingerprint(filePath);
-
-      if (!sameFingerprint(existingFingerprint, recheckedFingerprint)) {
-        throw new ExternalSynthesisResultChangeError(
+      await writeFileAtomically({
+        contents: serializeResult(result),
+        externalChangeDetail:
           "The Synthesis result changed while it was being saved.",
-        );
-      }
-
-      await writeFile(filePath, serializeResult(result), "utf8");
+        expectedFingerprint: existingFingerprint,
+        filePath,
+        filesystem,
+        readFingerprint: () => fingerprint(filePath),
+      });
     },
     readResult,
     readResults: async (): Promise<SynthesisResultListReadOutcome> => {
@@ -395,6 +394,11 @@ export const createFileBackedSynthesisResultRepository = (
           return { outcome: "found", results: [] };
         }
 
+        await discardAbandonedTemporaryFiles(
+          resultDirectory,
+          join(resultDirectory, "result.json"),
+          filesystem,
+        );
         entries = await readdir(resultDirectory, {
           encoding: "utf8",
           withFileTypes: true,

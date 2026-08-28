@@ -1,6 +1,13 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
+import {
+  discardAbandonedTemporaryFiles,
+  defaultAtomicFileSystem,
+  type AtomicFileSystem,
+  writeFileAtomically,
+} from "../file-backed-atomic-write";
 import type {
   ReadingPosition,
   WorkbenchSessionSnapshot,
@@ -13,6 +20,16 @@ interface PersistedWorkbenchSession {
   activeWorkspace?: WorkbenchWorkspace;
   readingPosition?: ReadingPosition;
 }
+
+/** Filesystem operations used by the session-state durability contract. */
+export interface WorkbenchSessionStateFileSystem extends AtomicFileSystem {
+  mkdir: typeof mkdir;
+}
+
+const defaultFileSystem: WorkbenchSessionStateFileSystem = {
+  ...defaultAtomicFileSystem,
+  mkdir,
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -62,6 +79,20 @@ const isPersistedWorkbenchSession = (
   );
 };
 
+const fingerprint = async (filePath: string): Promise<string | undefined> => {
+  try {
+    return createHash("sha256")
+      .update(await readFile(filePath))
+      .digest("hex");
+  } catch (error: unknown) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw error;
+  }
+};
+
 /**
  * Stores exact-root resume and active-work convenience state outside the
  * portable Knowledge Repository. Malformed or unavailable state behaves like
@@ -69,9 +100,19 @@ const isPersistedWorkbenchSession = (
  */
 export const createFileBackedWorkbenchSessionState = (
   sessionStatePath: string,
-): WorkbenchSessionState => ({
-  readSession: async (): Promise<WorkbenchSessionSnapshot | undefined> => {
+  filesystem: WorkbenchSessionStateFileSystem = defaultFileSystem,
+): WorkbenchSessionState => {
+  let writeQueue = Promise.resolve();
+
+  const readSession = async (): Promise<
+    WorkbenchSessionSnapshot | undefined
+  > => {
     try {
+      await discardAbandonedTemporaryFiles(
+        dirname(sessionStatePath),
+        sessionStatePath,
+        filesystem,
+      );
       const parsed: unknown = JSON.parse(
         await readFile(sessionStatePath, "utf8"),
       );
@@ -92,12 +133,34 @@ export const createFileBackedWorkbenchSessionState = (
     } catch {
       return undefined;
     }
-  },
-  writeSession: async (snapshot) => {
-    await mkdir(dirname(sessionStatePath), { recursive: true });
-    const temporaryPath = `${sessionStatePath}.tmp`;
+  };
 
-    await writeFile(temporaryPath, `${JSON.stringify(snapshot)}\n`, "utf8");
-    await rename(temporaryPath, sessionStatePath);
-  },
-});
+  const persistSession = async (
+    snapshot: WorkbenchSessionSnapshot,
+  ): Promise<void> => {
+    await filesystem.mkdir(dirname(sessionStatePath), { recursive: true });
+    const expectedFingerprint = await fingerprint(sessionStatePath);
+
+    await writeFileAtomically({
+      contents: `${JSON.stringify(snapshot)}\n`,
+      externalChangeDetail:
+        "The Workbench session state changed while it was being saved.",
+      expectedFingerprint,
+      filePath: sessionStatePath,
+      filesystem,
+      readFingerprint: () => fingerprint(sessionStatePath),
+    });
+  };
+
+  return {
+    readSession,
+    writeSession: (snapshot) => {
+      const operation = writeQueue.then(() => persistSession(snapshot));
+      writeQueue = operation.then(
+        () => undefined,
+        () => undefined,
+      );
+      return operation;
+    },
+  };
+};
