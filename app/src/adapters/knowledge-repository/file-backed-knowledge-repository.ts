@@ -98,54 +98,73 @@ const copyStarterContents = async (
   }
 };
 
+type Quote = "single" | "double";
+
+const isQuoteStart = (
+  character: string | undefined,
+  quote: Quote | undefined,
+  previousCharacter: string | undefined,
+): boolean =>
+  quote === undefined &&
+  (character === "'" || character === '"') &&
+  (previousCharacter === undefined || /\s|:/.test(previousCharacter));
+
+const isCommentStart = (
+  character: string | undefined,
+  previousCharacter: string | undefined,
+): boolean =>
+  character === "#" &&
+  (previousCharacter === undefined || /\s/.test(previousCharacter));
+
+const readQuotedCharacter = (
+  line: string,
+  index: number,
+  quote: Quote,
+): { quote: Quote | undefined; nextIndex: number } | undefined => {
+  const character = line[index];
+
+  if (quote === "double" && character === "\\") {
+    return { quote, nextIndex: index + 1 };
+  }
+
+  if (quote === "single" && character === "'") {
+    return {
+      quote: line[index + 1] === "'" ? quote : undefined,
+      nextIndex: line[index + 1] === "'" ? index + 1 : index,
+    };
+  }
+
+  if (quote === "double" && character === '"') {
+    return { quote: undefined, nextIndex: index };
+  }
+
+  return undefined;
+};
+
 const stripYamlComment = (line: string): string => {
-  let quote: "single" | "double" | undefined;
+  let quote: Quote | undefined;
 
   for (let index = 0; index < line.length; index += 1) {
     const character = line[index];
     const previousCharacter = line[index - 1];
 
-    if (quote === "double" && character === "\\") {
-      index += 1;
-      continue;
-    }
+    if (quote !== undefined) {
+      const quotedCharacter = readQuotedCharacter(line, index, quote);
 
-    if (
-      character === "'" &&
-      quote === undefined &&
-      (previousCharacter === undefined || /\s|:/.test(previousCharacter))
-    ) {
-      quote = "single";
-      continue;
-    }
-
-    if (
-      character === '"' &&
-      quote === undefined &&
-      (previousCharacter === undefined || /\s|:/.test(previousCharacter))
-    ) {
-      quote = "double";
-      continue;
-    }
-
-    if (character === "'" && quote === "single") {
-      if (line[index + 1] === "'") {
-        index += 1;
-      } else {
-        quote = undefined;
+      if (quotedCharacter !== undefined) {
+        quote = quotedCharacter.quote;
+        index = quotedCharacter.nextIndex;
       }
+
       continue;
     }
 
-    if (character === '"' && quote === "double") {
-      quote = undefined;
+    if (isQuoteStart(character, quote, previousCharacter)) {
+      quote = character === "'" ? "single" : "double";
       continue;
     }
 
-    if (
-      character === "#" &&
-      (previousCharacter === undefined || /\s/.test(previousCharacter))
-    ) {
+    if (isCommentStart(character, previousCharacter)) {
       return line.slice(0, index);
     }
   }
@@ -357,6 +376,45 @@ const findMarkdownMetadata = async (
   return undefined;
 };
 
+const completeTopicMetadata = (
+  metadata: Map<string, string> | undefined,
+): { id: string; title: string; sourceReference: string } | undefined => {
+  const id = metadata?.get("id");
+  const title = metadata?.get("title");
+  const sourceReference = metadata?.get("source_record");
+
+  if (
+    id === undefined ||
+    title === undefined ||
+    sourceReference === undefined ||
+    isAbsolute(sourceReference)
+  ) {
+    return undefined;
+  }
+
+  return { id, title, sourceReference };
+};
+
+const isRepositoryRelativePath = (path: string): boolean =>
+  path !== "" && !path.startsWith("..") && !isAbsolute(path);
+
+const completeSourceMetadata = (
+  metadata: Map<string, string> | undefined,
+): { id: string; title: string } | undefined => {
+  const id = metadata?.get("id");
+  const title = metadata?.get("title");
+
+  if (
+    metadata?.get("type") !== "source" ||
+    id === undefined ||
+    title === undefined
+  ) {
+    return undefined;
+  }
+
+  return { id, title };
+};
+
 const readWorkbenchContext = async (
   repositoryPath: string,
 ): Promise<WorkbenchContext | undefined> => {
@@ -364,45 +422,29 @@ const readWorkbenchContext = async (
     join(repositoryPath, "knowledge"),
     "topic",
   );
-  const topicId = topicMetadata?.get("id");
-  const topicTitle = topicMetadata?.get("title");
-  const sourceReference = topicMetadata?.get("source_record");
+  const topic = completeTopicMetadata(topicMetadata);
 
-  if (
-    topicId === undefined ||
-    topicTitle === undefined ||
-    sourceReference === undefined ||
-    isAbsolute(sourceReference)
-  ) {
+  if (topic === undefined) {
     return undefined;
   }
 
-  const sourcePath = resolve(repositoryPath, sourceReference);
+  const sourcePath = resolve(repositoryPath, topic.sourceReference);
   const relativeSourcePath = relative(repositoryPath, sourcePath);
 
-  if (
-    relativeSourcePath === "" ||
-    relativeSourcePath.startsWith("..") ||
-    isAbsolute(relativeSourcePath)
-  ) {
+  if (!isRepositoryRelativePath(relativeSourcePath)) {
     return undefined;
   }
 
   const sourceMetadata = await readMarkdownMetadata(sourcePath);
-  const sourceId = sourceMetadata?.get("id");
-  const sourceTitle = sourceMetadata?.get("title");
+  const source = completeSourceMetadata(sourceMetadata);
 
-  if (
-    sourceMetadata?.get("type") !== "source" ||
-    sourceId === undefined ||
-    sourceTitle === undefined
-  ) {
+  if (source === undefined) {
     return undefined;
   }
 
   return {
-    topic: { id: topicId, title: topicTitle },
-    sourceRecord: { id: sourceId, title: sourceTitle },
+    topic: { id: topic.id, title: topic.title },
+    sourceRecord: source,
   };
 };
 
@@ -486,6 +528,156 @@ const openingFailed = (): RepositoryOperationOutcome => ({
   detail: "The Knowledge Repository could not be opened.",
 });
 
+type CreationTarget = { canonicalParent: string; canonicalRoot: string };
+
+const resolveCreationTarget = async (
+  requestedRoot: string,
+): Promise<CreationTarget | RepositoryOperationOutcome> => {
+  let parentStats: Awaited<ReturnType<typeof lstat>>;
+
+  try {
+    parentStats = await lstat(dirname(requestedRoot));
+  } catch (error: unknown) {
+    if (isErrnoException(error) && error.code === "ENOENT") {
+      return targetUnavailable();
+    }
+
+    throw error;
+  }
+
+  if (parentStats.isSymbolicLink()) {
+    return unsafeTarget();
+  }
+
+  if (!parentStats.isDirectory()) {
+    return targetUnavailable();
+  }
+
+  const canonicalParent = await realpath(dirname(requestedRoot));
+  const canonicalRoot = join(canonicalParent, basename(requestedRoot));
+
+  try {
+    const targetStats = await lstat(canonicalRoot);
+
+    if (targetStats.isSymbolicLink() || !targetStats.isDirectory()) {
+      return operationFailed();
+    }
+
+    if ((await readdir(canonicalRoot)).length > 0) {
+      return operationFailed();
+    }
+  } catch (error: unknown) {
+    if (!isErrnoException(error) || error.code !== "ENOENT") {
+      return operationFailed();
+    }
+  }
+
+  return { canonicalParent, canonicalRoot };
+};
+
+const moveExistingCreationTarget = async (
+  canonicalRoot: string,
+  canonicalParent: string,
+  filesystem: KnowledgeRepositoryFileSystem,
+  state: CreationState,
+): Promise<void> => {
+  try {
+    const targetStats = await lstat(canonicalRoot);
+
+    if (
+      targetStats.isSymbolicLink() ||
+      !targetStats.isDirectory() ||
+      (await readdir(canonicalRoot)).length > 0
+    ) {
+      throw new Error("The selected target is no longer an empty directory.");
+    }
+
+    state.backupRoot = await mkdtemp(
+      join(canonicalParent, ".galaxy-brain-create-backup-"),
+    );
+    await filesystem.rm(state.backupRoot, { recursive: true, force: true });
+    await filesystem.rename(canonicalRoot, state.backupRoot);
+  } catch (error: unknown) {
+    if (isErrnoException(error) && error.code === "ENOENT") {
+      return;
+    }
+
+    throw error;
+  }
+};
+
+interface CreationState {
+  stagingRoot: string | undefined;
+  backupRoot: string | undefined;
+  existingTargetMoved: boolean;
+  repositoryInstalled: boolean;
+  preserveBackup: boolean;
+}
+
+const restoreCreationBackup = async (
+  state: CreationState,
+  canonicalRoot: string,
+  filesystem: KnowledgeRepositoryFileSystem,
+): Promise<void> => {
+  if (
+    !state.existingTargetMoved ||
+    state.repositoryInstalled ||
+    state.backupRoot === undefined
+  ) {
+    return;
+  }
+
+  try {
+    await filesystem.rename(state.backupRoot, canonicalRoot);
+    state.backupRoot = undefined;
+  } catch {
+    // Keep the backup in place rather than deleting user content when
+    // restoration itself cannot complete.
+    state.preserveBackup = true;
+  }
+};
+
+const cleanupCreation = async (
+  state: CreationState,
+  filesystem: KnowledgeRepositoryFileSystem,
+): Promise<void> => {
+  if (state.stagingRoot !== undefined) {
+    await filesystem.rm(state.stagingRoot, { recursive: true, force: true });
+  }
+
+  if (state.backupRoot !== undefined && !state.preserveBackup) {
+    await filesystem.rm(state.backupRoot, { recursive: true, force: true });
+  }
+};
+
+const resolveOpenTarget = async (
+  requestedRoot: string,
+): Promise<string | RepositoryOperationOutcome> => {
+  const parentStats = await lstat(dirname(requestedRoot));
+
+  if (parentStats.isSymbolicLink()) {
+    return unsafeTarget();
+  }
+
+  if (!parentStats.isDirectory()) {
+    return targetUnavailable();
+  }
+
+  const canonicalParent = await realpath(dirname(requestedRoot));
+  const canonicalRoot = join(canonicalParent, basename(requestedRoot));
+  const targetStats = await lstat(canonicalRoot);
+
+  if (targetStats.isSymbolicLink()) {
+    return unsafeTarget();
+  }
+
+  if (!targetStats.isDirectory()) {
+    return invalidFormat();
+  }
+
+  return canonicalRoot;
+};
+
 /**
  * Creates Knowledge Repositories from the bundled empty starter skeleton.
  * Creation is staged in a temporary sibling and selects the destination only
@@ -497,154 +689,74 @@ export const createFileBackedKnowledgeRepository = (
 ): KnowledgeRepository => ({
   createAt: async (requestedPath): Promise<RepositoryOperationOutcome> => {
     const requestedRoot = resolve(requestedPath);
-    let stagingRoot: string | undefined;
-    let backupRoot: string | undefined;
-    let existingTargetMoved = false;
-    let repositoryInstalled = false;
-    let preserveBackup = false;
-    let canonicalRoot: string | undefined;
+    let target: CreationTarget | RepositoryOperationOutcome;
 
     try {
-      let parentStats: Awaited<ReturnType<typeof lstat>>;
+      target = await resolveCreationTarget(requestedRoot);
+    } catch {
+      return operationFailed();
+    }
 
-      try {
-        parentStats = await lstat(dirname(requestedRoot));
-      } catch (error: unknown) {
-        if (isErrnoException(error) && error.code === "ENOENT") {
-          return targetUnavailable();
-        }
+    if ("outcome" in target) {
+      return target;
+    }
 
-        throw error;
-      }
+    const state: CreationState = {
+      stagingRoot: undefined,
+      backupRoot: undefined,
+      existingTargetMoved: false,
+      repositoryInstalled: false,
+      preserveBackup: false,
+    };
 
-      if (parentStats.isSymbolicLink()) {
-        return unsafeTarget();
-      }
-
-      if (!parentStats.isDirectory()) {
-        return targetUnavailable();
-      }
-
-      const canonicalParent = await realpath(dirname(requestedRoot));
-      canonicalRoot = join(canonicalParent, basename(requestedRoot));
-
-      try {
-        const targetStats = await lstat(canonicalRoot);
-
-        if (targetStats.isSymbolicLink() || !targetStats.isDirectory()) {
-          return operationFailed();
-        }
-
-        if ((await readdir(canonicalRoot)).length > 0) {
-          return operationFailed();
-        }
-      } catch (error: unknown) {
-        if (!isErrnoException(error) || error.code !== "ENOENT") {
-          return operationFailed();
-        }
-      }
-
-      stagingRoot = await mkdtemp(
-        join(canonicalParent, ".galaxy-brain-create-"),
+    try {
+      // Store each temporary path before the next filesystem operation so the
+      // transaction cleanup can recover from a failure at any later step.
+      state.stagingRoot = await mkdtemp(
+        join(target.canonicalParent, ".galaxy-brain-create-"),
       );
-      await copyStarterContents(starterRoot, stagingRoot);
-      await validateStagedRepository(stagingRoot);
+      await copyStarterContents(starterRoot, state.stagingRoot);
+      await validateStagedRepository(state.stagingRoot);
+      await moveExistingCreationTarget(
+        target.canonicalRoot,
+        target.canonicalParent,
+        filesystem,
+        state,
+      );
+      state.existingTargetMoved = state.backupRoot !== undefined;
 
-      try {
-        const targetStats = await lstat(canonicalRoot);
+      await filesystem.rename(state.stagingRoot, target.canonicalRoot);
+      state.stagingRoot = undefined;
+      state.repositoryInstalled = true;
 
-        if (
-          targetStats.isSymbolicLink() ||
-          !targetStats.isDirectory() ||
-          (await readdir(canonicalRoot)).length > 0
-        ) {
-          throw new Error(
-            "The selected target is no longer an empty directory.",
-          );
-        }
-
-        backupRoot = await mkdtemp(
-          join(canonicalParent, ".galaxy-brain-create-backup-"),
-        );
-        await filesystem.rm(backupRoot, { recursive: true, force: true });
-        await filesystem.rename(canonicalRoot, backupRoot);
-        existingTargetMoved = true;
-      } catch (error: unknown) {
-        if (!isErrnoException(error) || error.code !== "ENOENT") {
-          throw error;
-        }
-      }
-
-      await filesystem.rename(stagingRoot, canonicalRoot);
-      stagingRoot = undefined;
-      repositoryInstalled = true;
-
-      if (backupRoot !== undefined) {
+      if (state.backupRoot !== undefined) {
         // Placement is the commit point. Cleanup is best effort afterward;
         // reporting failure here would leave callers believing that no
         // repository was installed even though the final rename succeeded.
-        const completedBackup = backupRoot;
-        backupRoot = undefined;
+        const completedBackup = state.backupRoot;
+        state.backupRoot = undefined;
         await filesystem
           .rm(completedBackup, { recursive: true, force: true })
           .catch(() => undefined);
       }
 
-      return { outcome: "created", repositoryPath: canonicalRoot };
+      return { outcome: "created", repositoryPath: target.canonicalRoot };
     } catch {
-      if (
-        existingTargetMoved &&
-        !repositoryInstalled &&
-        backupRoot !== undefined &&
-        canonicalRoot !== undefined
-      ) {
-        try {
-          await filesystem.rename(backupRoot, canonicalRoot);
-          backupRoot = undefined;
-        } catch {
-          // Keep the backup in place rather than deleting user content when
-          // restoration itself cannot complete.
-          preserveBackup = true;
-        }
-      }
-
+      await restoreCreationBackup(state, target.canonicalRoot, filesystem);
       return operationFailed();
     } finally {
-      if (stagingRoot !== undefined) {
-        await filesystem.rm(stagingRoot, { recursive: true, force: true });
-      }
-
-      if (backupRoot !== undefined && !preserveBackup) {
-        await filesystem.rm(backupRoot, { recursive: true, force: true });
-      }
+      await cleanupCreation(state, filesystem);
     }
   },
   openAt: async (requestedPath): Promise<RepositoryOperationOutcome> => {
-    const requestedRoot = resolve(requestedPath);
-
     try {
-      const parentStats = await lstat(dirname(requestedRoot));
+      const target = await resolveOpenTarget(resolve(requestedPath));
 
-      if (parentStats.isSymbolicLink()) {
-        return unsafeTarget();
+      if (typeof target !== "string") {
+        return target;
       }
 
-      if (!parentStats.isDirectory()) {
-        return targetUnavailable();
-      }
-
-      const canonicalParent = await realpath(dirname(requestedRoot));
-      const canonicalRoot = join(canonicalParent, basename(requestedRoot));
-
-      const targetStats = await lstat(canonicalRoot);
-
-      if (targetStats.isSymbolicLink()) {
-        return unsafeTarget();
-      }
-
-      if (!targetStats.isDirectory()) {
-        return invalidFormat();
-      }
+      const canonicalRoot = target;
 
       await validateNoSymlinks(canonicalRoot);
       const { format, formatVersion } = await readManifest(canonicalRoot);

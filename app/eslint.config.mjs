@@ -3,6 +3,7 @@
 import js from "@eslint/js";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import reactHooks from "eslint-plugin-react-hooks";
+import sonarjs from "eslint-plugin-sonarjs";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
@@ -30,6 +31,18 @@ export default tseslint.config(
     rules: {
       ...jsxA11y.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
+    },
+  },
+  {
+    // Complexity limits are an authored-production-source policy. Tests and
+    // fixtures have different shape and remain outside this initial gate.
+    files: ["src/**/*.{ts,tsx}"],
+    plugins: {
+      sonarjs,
+    },
+    rules: {
+      complexity: ["error", { max: 15, variant: "classic" }],
+      "sonarjs/cognitive-complexity": ["error", 15],
     },
   },
 );

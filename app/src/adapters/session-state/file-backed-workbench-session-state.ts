@@ -14,50 +14,51 @@ interface PersistedWorkbenchSession {
   readingPosition?: ReadingPosition;
 }
 
-const isPersistedWorkbenchSession = (
-  value: unknown,
-): value is PersistedWorkbenchSession => {
-  if (typeof value !== "object" || value === null) {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isWorkbenchWorkspace = (value: unknown): value is WorkbenchWorkspace =>
+  value === undefined ||
+  value === "atlas" ||
+  value === "studio" ||
+  value === "paper-desk";
+
+const isReadingPosition = (value: unknown): value is ReadingPosition => {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!isRecord(value)) {
     return false;
   }
 
-  // The object check above narrows only to object; this local structural
-  // assertion is the smallest shape needed to validate untrusted JSON.
-  const persisted = value as {
-    selectedRepositoryPath?: unknown;
-    activeWorkspace?: unknown;
-    readingPosition?: unknown;
-  };
-  const selectedRepositoryPath = persisted.selectedRepositoryPath;
-
-  const activeWorkspace = persisted.activeWorkspace;
-  const hasValidWorkspace =
-    activeWorkspace === undefined ||
-    activeWorkspace === "atlas" ||
-    activeWorkspace === "studio" ||
-    activeWorkspace === "paper-desk";
-
-  const readingPosition = persisted.readingPosition;
-  const hasValidReadingPosition =
-    readingPosition === undefined ||
-    (typeof readingPosition === "object" &&
-      readingPosition !== null &&
-      typeof (readingPosition as { sourceRecordId?: unknown })
-        .sourceRecordId === "string" &&
-      (readingPosition as { sourceRecordId: string }).sourceRecordId.length >
-        0 &&
-      Number.isInteger((readingPosition as { page?: unknown }).page) &&
-      (readingPosition as { page: number }).page > 0 &&
-      Number.isInteger(
-        (readingPosition as { characterOffset?: unknown }).characterOffset,
-      ) &&
-      (readingPosition as { characterOffset: number }).characterOffset >= 0);
+  const page = value.page;
+  const characterOffset = value.characterOffset;
 
   return (
-    typeof selectedRepositoryPath === "string" &&
-    selectedRepositoryPath.length > 0 &&
-    hasValidWorkspace &&
-    hasValidReadingPosition
+    typeof value.sourceRecordId === "string" &&
+    value.sourceRecordId.length > 0 &&
+    typeof page === "number" &&
+    Number.isInteger(page) &&
+    page > 0 &&
+    typeof characterOffset === "number" &&
+    Number.isInteger(characterOffset) &&
+    characterOffset >= 0
+  );
+};
+
+const isPersistedWorkbenchSession = (
+  value: unknown,
+): value is PersistedWorkbenchSession => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.selectedRepositoryPath === "string" &&
+    value.selectedRepositoryPath.length > 0 &&
+    isWorkbenchWorkspace(value.activeWorkspace) &&
+    isReadingPosition(value.readingPosition)
   );
 };
 
