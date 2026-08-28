@@ -29,6 +29,19 @@ base_version: bayesian-statistics-v1
 
 Bayesian statistics updates a ==posterior belief== with evidence.`;
 
+const waitForText = async (
+  selector: string,
+  expectedText: string,
+): Promise<void> => {
+  await browser.waitUntil(
+    async () => (await $(selector).getText()) === expectedText,
+    {
+      timeout: 5_000,
+      timeoutMsg: `${selector} did not show the expected updated text.`,
+    },
+  );
+};
+
 describe("Edit one meaning across rich and source views", () => {
   it("preserves a highlighted edit through source inspection and same-session reopen", async () => {
     const fixtureRepositoryPath = join(
@@ -68,7 +81,7 @@ describe("Edit one meaning across rich and source views", () => {
     await $("#studio-rich-edit-input").setValue("posterior belief");
     await $("#studio-rich-edit-apply").click();
 
-    assert.equal(await $("#studio-rich-view").getText(), "posterior belief");
+    await waitForText("#studio-rich-view", "posterior belief");
     assert.equal(
       await $("#studio-rich-highlight").getAttribute("data-highlighted"),
       "true",
@@ -165,10 +178,7 @@ ${body}`;
     for (const example of examples) {
       await $(`#studio-authoring-construct-${example.construct}`).click();
       await $("#studio-rich-semantic-object").waitForDisplayed();
-      assert.equal(
-        await $("#studio-rich-semantic-object").getText(),
-        example.initialValue,
-      );
+      await waitForText("#studio-rich-semantic-object", example.initialValue);
 
       await $("#studio-source-mode").click();
       assert.equal(
@@ -179,10 +189,7 @@ ${body}`;
       await $("#studio-rich-edit").click();
       await $("#studio-rich-edit-input").setValue(example.editedValue);
       await $("#studio-rich-edit-apply").click();
-      assert.equal(
-        await $("#studio-rich-semantic-object").getText(),
-        example.editedValue,
-      );
+      await waitForText("#studio-rich-semantic-object", example.editedValue);
 
       await $("#studio-source-mode").click();
       assert.equal(
