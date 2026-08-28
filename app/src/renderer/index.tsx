@@ -5,8 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import "./styles.css";
 import { Atlas } from "./atlas/Atlas";
 import { PaperDesk } from "./paper-desk/PaperDesk";
+import { ProposalReview } from "./proposal-review/ProposalReview";
 import { Studio } from "./studio/Studio";
 import { WorkspaceSwitcher } from "./workspace-switcher/WorkspaceSwitcher";
+import type {
+  ProposalReviewApplyOutcome,
+  ProposalReviewReadOutcome,
+} from "../modules/proposal-review";
 import type {
   ConfirmSynthesisOutcome,
   RestoreSynthesisResultOutcome,
@@ -39,9 +44,11 @@ const root = createRoot(rootElement);
 const WorkbenchShell = ({
   initialWorkbench,
   initialSavedSynthesisResults,
+  initialProposalReview,
 }: {
   initialWorkbench: FreshWorkbench;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
+  initialProposalReview: ProposalReviewReadOutcome;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
   const shouldFocusSelectedContextAction = useRef(false);
@@ -72,6 +79,12 @@ const WorkbenchShell = ({
     );
   const [restoreOutcome, setRestoreOutcome] = useState<
     RestoreSynthesisResultOutcome | undefined
+  >();
+  const [proposalReview, setProposalReview] =
+    useState<ProposalReviewReadOutcome>(initialProposalReview);
+  const [isProposalReviewOpen, setIsProposalReviewOpen] = useState(false);
+  const [proposalReviewApplyOutcome, setProposalReviewApplyOutcome] = useState<
+    ProposalReviewApplyOutcome | undefined
   >();
 
   useEffect(() => {
@@ -109,6 +122,7 @@ const WorkbenchShell = ({
     } else {
       setSavedSynthesisResultsReadError(outcome.detail);
     }
+    setProposalReview(await window.workbench.readProposalReview());
   };
 
   const createRepository = async (): Promise<void> => {
@@ -141,6 +155,30 @@ const WorkbenchShell = ({
   const openTopicInStudio = async (topicId: string): Promise<void> => {
     const outcome = await window.workbench.openTopicInStudio(topicId);
     applyWorkspaceTransition(outcome);
+  };
+
+  const openProposalReview = async (): Promise<void> => {
+    const outcome = await window.workbench.openProposalReview();
+    setProposalReview(outcome);
+    setProposalReviewApplyOutcome(undefined);
+
+    if (outcome.outcome === "available" || outcome.outcome === "applied") {
+      setIsProposalReviewOpen(true);
+    }
+  };
+
+  const acceptProposalReview = async (): Promise<void> => {
+    const outcome = await window.workbench.acceptProposalReview();
+    setProposalReviewApplyOutcome(outcome);
+
+    if (outcome.outcome === "applied") {
+      setProposalReview(outcome);
+    }
+  };
+
+  const closeProposalReview = (): void => {
+    setIsProposalReviewOpen(false);
+    setProposalReviewApplyOutcome(undefined);
   };
 
   const openSourceRecordInPaperDesk = async (
@@ -245,6 +283,21 @@ const WorkbenchShell = ({
   };
 
   const workspace = (() => {
+    if (
+      isProposalReviewOpen &&
+      (proposalReview.outcome === "available" ||
+        proposalReview.outcome === "applied")
+    ) {
+      return (
+        <ProposalReview
+          review={proposalReview.review}
+          applyOutcome={proposalReviewApplyOutcome}
+          onAcceptAndApply={acceptProposalReview}
+          onBack={closeProposalReview}
+        />
+      );
+    }
+
     if (workbench.activeWorkspace === "studio") {
       return (
         <Studio
@@ -280,6 +333,8 @@ const WorkbenchShell = ({
         onOpenRepository={openRepository}
         onSelectWorkbenchContext={selectWorkbenchContext}
         onOpenTopicInStudio={openTopicInStudio}
+        proposalReview={proposalReview}
+        onOpenProposalReview={openProposalReview}
       />
     );
   })();
@@ -298,12 +353,16 @@ const WorkbenchShell = ({
   );
 };
 
-void window.workbench.openFreshWorkbench().then(async (workbench) => {
-  const outcome = await window.workbench.readSynthesisResults();
+void Promise.all([
+  window.workbench.openFreshWorkbench(),
+  window.workbench.readSynthesisResults(),
+  window.workbench.readProposalReview(),
+]).then(([workbench, outcome, proposalReview]) => {
   root.render(
     <WorkbenchShell
       initialWorkbench={workbench}
       initialSavedSynthesisResults={outcome}
+      initialProposalReview={proposalReview}
     />,
   );
 });

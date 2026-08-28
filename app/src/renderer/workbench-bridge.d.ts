@@ -14,6 +14,10 @@ import type {
   SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
 } from "../modules/source-processing";
+import type {
+  ProposalReviewApplyOutcome,
+  ProposalReviewReadOutcome,
+} from "../modules/proposal-review";
 
 declare global {
   interface Window {
@@ -21,6 +25,9 @@ declare global {
       // Keep renderer callers typed to the same public result as the preload
       // bridge and Workbench Session Module.
       openFreshWorkbench(): Promise<FreshWorkbench>;
+      readProposalReview(): Promise<ProposalReviewReadOutcome>;
+      openProposalReview(): Promise<ProposalReviewReadOutcome>;
+      acceptProposalReview(): Promise<ProposalReviewApplyOutcome>;
       createRepository(): Promise<RepositoryOperationOutcome>;
       openRepository(): Promise<RepositoryOperationOutcome>;
       selectWorkbenchContext(
