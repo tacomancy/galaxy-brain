@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/tacomancy/galaxy-brain/compare/v0.6.0...v0.6.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* make file-backed writes atomic and recoverable ([#64](https://github.com/tacomancy/galaxy-brain/issues/64)) ([ae45ce3](https://github.com/tacomancy/galaxy-brain/commit/ae45ce3726b7c8d86f12dcd34e14c05769b6efe5))
+
 ## [0.6.0](https://github.com/tacomancy/galaxy-brain/compare/v0.5.0...v0.6.0) (2026-08-28)
 
 
