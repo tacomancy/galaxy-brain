@@ -145,6 +145,12 @@ const WorkbenchShell = ({
   const prepareSynthesis = async (
     includeAllContext: boolean,
   ): Promise<void> => {
+    // Do not leave an old confirmation surface actionable while the main
+    // process prepares the next preview. Otherwise a quick follow-up click
+    // can race the previous IPC request and apply its outcome out of order.
+    setSynthesisPreview(undefined);
+    setSynthesisOutcome(undefined);
+
     const outcome = await window.workbench.prepareSynthesis(includeAllContext);
 
     if (outcome.outcome === "preview-ready") {
