@@ -141,6 +141,7 @@ const prepareAcceptedProposal = async (
     decision: "accepted",
     acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
     rejectedChangeIds: [],
+    deferredChangeIds: [],
   });
 };
 
@@ -211,6 +212,7 @@ describe("file-backed Governance version storage", () => {
         decision: "accepted",
         acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
         rejectedChangeIds: [],
+        deferredChangeIds: [],
       }),
       {
         outcome: "judgment-recorded",
@@ -223,6 +225,7 @@ describe("file-backed Governance version storage", () => {
           decision: "accepted",
           acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
           rejectedChangeIds: [],
+          deferredChangeIds: [],
         },
       },
     );

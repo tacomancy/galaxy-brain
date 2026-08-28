@@ -489,7 +489,7 @@ After confirmation, completion requires the focused Red/Green evidence, full aut
 
 ## Required fourth cycle: defer an independently reviewable change
 
-This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the accepted first three TB9 cycles. The additive deferral shape and caller-visible application behavior below are proposed for confirmation before implementation.
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the completed first three TB9 cycles. The additive deferral shape and caller-visible application behavior below were confirmed before implementation.
 
 ### Scope
 
@@ -506,9 +506,9 @@ Before writing the Red test or implementation code, explicitly complete these to
 3. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
 4. Obtain explicit human confirmation that a deferred change is neither rejected nor accepted, omitted IDs are not inferred as deferred, and accepted changes still require their complete dependency closure.
 
-Implementation must not begin until this fourth-cycle documentation review and confirmation task is complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam requires stopping and revising this brief before proceeding.
+Implementation began only after this fourth-cycle documentation review and confirmation task was complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam would require stopping and revising this brief before proceeding.
 
-### Proposed public behavior
+### Public behavior
 
 Given the current `bayesian-statistics-v1` version and a Proposal containing two independent changes:
 
@@ -521,7 +521,7 @@ Given the current `bayesian-statistics-v1` version and a Proposal containing two
 
 The dependency rule remains unchanged: every accepted change must include all direct and indirect `dependsOn` IDs. This cycle observes independent changes so that explicit deferral is separate from both rejection and dependency invalidity.
 
-### Proposed Interface shape
+### Interface shape
 
 Keep the accepted and rejected classification sets confirmed in the third cycle and add the explicit deferred set:
 
@@ -627,9 +627,9 @@ The following alternatives are discarded or deferred for this cycle:
 - **Let the storage Adapter interpret deferred IDs:** discarded because decision policy belongs to Governance and must remain Adapter-independent.
 - **Persist mixed deferred decisions now:** deferred because durable change-level audit and re-review provenance need a separate representation decision.
 
-### Acceptance evidence and required confirmation
+### Acceptance evidence
 
-This fourth cycle is not implementation-ready until the user confirms:
+The user confirmed this fourth-cycle design on August 28, 2026. Completion requires:
 
 - the additive `deferredChangeIds` Judgment shape and exact three-way classification rule;
 - the accepted-only application behavior;
@@ -637,3 +637,12 @@ This fourth cycle is not implementation-ready until the user confirms:
 - the literal independent two-change fixture and explicit deferrals above.
 
 After confirmation, completion requires the focused Red/Green evidence, full automated gates, proof that the deferred change was not applied or treated as rejected, and human confirmation that the resulting version contains only the explicitly accepted change while the prior version remains retrievable. Acceptance of this cycle will not approve edited decisions, deferred-change re-review, dependent mixed decisions, or persistent mixed-decision provenance.
+
+### Fourth-cycle implementation evidence
+
+- **Confirmation:** The user confirmed the additive `deferredChangeIds` Judgment shape, exact three-way classification rule, accepted-only application behavior, dependency-closure rule, literal fixture, and explicit deferrals before the Red test on August 28, 2026.
+- **Red evidence:** The focused test first failed because the existing Judgment validator rejected the explicit deferred ID as an incomplete classification.
+- **Green evidence:** The focused deferred-decision test passed. `npm run check` passed formatting, linting, strict type checking, and 69 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.13% statements, 73.06% branches, and 97.31% functions. `npm run lint:complexity` passed.
+- **Behavior evidence:** Governance applied only `change-tb9-deferred-source-evidence`; the explicitly deferred claim update was absent from `bayesian-statistics-v2`, the storage mutation occurred once, and `bayesian-statistics-v1` remained retrievable.
+- **Compatibility evidence:** Existing single-change, stale-Judgment, invalid-dependency-subset, and independently judged-change tests pass. Multi-change applied-record persistence remains deferred.
+- **Acceptance:** Human acceptance of this deferred-change behavior remains pending. The user has confirmed the implementation specification, not the completed behavior.

@@ -130,6 +130,7 @@ describe("Governance", () => {
       decision: "accepted",
       acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
       rejectedChangeIds: [],
+      deferredChangeIds: [],
     });
 
     assert.deepEqual(judgmentOutcome, {
@@ -143,6 +144,7 @@ describe("Governance", () => {
         decision: "accepted",
         acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
         rejectedChangeIds: [],
+        deferredChangeIds: [],
       },
     });
 

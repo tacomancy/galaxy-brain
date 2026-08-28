@@ -56,6 +56,7 @@ export interface Judgment {
   decision: "accepted";
   acceptedChangeIds: string[];
   rejectedChangeIds: string[];
+  deferredChangeIds: string[];
 }
 
 /** Immutable identity and provenance for one applied Proposal. */
@@ -87,6 +88,7 @@ export interface RecordJudgmentInput {
   decision: "accepted";
   acceptedChangeIds: string[];
   rejectedChangeIds: string[];
+  deferredChangeIds: string[];
 }
 
 /** Caller input for applying one reviewed Proposal. */
@@ -216,6 +218,7 @@ const copyJudgment = (judgment: Judgment): Judgment => ({
   ...judgment,
   acceptedChangeIds: [...judgment.acceptedChangeIds],
   rejectedChangeIds: [...judgment.rejectedChangeIds],
+  deferredChangeIds: [...judgment.deferredChangeIds],
 });
 
 const isSameTarget = (left: GovernedTarget, right: GovernedTarget): boolean =>
@@ -284,19 +287,27 @@ const hasValidChangeClassification = (
   proposal: Proposal,
   acceptedChangeIds: string[],
   rejectedChangeIds: string[],
+  deferredChangeIds: string[],
 ): boolean => {
   const changeIds = new Set(proposal.changes.map((change) => change.id));
   const accepted = new Set(acceptedChangeIds);
   const rejected = new Set(rejectedChangeIds);
-  const classified = new Set([...acceptedChangeIds, ...rejectedChangeIds]);
+  const deferred = new Set(deferredChangeIds);
+  const classified = new Set([
+    ...acceptedChangeIds,
+    ...rejectedChangeIds,
+    ...deferredChangeIds,
+  ]);
 
   return (
     accepted.size > 0 &&
     new Set(acceptedChangeIds).size === acceptedChangeIds.length &&
     rejected.size === rejectedChangeIds.length &&
+    deferred.size === deferredChangeIds.length &&
     acceptedChangeIds.every((changeId) => changeIds.has(changeId)) &&
     rejectedChangeIds.every((changeId) => changeIds.has(changeId)) &&
-    accepted.size + rejected.size === classified.size &&
+    deferredChangeIds.every((changeId) => changeIds.has(changeId)) &&
+    accepted.size + rejected.size + deferred.size === classified.size &&
     classified.size === changeIds.size
   );
 };
@@ -495,6 +506,7 @@ export const createGovernance = (
         proposal,
         input.acceptedChangeIds,
         input.rejectedChangeIds,
+        input.deferredChangeIds,
       )
     ) {
       return {
@@ -519,6 +531,7 @@ export const createGovernance = (
       decision: input.decision,
       acceptedChangeIds: [...input.acceptedChangeIds],
       rejectedChangeIds: [...input.rejectedChangeIds],
+      deferredChangeIds: [...input.deferredChangeIds],
     };
 
     judgments.set(judgment.id, copyJudgment(judgment));
