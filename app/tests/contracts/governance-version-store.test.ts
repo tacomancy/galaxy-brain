@@ -77,6 +77,40 @@ const workingMaterial: WorkingMaterialDraft = {
   content: proposedContent,
 };
 
+const persistedEditedContent = `---
+id: bayesian-statistics
+title: Bayesian statistics
+type: topic
+status: current
+source_record: sources/papers/bayesian-statistics.md
+reviewed_claim: fixture-evidence
+---
+
+# Bayesian statistics
+
+Bayesian statistics updates prior belief from evidence.
+`;
+
+const persistedEditedWorkingMaterial: WorkingMaterialDraft = {
+  id: "working-material-tb9-persisted-edited-provenance-bayesian-statistics",
+  state: "working-material",
+  target,
+  baseVersionId: "bayesian-statistics-v1",
+  content: `---
+id: bayesian-statistics
+title: Bayesian statistics
+type: topic
+status: current
+source_record: sources/papers/bayesian-statistics.md
+reviewed_claim: fixture-evidence
+---
+
+# Bayesian statistics
+
+Bayesian statistics uses evidence to update prior belief.
+`,
+};
+
 const temporaryRepositories: string[] = [];
 
 afterEach(async () => {
@@ -354,6 +388,232 @@ describe("file-backed Governance version storage", () => {
       rollback_path:
         "proposals/applied/applied-proposal-tb8-bayesian-statistics-evidence/rollback/knowledge/bayesian-statistics.md",
     });
+  });
+
+  it("persists edited multi-change provenance and reopens its current and prior versions", async () => {
+    const { repositoryPath, governance } = await createGovernanceFor();
+
+    assert.equal(
+      (
+        await governance.createProposal({
+          proposalId:
+            "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+          proposalFingerprint:
+            "proposal-fingerprint-tb9-persisted-edited-provenance-bayesian-statistics",
+          target,
+          baseVersionId: "bayesian-statistics-v1",
+          workingMaterial: persistedEditedWorkingMaterial,
+          changes: [
+            {
+              id: "change-tb9-persisted-edited-source-evidence",
+              exactChange: {
+                path: target.path,
+                before: "source_record: sources/papers/bayesian-statistics.md",
+                after:
+                  "source_record: sources/papers/bayesian-statistics.md\nreviewed_claim: fixture-evidence",
+              },
+              dependsOn: [],
+            },
+            {
+              id: "change-tb9-persisted-edited-claim-update",
+              exactChange: {
+                path: target.path,
+                before:
+                  "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+                after:
+                  "Bayesian statistics uses evidence to update prior belief.",
+              },
+              dependsOn: ["change-tb9-persisted-edited-source-evidence"],
+            },
+          ],
+        })
+      ).outcome,
+      "proposal-created",
+    );
+
+    assert.equal(
+      (
+        await governance.recordJudgment({
+          judgmentId:
+            "judgment-tb9-persisted-edited-provenance-bayesian-statistics",
+          proposalId:
+            "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+          proposalFingerprint:
+            "proposal-fingerprint-tb9-persisted-edited-provenance-bayesian-statistics",
+          decision: "accepted",
+          acceptedChangeIds: ["change-tb9-persisted-edited-source-evidence"],
+          rejectedChangeIds: [],
+          deferredChangeIds: [],
+          editedChanges: [
+            {
+              changeId: "change-tb9-persisted-edited-claim-update",
+              exactChange: {
+                path: target.path,
+                before:
+                  "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+                after:
+                  "Bayesian statistics updates prior belief from evidence.",
+              },
+            },
+          ],
+        })
+      ).outcome,
+      "judgment-recorded",
+    );
+
+    assert.deepEqual(
+      await governance.applyProposal({
+        proposalId:
+          "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+        judgmentId:
+          "judgment-tb9-persisted-edited-provenance-bayesian-statistics",
+      }),
+      {
+        outcome: "applied",
+        currentVersion: {
+          id: "bayesian-statistics-v2",
+          target,
+          content: persistedEditedContent,
+          parentVersionId: "bayesian-statistics-v1",
+        },
+        previousVersion: currentVersion,
+        appliedRecord: {
+          id: "applied-proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+          proposalId:
+            "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+          judgmentId:
+            "judgment-tb9-persisted-edited-provenance-bayesian-statistics",
+          targetId: "bayesian-statistics",
+          previousVersionId: "bayesian-statistics-v1",
+          newVersionId: "bayesian-statistics-v2",
+          decision: "accepted",
+        },
+      },
+    );
+
+    const appliedRecord = JSON.parse(
+      await readFile(
+        join(
+          repositoryPath,
+          "proposals/applied/applied-proposal-tb9-persisted-edited-provenance-bayesian-statistics.json",
+        ),
+        "utf8",
+      ),
+    );
+    assert.deepEqual(appliedRecord, {
+      id: "applied-proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+      proposal: {
+        id: "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+        fingerprint:
+          "proposal-fingerprint-tb9-persisted-edited-provenance-bayesian-statistics",
+        target,
+        base_version_id: "bayesian-statistics-v1",
+        working_material_id:
+          "working-material-tb9-persisted-edited-provenance-bayesian-statistics",
+        changes: [
+          {
+            id: "change-tb9-persisted-edited-source-evidence",
+            exact_change: {
+              path: target.path,
+              before: "source_record: sources/papers/bayesian-statistics.md",
+              after:
+                "source_record: sources/papers/bayesian-statistics.md\nreviewed_claim: fixture-evidence",
+            },
+            depends_on: [],
+          },
+          {
+            id: "change-tb9-persisted-edited-claim-update",
+            exact_change: {
+              path: target.path,
+              before:
+                "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+              after:
+                "Bayesian statistics uses evidence to update prior belief.",
+            },
+            depends_on: ["change-tb9-persisted-edited-source-evidence"],
+          },
+        ],
+      },
+      judgment: {
+        id: "judgment-tb9-persisted-edited-provenance-bayesian-statistics",
+        proposal_id:
+          "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+        proposal_fingerprint:
+          "proposal-fingerprint-tb9-persisted-edited-provenance-bayesian-statistics",
+        base_version_id: "bayesian-statistics-v1",
+        decision: "accepted",
+        accepted_change_ids: ["change-tb9-persisted-edited-source-evidence"],
+        rejected_change_ids: [],
+        deferred_change_ids: [],
+        edited_changes: [
+          {
+            change_id: "change-tb9-persisted-edited-claim-update",
+            exact_change: {
+              path: target.path,
+              before:
+                "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+              after: "Bayesian statistics updates prior belief from evidence.",
+            },
+          },
+        ],
+      },
+      target,
+      previous_version: {
+        id: "bayesian-statistics-v1",
+        fingerprint:
+          "5fb3de504a1d39faaa32c199f9b8209dabb9abb4deb419633b2679de242c41df",
+      },
+      new_version: {
+        id: "bayesian-statistics-v2",
+        fingerprint:
+          "eae12364a535948c3edde57e9971d9283da2a3f3efff420ddbe4bddd2a176aca",
+      },
+      rollback_path:
+        "proposals/applied/applied-proposal-tb9-persisted-edited-provenance-bayesian-statistics/rollback/knowledge/bayesian-statistics.md",
+    });
+
+    const reopenedGovernance = createGovernance({
+      store: createFileBackedGovernanceStore({
+        repositoryPath,
+        target,
+        initialVersionId: "bayesian-statistics-v1",
+        nextVersionId: "bayesian-statistics-v2",
+      }),
+    });
+
+    assert.deepEqual(await reopenedGovernance.loadCurrentVersion(target.id), {
+      outcome: "found",
+      version: {
+        id: "bayesian-statistics-v2",
+        target,
+        content: persistedEditedContent,
+        parentVersionId: "bayesian-statistics-v1",
+      },
+    });
+    assert.deepEqual(
+      await reopenedGovernance.getVersion(target.id, "bayesian-statistics-v1"),
+      { outcome: "found", version: currentVersion },
+    );
+    assert.equal(
+      await readFile(
+        join(
+          repositoryPath,
+          "proposals/applied/applied-proposal-tb9-persisted-edited-provenance-bayesian-statistics/rollback/knowledge/bayesian-statistics.md",
+        ),
+        "utf8",
+      ),
+      currentContent,
+    );
+    assert.equal(
+      await readFile(
+        join(repositoryPath, "knowledge/registries/glossary.yaml"),
+        "utf8",
+      ),
+      await readFile(
+        join(fixtureRepositoryPath, "knowledge/registries/glossary.yaml"),
+        "utf8",
+      ),
+    );
   });
 
   it("rejects an external edit without overwriting it", async () => {

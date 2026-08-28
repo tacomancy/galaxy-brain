@@ -104,6 +104,59 @@ The directory contains a private journal and staged target, rollback, and audit 
 
 Readers must treat malformed or internally inconsistent applied records as an explicit repository/application outcome rather than silently inventing version history. A successful open with no applied record uses the existing target bytes as the deterministic fixture baseline `bayesian-statistics-v1`; after application, the valid applied record establishes `bayesian-statistics-v2` and its prior relationship. General version allocation, branching lineage, migrations, indexing, retention policy, and schema negotiation remain deferred.
 
+### Multi-change applied records
+
+The TB9 multi-change Governance path remains within `format_version: 1`. Existing TB8 records with scalar `proposal.exact_change` and a judgment containing only `decision: accepted` remain valid and readable without migration or incidental rewrite. New successful multi-change applications use the plural representation below in the same immutable applied-record JSON file:
+
+```json
+{
+  "proposal": {
+    "id": "proposal-id",
+    "fingerprint": "proposal-fingerprint",
+    "target": {
+      "id": "target-id",
+      "title": "Target title",
+      "path": "knowledge/target.md"
+    },
+    "base_version_id": "base-version-id",
+    "working_material_id": "working-material-id",
+    "changes": [
+      {
+        "id": "change-id",
+        "exact_change": {
+          "path": "knowledge/target.md",
+          "before": "old text",
+          "after": "original proposed text"
+        },
+        "depends_on": []
+      }
+    ]
+  },
+  "judgment": {
+    "id": "judgment-id",
+    "proposal_id": "proposal-id",
+    "proposal_fingerprint": "proposal-fingerprint",
+    "base_version_id": "base-version-id",
+    "decision": "accepted",
+    "accepted_change_ids": ["change-id"],
+    "rejected_change_ids": [],
+    "deferred_change_ids": [],
+    "edited_changes": [
+      {
+        "change_id": "edited-change-id",
+        "exact_change": {
+          "path": "knowledge/target.md",
+          "before": "old reviewed text",
+          "after": "reviewer-selected text"
+        }
+      }
+    ]
+  }
+}
+```
+
+The outer applied-record fields, target fingerprints, and rollback path retain the TB8 meaning. `proposal.changes` preserves Proposal order, original exact replacements, and dependency IDs. The Judgment arrays preserve every change classification exactly once, while `edited_changes` preserves the reviewer-supplied exact replacement separately from the original Proposal replacement. The ordinary target file remains the current-content authority, and the rollback file remains the exact prior target bytes. Migration, branching history, multiple applied records, and persisted non-applied Judgments remain deferred.
+
 ## Compatibility and safe writes
 
 A Workbench checks `format` and `format_version` before enabling writes:

@@ -51,12 +51,25 @@ export interface FileBackedGovernanceStoreInput {
   filesystem?: GovernanceFileSystem;
 }
 
-interface PersistedProposal {
+interface PersistedProposalHeader {
   id: string;
   fingerprint: string;
   target: GovernedTarget;
   base_version_id: string;
   working_material_id: string;
+}
+
+interface PersistedProposalChange {
+  id: string;
+  exact_change: {
+    path: string;
+    before: string;
+    after: string;
+  };
+  depends_on: string[];
+}
+
+interface LegacyPersistedProposal extends PersistedProposalHeader {
   exact_change: {
     path: string;
     before: string;
@@ -64,13 +77,37 @@ interface PersistedProposal {
   };
 }
 
-interface PersistedJudgment {
+interface MultiChangePersistedProposal extends PersistedProposalHeader {
+  changes: PersistedProposalChange[];
+}
+
+type PersistedProposal = LegacyPersistedProposal | MultiChangePersistedProposal;
+
+interface LegacyPersistedJudgment {
   id: string;
   proposal_id: string;
   proposal_fingerprint: string;
   base_version_id: string;
   decision: "accepted";
 }
+
+interface PersistedEditedChange {
+  change_id: string;
+  exact_change: {
+    path: string;
+    before: string;
+    after: string;
+  };
+}
+
+interface MultiChangePersistedJudgment extends LegacyPersistedJudgment {
+  accepted_change_ids: string[];
+  rejected_change_ids: string[];
+  deferred_change_ids: string[];
+  edited_changes: PersistedEditedChange[];
+}
+
+type PersistedJudgment = LegacyPersistedJudgment | MultiChangePersistedJudgment;
 
 interface PersistedAppliedRecord {
   id: string;
@@ -151,16 +188,6 @@ const replaceExactOnce = (
   return `${content.slice(0, firstIndex)}${after}${content.slice(firstIndex + before.length)}`;
 };
 
-const onlyProposalChange = (proposal: Proposal) => {
-  if (proposal.changes.length !== 1 || proposal.changes[0] === undefined) {
-    throw new GovernanceStorageError(
-      "Multi-change Proposal persistence is deferred.",
-    );
-  }
-
-  return proposal.changes[0];
-};
-
 const relativePath = (root: string, absolutePath: string): string => {
   const value = relative(root, absolutePath);
 
@@ -216,33 +243,85 @@ const isSameTargetRecord = (
   value.title === target.title &&
   value.path === target.path;
 
+const isPersistedProposalHeader = (
+  value: Record<string, unknown>,
+  target: GovernedTarget,
+): boolean =>
+  isString(value.id) &&
+  isString(value.fingerprint) &&
+  isSameTargetRecord(value.target, target) &&
+  isString(value.base_version_id) &&
+  isString(value.working_material_id);
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => isString(item));
+
+const isPersistedExactChange = (
+  value: unknown,
+): value is PersistedProposalChange["exact_change"] =>
+  isRecord(value) &&
+  isString(value.path) &&
+  isString(value.before) &&
+  isString(value.after);
+
+const isPersistedProposalChange = (
+  value: unknown,
+): value is PersistedProposalChange =>
+  isRecord(value) &&
+  isString(value.id) &&
+  isPersistedExactChange(value.exact_change) &&
+  isStringArray(value.depends_on);
+
 const isPersistedProposal = (
   value: unknown,
   target: GovernedTarget,
 ): value is PersistedProposal => {
-  if (!isRecord(value) || !isRecord(value.exact_change)) {
+  if (!isRecord(value) || !isPersistedProposalHeader(value, target)) {
     return false;
   }
 
-  return (
-    isString(value.id) &&
-    isString(value.fingerprint) &&
-    isSameTargetRecord(value.target, target) &&
-    isString(value.base_version_id) &&
-    isString(value.working_material_id) &&
-    isString(value.exact_change.path) &&
-    isString(value.exact_change.before) &&
-    isString(value.exact_change.after)
-  );
+  const hasLegacyChange = isPersistedExactChange(value.exact_change);
+  const hasMultiChanges =
+    Array.isArray(value.changes) &&
+    value.changes.length > 0 &&
+    value.changes.every(isPersistedProposalChange);
+
+  return hasLegacyChange !== hasMultiChanges;
 };
 
-const isPersistedJudgment = (value: unknown): value is PersistedJudgment =>
+const isPersistedEditedChange = (
+  value: unknown,
+): value is PersistedEditedChange =>
   isRecord(value) &&
-  isString(value.id) &&
-  isString(value.proposal_id) &&
-  isString(value.proposal_fingerprint) &&
-  isString(value.base_version_id) &&
-  value.decision === "accepted";
+  isString(value.change_id) &&
+  isPersistedExactChange(value.exact_change);
+
+const isPersistedJudgment = (value: unknown): value is PersistedJudgment => {
+  if (
+    !isRecord(value) ||
+    !isString(value.id) ||
+    !isString(value.proposal_id) ||
+    !isString(value.proposal_fingerprint) ||
+    !isString(value.base_version_id) ||
+    value.decision !== "accepted"
+  ) {
+    return false;
+  }
+
+  const hasLegacyClassification =
+    !("accepted_change_ids" in value) &&
+    !("rejected_change_ids" in value) &&
+    !("deferred_change_ids" in value) &&
+    !("edited_changes" in value);
+  const hasMultiChangeClassification =
+    isStringArray(value.accepted_change_ids) &&
+    isStringArray(value.rejected_change_ids) &&
+    isStringArray(value.deferred_change_ids) &&
+    Array.isArray(value.edited_changes) &&
+    value.edited_changes.every(isPersistedEditedChange);
+
+  return hasLegacyClassification !== hasMultiChangeClassification;
+};
 
 const isPersistedVersion = (
   value: unknown,
@@ -288,7 +367,22 @@ const parseAppliedRecord = (
 };
 
 const persistedProposal = (proposal: Proposal): PersistedProposal => {
-  const change = onlyProposalChange(proposal);
+  if (proposal.changes.length === 1 && proposal.changes[0] !== undefined) {
+    const change = proposal.changes[0];
+
+    return {
+      id: proposal.id,
+      fingerprint: proposal.fingerprint,
+      target: copyTarget(proposal.target),
+      base_version_id: proposal.baseVersionId,
+      working_material_id: proposal.workingMaterialId,
+      exact_change: {
+        path: change.exactChange.path,
+        before: change.exactChange.before,
+        after: change.exactChange.after,
+      },
+    };
+  }
 
   return {
     id: proposal.id,
@@ -296,21 +390,88 @@ const persistedProposal = (proposal: Proposal): PersistedProposal => {
     target: copyTarget(proposal.target),
     base_version_id: proposal.baseVersionId,
     working_material_id: proposal.workingMaterialId,
-    exact_change: {
-      path: change.exactChange.path,
-      before: change.exactChange.before,
-      after: change.exactChange.after,
-    },
+    changes: proposal.changes.map((change) => ({
+      id: change.id,
+      exact_change: {
+        path: change.exactChange.path,
+        before: change.exactChange.before,
+        after: change.exactChange.after,
+      },
+      depends_on: [...change.dependsOn],
+    })),
   };
 };
 
-const persistedJudgment = (judgment: Judgment): PersistedJudgment => ({
-  id: judgment.id,
-  proposal_id: judgment.proposalId,
-  proposal_fingerprint: judgment.proposalFingerprint,
-  base_version_id: judgment.baseVersionId,
-  decision: judgment.decision,
-});
+const persistedJudgment = (judgment: Judgment): PersistedJudgment => {
+  if (
+    judgment.acceptedChangeIds.length === 1 &&
+    judgment.rejectedChangeIds.length === 0 &&
+    judgment.deferredChangeIds.length === 0 &&
+    judgment.editedChanges.length === 0
+  ) {
+    return {
+      id: judgment.id,
+      proposal_id: judgment.proposalId,
+      proposal_fingerprint: judgment.proposalFingerprint,
+      base_version_id: judgment.baseVersionId,
+      decision: judgment.decision,
+    };
+  }
+
+  return {
+    id: judgment.id,
+    proposal_id: judgment.proposalId,
+    proposal_fingerprint: judgment.proposalFingerprint,
+    base_version_id: judgment.baseVersionId,
+    decision: judgment.decision,
+    accepted_change_ids: [...judgment.acceptedChangeIds],
+    rejected_change_ids: [...judgment.rejectedChangeIds],
+    deferred_change_ids: [...judgment.deferredChangeIds],
+    edited_changes: judgment.editedChanges.map((editedChange) => ({
+      change_id: editedChange.changeId,
+      exact_change: { ...editedChange.exactChange },
+    })),
+  };
+};
+
+const effectiveExactChanges = (
+  proposal: Proposal,
+  judgment: Judgment,
+): Array<{ path: string; before: string; after: string }> => {
+  const effectiveAcceptedIds = new Set([
+    ...judgment.acceptedChangeIds,
+    ...judgment.editedChanges.map((editedChange) => editedChange.changeId),
+  ]);
+  const editedChangesById = new Map(
+    judgment.editedChanges.map((editedChange) => [
+      editedChange.changeId,
+      editedChange.exactChange,
+    ]),
+  );
+
+  return proposal.changes
+    .filter((change) => effectiveAcceptedIds.has(change.id))
+    .map((change) => editedChangesById.get(change.id) ?? change.exactChange);
+};
+
+const applyExactChanges = (
+  content: string,
+  changes: Array<{ path: string; before: string; after: string }>,
+): string | undefined => {
+  let nextContent = content;
+
+  for (const change of changes) {
+    const replaced = replaceExactOnce(nextContent, change.before, change.after);
+
+    if (replaced === undefined) {
+      return undefined;
+    }
+
+    nextContent = replaced;
+  }
+
+  return nextContent;
+};
 
 const readFileIfPresent = async (
   filesystem: GovernanceFileSystem,
@@ -835,12 +996,9 @@ export const createFileBackedGovernanceStore = ({
       );
     }
 
-    const change = onlyProposalChange(input.proposal);
-
-    const expectedContent = replaceExactOnce(
+    const expectedContent = applyExactChanges(
       input.expectedBaseContent,
-      change.exactChange.before,
-      change.exactChange.after,
+      effectiveExactChanges(input.proposal, input.judgment),
     );
 
     if (expectedContent === undefined || expectedContent !== input.content) {

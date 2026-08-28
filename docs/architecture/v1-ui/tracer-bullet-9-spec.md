@@ -996,7 +996,7 @@ Completion requires focused Red/Green evidence, full automated gates, proof that
 
 ## Required seventh cycle: persist edited multi-change provenance
 
-This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2/S5 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 Repository Format and persistence representation, and the completed first six TB9 cycles. The backward-compatible persisted representation and caller-visible reopen behavior below are proposed for confirmation before implementation.
+This is the seventh TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was completed against the accepted Product Decisions, Architecture, Test Strategy S2/S5 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 Repository Format and persistence representation, and the completed first six TB9 cycles. The user confirmed the backward-compatible persisted representation and caller-visible reopen behavior below before implementation.
 
 ### Scope
 
@@ -1004,7 +1004,7 @@ The seventh TB9 cycle closes the durable-provenance gap for the accepted in-memo
 
 This cycle keeps the existing S2 Governance Interface, S5 file-backed Adapter, one-target version lineage, targeted rollback bytes, and transaction directory. It does not revise the Repository Format version, migrate existing scalar TB8 records in place, add general schema negotiation, support multiple applied records or branching history, or introduce UI behavior.
 
-### Documentation prerequisite for this cycle
+### Documentation prerequisite for this cycle — complete
 
 Before writing the Red test or implementation code, explicitly complete these to-do items:
 
@@ -1015,9 +1015,9 @@ Before writing the Red test or implementation code, explicitly complete these to
 5. Record any changed public Interface, Repository Format authority, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
 6. Obtain explicit human confirmation of the persisted shape, compatibility behavior, exact audit values, and explicit deferrals.
 
-Implementation must not begin until this seventh-cycle documentation review and confirmation task is complete. A Repository Format revision, migration policy, new Test Seam, or change to current-content authority requires stopping and revising this brief before proceeding.
+Implementation began only after this seventh-cycle documentation review and confirmation task was complete. A Repository Format revision, migration policy, new Test Seam, or change to current-content authority would require stopping and revising this brief before proceeding.
 
-### Proposed public behavior
+### Public behavior
 
 Given the file-backed TB8 fixture repository and a Proposal containing an accepted prerequisite and an edited dependent change:
 
@@ -1031,7 +1031,7 @@ Given the file-backed TB8 fixture repository and a Proposal containing an accept
 
 The persisted record is provenance and recovery data. The ordinary target file remains the current-content authority; the applied record and rollback bytes do not become alternate current versions.
 
-### Proposed persisted representation
+### Persisted representation
 
 Keep `format: galaxy-brain` and `format_version: 1`. Do not add an in-record schema version in this slice. The Adapter accepts both the existing legacy shape and the new multi-change shape:
 
@@ -1181,7 +1181,7 @@ The following alternatives are discarded or deferred for this cycle:
 
 ### Acceptance evidence and required confirmation
 
-This seventh cycle is not implementation-ready until the user confirms:
+The user confirmed these implementation decisions on August 28, 2026:
 
 - the legacy scalar-read/new plural-write compatibility boundary;
 - the exact `changes`, `depends_on`, classification-array, and `edited_changes` fields;
@@ -1189,4 +1189,13 @@ This seventh cycle is not implementation-ready until the user confirms:
 - reopen/current-history and rollback expectations; and
 - the explicit deferrals and discarded alternatives.
 
-After confirmation, completion requires focused Red/Green evidence, full automated gates, exact persisted JSON and rollback evidence, legacy-record compatibility evidence, and human confirmation that reopening preserves the edited application and prior version. Acceptance will not approve format migration, multi-record history, branching lineage, or UI behavior.
+Completion requires focused Red/Green evidence, full automated gates, exact persisted JSON and rollback evidence, legacy-record compatibility evidence, and human confirmation that reopening preserves the edited application and prior version. Acceptance will not approve format migration, multi-record history, branching lineage, or UI behavior.
+
+### Seventh-cycle implementation evidence
+
+- **Confirmation:** The user confirmed the legacy scalar-read/new plural-write boundary, exact persisted fields, original-versus-edited provenance, reopen/history behavior, rollback expectations, and explicit deferrals before implementation on August 28, 2026.
+- **Red evidence:** The focused file-backed contract first failed because the Adapter rejected the multi-change Proposal through the TB8 `onlyProposalChange` guard and returned `operation-failed`.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 72 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.60% statements, 73.97% branches, and 97.52% functions. `npm run lint:complexity` passed. `python scripts/test_public_docs.py` passed under the documented Python 3.11 environment.
+- **Behavior evidence:** The file-backed contract proves the applied JSON preserves the ordered original Proposal changes, dependency IDs, complete Judgment classification, and reviewer-edited exact change; reopen returns `bayesian-statistics-v2` and retrieves `bayesian-statistics-v1`; rollback bytes and unrelated repository content remain exact.
+- **Compatibility evidence:** The existing TB8 single-change contract continues to pass and its scalar audit record remains readable without migration. The file-backed Adapter uses the plural representation for new multi-change applications while preserving the ordinary target as current-content authority.
+- **Status:** Implementation is complete and human acceptance is pending. The next manual review must inspect the plural audit record, rollback bytes, reopened current/prior versions, and legacy scalar-record compatibility.
