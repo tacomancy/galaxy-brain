@@ -61,14 +61,27 @@ def load_manifest() -> list[dict[str, str]]:
         destination = page.get("destination")
         if not isinstance(source, str) or not isinstance(destination, str):
             raise ValueError("Each public page needs string source and destination.")
+        manifest_path(destination, "destination")
         if destination in destinations:
             raise ValueError(f"Duplicate public documentation destination: {destination}")
         destinations.add(destination)
-        source_path = REPOSITORY_ROOT / source
+        source_path = manifest_path(source, "source")
         if not source_path.is_file():
             raise ValueError(f"Public documentation source does not exist: {source}")
         normalized.append({"source": source, "destination": destination})
     return normalized
+
+
+def manifest_path(value: str, kind: str) -> Path:
+    path = PurePosixPath(value)
+    if path.is_absolute() or ".." in path.parts or not path.parts:
+        raise ValueError(f"Public documentation {kind} must be a relative path: {value}")
+    resolved = (REPOSITORY_ROOT / Path(*path.parts)).resolve()
+    if REPOSITORY_ROOT not in resolved.parents:
+        raise ValueError(f"Public documentation {kind} escapes the repository: {value}")
+    if kind == "source" and (REPOSITORY_ROOT / Path(*path.parts)).is_symlink():
+        raise ValueError(f"Public documentation source must not be a symlink: {value}")
+    return REPOSITORY_ROOT / Path(*path.parts)
 
 
 def rewrite_links(
@@ -98,6 +111,11 @@ def rewrite_links(
         )
         mapped_destination = source_to_destination.get(resolved_source.as_posix())
         if mapped_destination is None:
+            linked_path = manifest_path(resolved_source.as_posix(), "link target")
+            if not linked_path.is_file():
+                raise ValueError(
+                    f"Unresolved relative public documentation link in {source}: {target}"
+                )
             return label
 
         rewritten = posixpath.relpath(
@@ -135,8 +153,13 @@ def stage_sources(pages: list[dict[str, str]]) -> None:
 
 def build_site(output: Path) -> None:
     output = output.resolve()
-    if output == REPOSITORY_ROOT or output == REPOSITORY_ROOT / ".generated":
+    generated_root = (REPOSITORY_ROOT / ".generated").resolve()
+    if output == REPOSITORY_ROOT or output == generated_root:
         raise ValueError("The public site output must be an artifact directory.")
+    if output.exists() and generated_root not in output.parents:
+        raise ValueError(
+            "Refusing to replace an existing output outside the repository .generated directory."
+        )
     shutil.rmtree(output, ignore_errors=True)
     output.parent.mkdir(parents=True, exist_ok=True)
     environment = os.environ.copy()
