@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation complete on August 27, 2026 pending human acceptance; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -381,9 +381,11 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Public Behavior:** Studio presents an explicit Synthesis review action, concise summary, destination/model, selected context with whole-item removal and regenerated preview, exact payload disclosure, confirm/decline/cancel controls, provider-unavailable feedback, and saved-result provenance/version/restore controls through the real Electron main process and preload bridge. Confirmation sends the exact preview retained by the main process, and saved-result reads preserve explicit availability outcomes.
 - **Test Seam:** S1 packaged Electron workflow through the real main process, preload bridge, Studio UI Adapter, file-backed Knowledge Repository, file-backed Working Material Adapters, and the S3 Source Processing Module.
 - **Red evidence:** The first packaged run exposed that the exact payload disclosure was collapsed when asserted; the workflow was corrected to expand the disclosure before checking its contents.
-- **Green evidence:** The focused packaged workflow passed. The full packaged workflow suite passed all 20 WebdriverIO specs, including whole-context-item removal and regenerated preview assertions. `npm run check` passed formatting, linting, strict type checking, and 40 Vitest tests.
+- **Green evidence:** The focused packaged workflow passed. The local full packaged workflow suite passed all 21 WebdriverIO specs, including renderer styling, whole-context-item removal, and regenerated preview assertions. `npm run check` passed formatting, linting, strict type checking, and 42 Vitest tests.
 - **Scope confirmed:** The surface does not call a production provider, fabricate a successful draft, apply Governed Knowledge changes, or add a fourth primary workspace. Provider-unavailable behavior remains visible and local workflows remain usable.
-- **Next behavior:** Human acceptance review of the complete TB7 S3/S1 behavior; production provider integration and later Proposal/Governance work remain outside TB7.
+- **Human acceptance:** On August 28, 2026, the user completed and accepted all five manual checks: packaged layout; initial Synthesis preview and exact payload; whole-context-item removal and regenerated preview; decline/cancel/provider-unavailable outcomes; and saved-result provenance/version/restore behavior. The review confirmed the states were legible and operable in the packaged app.
+- **CI follow-up:** PR #24 still has a required desktop-workflow failure at `review-synthesis-confirmation.e2e.ts:83`, where the test asserts the Cancel outcome before the asynchronous UI update is visible. This remains a merge blocker and is separate from the accepted manual UI behavior.
+- **Next behavior:** Production provider integration and later Proposal/Governance work remain outside TB7.
 
 ### 8. Apply one governed change
 

@@ -1,6 +1,6 @@
 # Tracer Bullet 7: Synthesize selected evidence explicitly
 
-Status: implementation complete on August 27, 2026; pending human acceptance of the packaged S3/S1 behavior.
+Status: implementation complete and human-accepted on August 28, 2026 for the packaged S3/S1 behavior.
 
 This tracer bullet adds the first provider-dependent Agentic Capability to the accepted provider-free Source Processing path. It makes Synthesis an explicit, inspectable, user-authorized operation over selected Structured Annotations. It does not make an Agent Provider a prerequisite for the Workbench or promote generated output to Governed Knowledge.
 
@@ -61,7 +61,7 @@ The following V1 work remains outside this completed TB7 implementation: a produ
 
 ## Acceptance evidence
 
-Implementation evidence is complete: focused S3 coverage exercises the confirmation, privacy, provider, save, snapshot, regeneration, restore, and provenance rules; the S5 result Adapter round-trips portable history; the packaged S1 workflow presents the exact request, whole-item removal with regenerated preview, confirmation choices, provider-unavailable state, provenance/version metadata, and restore control; the full `check` gate and packaged workflow suite pass. Human acceptance must still confirm that the operation, destination, model, selected context, content category, request size, exact payload, whole-item removal, regenerated preview, confirmation, decline, unavailable, saved-result, provenance, version, and restore states are legible and keyboard-operable.
+Implementation evidence is complete: focused S3 coverage exercises the confirmation, privacy, provider, save, snapshot, regeneration, restore, and provenance rules; the S5 result Adapter round-trips portable history; the packaged S1 workflow presents the exact request, whole-item removal with regenerated preview, confirmation choices, provider-unavailable state, provenance/version metadata, and restore control; the local `check` gate and packaged workflow suite pass. Human acceptance was completed on August 28, 2026: the user reviewed the packaged UI and confirmed all five manual checks covering layout, the initial preview, context removal/regeneration, confirmation outcomes, and saved-result provenance/restoration. PR #24 retains a separate CI timing failure in the Synthesis cancellation assertion and remains a merge blocker until resolved.
 
 ## Required confirmation
 
