@@ -56,6 +56,7 @@ Issue #47 is not complete until the measured baseline, final global and per-file
 - The Workbench presents the newest result as current and exposes prior result versions through ordinary artifact history without creating separate top-level items for each regeneration.
 - Explicitly restoring an older result creates a new current version, preserves all intervening versions, and makes no OpenAI request.
 - Prior agent-result versions are retained by default with no automatic cleanup; any future deletion or history-pruning action requires explicit approval and explains the lost recovery and provenance.
+- When a repository contains multiple complete topic contexts, the Workbench presents deterministic candidates and requires explicit selection; relaunch restores the selected identity when it remains available.
 
 **Public interface:** the rendered desktop Knowledge Workbench operated through accessible user actions and observed through visible content, focus, navigation state, and durable outcomes returned by the Workbench.
 

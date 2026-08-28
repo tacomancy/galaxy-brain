@@ -59,6 +59,9 @@ const logicalLocatorFor = (
   locator: Pick<SourceLocator, "page" | "start" | "end">,
 ): string => `page:${locator.page}#chars=${locator.start}-${locator.end}`;
 
+const compareStrings = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0;
+
 const isValidLocator = (locator: SourceLocator): boolean =>
   Number.isInteger(locator.page) &&
   locator.page > 0 &&
@@ -414,10 +417,12 @@ export const createFileBackedWorkingMaterialRepository = (
           filesystem,
         );
 
-        const entries = await readdir(annotationDirectory, {
-          encoding: "utf8",
-          withFileTypes: true,
-        });
+        const entries = (
+          await readdir(annotationDirectory, {
+            encoding: "utf8",
+            withFileTypes: true,
+          })
+        ).sort((left, right) => compareStrings(left.name, right.name));
 
         for (const entry of entries) {
           if (!entry.isFile() || !entry.name.endsWith(".md")) {
@@ -490,10 +495,12 @@ export const createFileBackedWorkingMaterialRepository = (
           filesystem,
         );
 
-        const entries = await readdir(annotationDirectory, {
-          encoding: "utf8",
-          withFileTypes: true,
-        });
+        const entries = (
+          await readdir(annotationDirectory, {
+            encoding: "utf8",
+            withFileTypes: true,
+          })
+        ).sort((left, right) => compareStrings(left.name, right.name));
         const annotations: StructuredAnnotation[] = [];
 
         for (const entry of entries) {

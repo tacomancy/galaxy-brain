@@ -34,6 +34,12 @@ export interface WorkbenchContext {
   sourceRecord: WorkbenchSourceRecord;
 }
 
+/** Stable identity used to persist one explicitly selected context. */
+export interface WorkbenchContextSelection {
+  topicId: string;
+  sourceRecordId: string;
+}
+
 /**
  * Caller-visible state rendered by the desktop Workbench shell. A selected
  * state always has a canonical repository path and access mode; contextual
@@ -46,6 +52,8 @@ export interface WorkbenchState {
   repositoryAccess?: "read-write" | "read-only";
   repositorySelection?: "created" | "opened" | "read-only-compatible";
   context?: WorkbenchContext;
+  /** Complete topic contexts shown when the repository needs an explicit choice. */
+  contextOptions?: WorkbenchContext[];
   /** The saved source claim shown when Paper Desk resumes meaningful work. */
   sourceAnnotation?: StructuredAnnotation;
   /** The machine-local reading position for the selected Source Record. */
@@ -91,6 +99,7 @@ export type RepositoryResumeFailure = Extract<
  */
 export type WorkbenchContextReadOutcome =
   | { outcome: "available"; context: WorkbenchContext }
+  | { outcome: "ambiguous"; contexts: WorkbenchContext[] }
   | { outcome: "not-found"; detail: string }
   | { outcome: "unavailable"; detail: string; cause: unknown };
 
@@ -100,6 +109,12 @@ export type WorkbenchContextReadOutcome =
  */
 export type WorkspaceTransitionOutcome =
   | { outcome: "transitioned"; workbench: WorkbenchState }
+  | { outcome: "context-unavailable"; detail: string }
+  | { outcome: "operation-failed"; detail: string };
+
+/** Caller-visible result of choosing one ambiguous Workbench context. */
+export type WorkbenchContextSelectionOutcome =
+  | { outcome: "selected"; workbench: WorkbenchState }
   | { outcome: "context-unavailable"; detail: string }
   | { outcome: "operation-failed"; detail: string };
 
@@ -138,6 +153,7 @@ export interface KnowledgeRepository {
 export interface WorkbenchSessionSnapshot {
   selectedRepositoryPath: string;
   activeWorkspace?: WorkbenchWorkspace;
+  selectedContext?: WorkbenchContextSelection;
   readingPosition?: ReadingPosition;
 }
 
@@ -160,6 +176,10 @@ export interface WorkbenchSession {
   createRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
   /** A session-state write failure returns operation-failed and preserves selection. */
   openRepository(repositoryPath: string): Promise<RepositoryOperationOutcome>;
+  /** Selects one complete context when repository inspection found ambiguity. */
+  selectWorkbenchContext(
+    selection: WorkbenchContextSelection,
+  ): Promise<WorkbenchContextSelectionOutcome>;
   /** Carries a known topic into Studio and persists active-work state. */
   openTopicInStudio(topicId: string): Promise<WorkspaceTransitionOutcome>;
   /** Carries the selected Source Record and its topic into Paper Desk. */
@@ -190,6 +210,7 @@ export const createWorkbenchSession = (
         access: "read-write" | "read-only";
         selection: "created" | "opened" | "read-only-compatible";
         context?: WorkbenchContext;
+        contextOptions?: WorkbenchContext[];
         contextReadFailure?: Extract<
           WorkbenchContextReadOutcome,
           { outcome: "unavailable" }
@@ -204,6 +225,16 @@ export const createWorkbenchSession = (
   let readingPosition: ReadingPosition | undefined;
   type SelectedRepository = NonNullable<typeof selectedRepository>;
 
+  const selectedContextFor = (
+    repository: SelectedRepository,
+  ): WorkbenchContextSelection | undefined =>
+    repository.context === undefined
+      ? undefined
+      : {
+          topicId: repository.context.topic.id,
+          sourceRecordId: repository.context.sourceRecord.id,
+        };
+
   const readWorkbenchContext = async (
     repositoryPath: string,
   ): Promise<WorkbenchContextReadOutcome> => {
@@ -216,6 +247,38 @@ export const createWorkbenchSession = (
         cause,
       };
     }
+  };
+
+  const restoreRememberedContext = (
+    contextReadOutcome: WorkbenchContextReadOutcome,
+    selection: WorkbenchContextSelection | undefined,
+  ): WorkbenchContextReadOutcome => {
+    if (selection === undefined) {
+      return contextReadOutcome;
+    }
+
+    const contexts =
+      contextReadOutcome.outcome === "available"
+        ? [contextReadOutcome.context]
+        : contextReadOutcome.outcome === "ambiguous"
+          ? contextReadOutcome.contexts
+          : undefined;
+
+    if (contexts === undefined) {
+      return contextReadOutcome;
+    }
+
+    const context = contexts.find(
+      (candidate) =>
+        candidate.topic.id === selection.topicId &&
+        candidate.sourceRecord.id === selection.sourceRecordId,
+    );
+
+    if (context !== undefined) {
+      return { outcome: "available", context };
+    }
+
+    return { outcome: "ambiguous", contexts };
   };
 
   const setSelectedRepository = (
@@ -232,6 +295,9 @@ export const createWorkbenchSession = (
       selection: outcome.outcome,
       ...(contextReadOutcome.outcome === "available"
         ? { context: contextReadOutcome.context }
+        : {}),
+      ...(contextReadOutcome.outcome === "ambiguous"
+        ? { contextOptions: contextReadOutcome.contexts }
         : {}),
       ...(contextReadOutcome.outcome === "unavailable"
         ? { contextReadFailure: contextReadOutcome }
@@ -339,8 +405,9 @@ export const createWorkbenchSession = (
       outcome.outcome === "opened" ||
       outcome.outcome === "read-only-compatible"
     ) {
-      const contextReadOutcome = await readWorkbenchContext(
-        outcome.repositoryPath,
+      const contextReadOutcome = restoreRememberedContext(
+        await readWorkbenchContext(outcome.repositoryPath),
+        rememberedSession?.selectedContext,
       );
       setSelectedRepository(outcome, contextReadOutcome);
       restoreRememberedWorkspace(
@@ -447,10 +514,13 @@ export const createWorkbenchSession = (
       };
     }
 
+    const selectedContext = selectedContextFor(repository);
+
     try {
       await sessionState.writeSession({
         selectedRepositoryPath: repository.path,
         activeWorkspace: workspace,
+        ...(selectedContext === undefined ? {} : { selectedContext }),
         ...(readingPosition === undefined ? {} : { readingPosition }),
       });
     } catch {
@@ -485,6 +555,10 @@ export const createWorkbenchSession = (
 
         if (selectedRepository.context !== undefined) {
           workbench.context = selectedRepository.context;
+        }
+
+        if (selectedRepository.contextOptions !== undefined) {
+          workbench.contextOptions = selectedRepository.contextOptions;
         }
 
         if (selectedRepository.sourceAnnotation !== undefined) {
@@ -526,6 +600,53 @@ export const createWorkbenchSession = (
       }
 
       return outcome;
+    },
+    selectWorkbenchContext: async (
+      selection,
+    ): Promise<WorkbenchContextSelectionOutcome> => {
+      const repository = selectedRepository;
+      const context = repository?.contextOptions?.find(
+        (candidate) =>
+          candidate.topic.id === selection.topicId &&
+          candidate.sourceRecord.id === selection.sourceRecordId,
+      );
+
+      if (repository === undefined || context === undefined) {
+        return {
+          outcome: "context-unavailable",
+          detail: "The selected Workbench context is not available.",
+        };
+      }
+
+      try {
+        await sessionState.writeSession({
+          selectedRepositoryPath: repository.path,
+          activeWorkspace: "atlas",
+          selectedContext: selection,
+        });
+      } catch {
+        return {
+          outcome: "operation-failed",
+          detail: "The Workbench session could not be saved.",
+        };
+      }
+
+      delete repository.contextOptions;
+      repository.context = context;
+      activeWorkspace = "atlas";
+      readingPosition = undefined;
+
+      return {
+        outcome: "selected",
+        workbench: {
+          activeWorkspace,
+          repositoryStatus: "selected",
+          repositoryPath: repository.path,
+          repositoryAccess: repository.access,
+          repositorySelection: repository.selection,
+          context,
+        },
+      };
     },
     openTopicInStudio: async (topicId): Promise<WorkspaceTransitionOutcome> => {
       const repository = selectedRepository;
@@ -583,10 +704,13 @@ export const createWorkbenchSession = (
         characterOffset: repository.sourceAnnotation.sourceLocator.start,
       };
 
+      const selectedContext = selectedContextFor(repository);
+
       try {
         await sessionState.writeSession({
           selectedRepositoryPath: repository.path,
           activeWorkspace: "paper-desk",
+          ...(selectedContext === undefined ? {} : { selectedContext }),
           readingPosition: nextReadingPosition,
         });
       } catch {

@@ -355,11 +355,12 @@ const readMarkdownMetadata = async (
 const findMarkdownMetadata = async (
   root: string,
   type: string,
-): Promise<Map<string, string> | undefined> => {
+): Promise<Map<string, string>[]> => {
   const entries = await readdir(root, {
     encoding: "utf8",
     withFileTypes: true,
   });
+  const metadataEntries: Map<string, string>[] = [];
 
   for (const entry of entries) {
     if (!entry.isFile() || extname(entry.name) !== ".md") {
@@ -369,12 +370,15 @@ const findMarkdownMetadata = async (
     const metadata = await readMarkdownMetadata(join(root, entry.name));
 
     if (metadata?.get("type") === type) {
-      return metadata;
+      metadataEntries.push(metadata);
     }
   }
 
-  return undefined;
+  return metadataEntries;
 };
+
+const compareStrings = (left: string, right: string): number =>
+  left < right ? -1 : left > right ? 1 : 0;
 
 const completeTopicMetadata = (
   metadata: Map<string, string> | undefined,
@@ -415,37 +419,60 @@ const completeSourceMetadata = (
   return { id, title };
 };
 
-const readWorkbenchContext = async (
+const readWorkbenchContexts = async (
   repositoryPath: string,
-): Promise<WorkbenchContext | undefined> => {
-  const topicMetadata = await findMarkdownMetadata(
+): Promise<WorkbenchContext[]> => {
+  const topicMetadataEntries = await findMarkdownMetadata(
     join(repositoryPath, "knowledge"),
     "topic",
   );
-  const topic = completeTopicMetadata(topicMetadata);
+  const contexts: WorkbenchContext[] = [];
+  let sourceReadFailure: unknown;
 
-  if (topic === undefined) {
-    return undefined;
+  for (const topicMetadata of topicMetadataEntries) {
+    const topic = completeTopicMetadata(topicMetadata);
+
+    if (topic === undefined) {
+      continue;
+    }
+
+    const sourcePath = resolve(repositoryPath, topic.sourceReference);
+    const relativeSourcePath = relative(repositoryPath, sourcePath);
+
+    if (!isRepositoryRelativePath(relativeSourcePath)) {
+      continue;
+    }
+
+    let sourceMetadata: Map<string, string> | undefined;
+
+    try {
+      sourceMetadata = await readMarkdownMetadata(sourcePath);
+    } catch (cause: unknown) {
+      sourceReadFailure ??= cause;
+      continue;
+    }
+
+    const source = completeSourceMetadata(sourceMetadata);
+
+    if (source === undefined) {
+      continue;
+    }
+
+    contexts.push({
+      topic: { id: topic.id, title: topic.title },
+      sourceRecord: source,
+    });
   }
 
-  const sourcePath = resolve(repositoryPath, topic.sourceReference);
-  const relativeSourcePath = relative(repositoryPath, sourcePath);
-
-  if (!isRepositoryRelativePath(relativeSourcePath)) {
-    return undefined;
+  if (contexts.length === 0 && sourceReadFailure !== undefined) {
+    throw sourceReadFailure;
   }
 
-  const sourceMetadata = await readMarkdownMetadata(sourcePath);
-  const source = completeSourceMetadata(sourceMetadata);
-
-  if (source === undefined) {
-    return undefined;
-  }
-
-  return {
-    topic: { id: topic.id, title: topic.title },
-    sourceRecord: source,
-  };
+  return contexts.sort(
+    (left, right) =>
+      compareStrings(left.topic.id, right.topic.id) ||
+      compareStrings(left.sourceRecord.id, right.sourceRecord.id),
+  );
 };
 
 const validateRepositoryRoots = async (
@@ -799,7 +826,20 @@ export const createFileBackedKnowledgeRepository = (
     repositoryPath,
   ): Promise<WorkbenchContextReadOutcome> => {
     try {
-      const context = await readWorkbenchContext(repositoryPath);
+      const contexts = await readWorkbenchContexts(repositoryPath);
+
+      if (contexts.length === 0) {
+        return {
+          outcome: "not-found",
+          detail: "No complete topic context is available.",
+        };
+      }
+
+      if (contexts.length > 1) {
+        return { outcome: "ambiguous", contexts };
+      }
+
+      const [context] = contexts;
 
       if (context === undefined) {
         return {

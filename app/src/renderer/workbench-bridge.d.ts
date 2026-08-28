@@ -3,6 +3,8 @@ import type {
   FreshWorkbench,
   ReadingPositionOutcome,
   RepositoryOperationOutcome,
+  WorkbenchContextSelection,
+  WorkbenchContextSelectionOutcome,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
@@ -21,6 +23,9 @@ declare global {
       openFreshWorkbench(): Promise<FreshWorkbench>;
       createRepository(): Promise<RepositoryOperationOutcome>;
       openRepository(): Promise<RepositoryOperationOutcome>;
+      selectWorkbenchContext(
+        selection: WorkbenchContextSelection,
+      ): Promise<WorkbenchContextSelectionOutcome>;
       openTopicInStudio(topicId: string): Promise<WorkspaceTransitionOutcome>;
       openSourceRecordInPaperDesk(
         sourceRecordId: string,

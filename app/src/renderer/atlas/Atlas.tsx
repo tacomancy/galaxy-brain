@@ -1,6 +1,8 @@
 import type {
   RepositoryOperationOutcome,
   WorkbenchContext,
+  WorkbenchContextSelection,
+  WorkbenchContextSelectionOutcome,
   WorkbenchState,
   WorkspaceTransitionOutcome,
 } from "../../modules/workbench-session";
@@ -10,9 +12,15 @@ import type { JSX } from "react";
 interface AtlasProps {
   workbench: WorkbenchState;
   lastOutcome:
-    RepositoryOperationOutcome | WorkspaceTransitionOutcome | undefined;
+    | RepositoryOperationOutcome
+    | WorkbenchContextSelectionOutcome
+    | WorkspaceTransitionOutcome
+    | undefined;
   onCreateRepository: () => Promise<void>;
   onOpenRepository: () => Promise<void>;
+  onSelectWorkbenchContext: (
+    selection: WorkbenchContextSelection,
+  ) => Promise<void>;
   onOpenTopicInStudio: (topicId: string) => Promise<void>;
 }
 
@@ -174,10 +182,63 @@ const ContinueWorkingCard = ({
   </section>
 );
 
+interface ContextSelectionCardProps {
+  contexts: WorkbenchContext[];
+  onSelectWorkbenchContext: (
+    selection: WorkbenchContextSelection,
+  ) => Promise<void>;
+}
+
+const ContextSelectionCard = ({
+  contexts,
+  onSelectWorkbenchContext,
+}: ContextSelectionCardProps): JSX.Element => (
+  <section
+    id="atlas-context-selection"
+    className="atlas-continue-card"
+    aria-labelledby="atlas-context-selection-heading"
+  >
+    <span className="card-kicker">Choose where to continue</span>
+    <h2 id="atlas-context-selection-heading">Select a Workbench context</h2>
+    <p>
+      This Knowledge Repository contains multiple topics. Choose the topic and
+      Source Record that should be your current context.
+    </p>
+    <ul id="atlas-context-options">
+      {contexts.map((context) => (
+        <li
+          id={`atlas-context-option-${context.topic.id}`}
+          key={`${context.topic.id}:${context.sourceRecord.id}`}
+        >
+          <strong>{context.topic.title}</strong>
+          <span>{context.sourceRecord.title}</span>
+          <button
+            id={`atlas-context-select-${context.topic.id}`}
+            className="button button-light"
+            type="button"
+            aria-label={`Use ${context.topic.title} with ${context.sourceRecord.title}`}
+            onClick={() =>
+              onSelectWorkbenchContext({
+                topicId: context.topic.id,
+                sourceRecordId: context.sourceRecord.id,
+              })
+            }
+          >
+            Use this context
+          </button>
+        </li>
+      ))}
+    </ul>
+  </section>
+);
+
 const AtlasOutcomeNotice = ({
   outcome,
 }: {
-  outcome: RepositoryOperationOutcome | WorkspaceTransitionOutcome;
+  outcome:
+    | RepositoryOperationOutcome
+    | WorkbenchContextSelectionOutcome
+    | WorkspaceTransitionOutcome;
 }): JSX.Element | null =>
   "detail" in outcome ? (
     <p
@@ -200,6 +261,7 @@ export const Atlas = ({
   lastOutcome,
   onCreateRepository,
   onOpenRepository,
+  onSelectWorkbenchContext,
   onOpenTopicInStudio,
 }: AtlasProps): JSX.Element => {
   // This is an invariant of the fresh-session Interface. Failing loudly keeps
@@ -235,6 +297,12 @@ export const Atlas = ({
               onCreateRepository={onCreateRepository}
               onOpenRepository={onOpenRepository}
             />
+            {workbench.contextOptions === undefined ? null : (
+              <ContextSelectionCard
+                contexts={workbench.contextOptions}
+                onSelectWorkbenchContext={onSelectWorkbenchContext}
+              />
+            )}
             {workbench.context === undefined ? null : (
               <ContinueWorkingCard
                 context={workbench.context}
