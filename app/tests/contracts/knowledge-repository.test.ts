@@ -20,7 +20,12 @@ import {
   createFileBackedKnowledgeRepository,
   type KnowledgeRepositoryFileSystem,
 } from "../../src/adapters/knowledge-repository/file-backed-knowledge-repository";
-import { createWorkbenchSession } from "../../src/modules/workbench-session";
+import {
+  createWorkbenchSession,
+  type WorkbenchContext,
+  type WorkbenchSessionSnapshot,
+} from "../../src/modules/workbench-session";
+import type { StructuredAnnotation } from "../../src/modules/source-processing";
 
 const canonicalRoots = [
   "assets",
@@ -208,7 +213,7 @@ describe("file-backed Knowledge Repository contract", () => {
     );
 
     const manifest =
-      "# A harmless comment\nformat_version: 1 # still V1\nformat: galaxy-brain\nextra: preserved\n";
+      '# A harmless comment\nformat_version: 1 # still V1\nformat: "galaxy-brain" # quoted V1\nextra: preserved\n';
     await writeFile(join(repositoryPath, "galaxy-brain.yaml"), manifest);
     await writeFile(unknownPath, "preserve this content\n");
 
@@ -228,6 +233,37 @@ describe("file-backed Knowledge Repository contract", () => {
     assert.equal(
       await readFile(unknownPath, "utf8"),
       "preserve this content\n",
+    );
+
+    const unsupportedPath = join(temporaryRoot, "unsupported-repository");
+    await cp(
+      resolve(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      unsupportedPath,
+      { recursive: true },
+    );
+    await writeFile(
+      join(unsupportedPath, "galaxy-brain.yaml"),
+      "format: other-system\nformat_version: 1\n",
+    );
+
+    assert.deepEqual(
+      await createFileBackedKnowledgeRepository(starterRoot).openAt(
+        unsupportedPath,
+      ),
+      {
+        outcome: "unsupported-format",
+        detail: "The selected target uses an unsupported repository format.",
+      },
+    );
+  });
+
+  it("reports malformed filesystem input as an opening failure", async () => {
+    assert.deepEqual(
+      await createFileBackedKnowledgeRepository(starterRoot).openAt("\0"),
+      {
+        outcome: "operation-failed",
+        detail: "The Knowledge Repository could not be opened.",
+      },
     );
   });
 
@@ -476,6 +512,124 @@ describe("Workbench Session selection contract", () => {
       repositoryPath: "/created-repository",
       repositoryAccess: "read-write",
       repositorySelection: "created",
+    });
+  });
+
+  it("carries repository context through workspace and reading transitions", async () => {
+    const context: WorkbenchContext = {
+      topic: { id: "topic-id", title: "Bayesian statistics" },
+      sourceRecord: {
+        id: "source-id",
+        title: "Bayesian statistics fixture source",
+      },
+    };
+    const annotation: StructuredAnnotation = {
+      id: "annotation-id",
+      state: "working-material",
+      sourceRecord: context.sourceRecord,
+      sourceLocator: {
+        page: 2,
+        start: 10,
+        end: 54,
+        logical: "page:2#chars=10-54",
+      },
+      text: "Bayesian inference updates prior belief with evidence.",
+      attribution: "source-claim",
+      classification: "source-claim",
+    };
+    let latestSnapshot: WorkbenchSessionSnapshot | undefined;
+
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/contextual-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/contextual-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "available" as const,
+          context,
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "found" as const,
+          annotation,
+        }),
+      },
+      {
+        readSession: async () => undefined,
+        writeSession: async (snapshot) => {
+          latestSnapshot = snapshot;
+        },
+      },
+    );
+
+    assert.deepEqual(await session.createRepository("/requested-repository"), {
+      outcome: "created",
+      repositoryPath: "/contextual-repository",
+    });
+    assert.deepEqual(await session.openTopicInStudio("topic-id"), {
+      outcome: "transitioned",
+      workbench: {
+        activeWorkspace: "studio",
+        repositoryStatus: "selected",
+        repositoryPath: "/contextual-repository",
+        repositoryAccess: "read-write",
+        repositorySelection: "created",
+        context,
+        sourceAnnotation: annotation,
+      },
+    });
+    assert.deepEqual(await session.openSourceRecordInPaperDesk("source-id"), {
+      outcome: "transitioned",
+      workbench: {
+        activeWorkspace: "paper-desk",
+        repositoryStatus: "selected",
+        repositoryPath: "/contextual-repository",
+        repositoryAccess: "read-write",
+        repositorySelection: "created",
+        context,
+        sourceAnnotation: annotation,
+      },
+    });
+    assert.deepEqual(await session.switchWorkspace("atlas"), {
+      outcome: "transitioned",
+      workbench: {
+        activeWorkspace: "atlas",
+        repositoryStatus: "selected",
+        repositoryPath: "/contextual-repository",
+        repositoryAccess: "read-write",
+        repositorySelection: "created",
+        context,
+      },
+    });
+    assert.deepEqual(await session.openSavedAnnotation(), {
+      outcome: "position-restored",
+      workbench: {
+        activeWorkspace: "paper-desk",
+        repositoryStatus: "selected",
+        repositoryPath: "/contextual-repository",
+        repositoryAccess: "read-write",
+        repositorySelection: "created",
+        context,
+        sourceAnnotation: annotation,
+        readingPosition: {
+          sourceRecordId: "source-id",
+          page: 2,
+          characterOffset: 10,
+        },
+      },
+    });
+    assert.deepEqual(latestSnapshot, {
+      selectedRepositoryPath: "/contextual-repository",
+      activeWorkspace: "paper-desk",
+      readingPosition: {
+        sourceRecordId: "source-id",
+        page: 2,
+        characterOffset: 10,
+      },
     });
   });
 });
