@@ -42,6 +42,14 @@ The packaged application is written under `app/out/`. Run the repository verific
 npm run check
 ```
 
+Run the local coverage command for [Issue #47](https://github.com/tacomancy/galaxy-brain/issues/47) with:
+
+```bash
+npm run test:coverage
+```
+
+It measures the explicitly selected production TypeScript/TSX surface, enforces the calibrated global and per-file floors, and emits text, HTML, LCOV, and machine-readable reports. See the [coverage enforcement policy](../docs/architecture/v1-ui/test-strategy.md#coverage-enforcement) for the required boundaries and the distinction between branch and condition coverage.
+
 The packaged desktop workflow test packages the application and launches it through WebdriverIO:
 
 ```bash

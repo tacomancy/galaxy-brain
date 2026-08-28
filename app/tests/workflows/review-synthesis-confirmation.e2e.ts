@@ -71,15 +71,30 @@ describe("Review a Synthesis request", () => {
     );
 
     await $("#studio-synthesis-decline").click();
-    assert.equal(
-      await $("#studio-synthesis-outcome").getAttribute(
-        "data-synthesis-outcome",
-      ),
-      "declined",
+    await browser.waitUntil(
+      async () =>
+        (await $("#studio-synthesis-outcome").getAttribute(
+          "data-synthesis-outcome",
+        )) === "declined",
+      {
+        timeout: 5_000,
+        timeoutMsg: "The Synthesis decline outcome did not appear.",
+      },
     );
 
     await $("#studio-synthesis-prepare").click();
+    await $("#studio-synthesis-preview").waitForDisplayed();
     await $("#studio-synthesis-cancel").click();
+    await browser.waitUntil(
+      async () =>
+        (await $("#studio-synthesis-outcome").getAttribute(
+          "data-synthesis-outcome",
+        )) === "canceled",
+      {
+        timeout: 5_000,
+        timeoutMsg: "The Synthesis cancel outcome did not appear.",
+      },
+    );
     assert.equal(
       await $("#studio-synthesis-outcome").getAttribute(
         "data-synthesis-outcome",
@@ -88,12 +103,17 @@ describe("Review a Synthesis request", () => {
     );
 
     await $("#studio-synthesis-prepare").click();
+    await $("#studio-synthesis-preview").waitForDisplayed();
     await $("#studio-synthesis-confirm").click();
-    assert.equal(
-      await $("#studio-synthesis-outcome").getAttribute(
-        "data-synthesis-outcome",
-      ),
-      "agent-provider-unavailable",
+    await browser.waitUntil(
+      async () =>
+        (await $("#studio-synthesis-outcome").getAttribute(
+          "data-synthesis-outcome",
+        )) === "agent-provider-unavailable",
+      {
+        timeout: 5_000,
+        timeoutMsg: "The Synthesis provider outcome did not appear.",
+      },
     );
     assert.equal(
       await $("#studio-synthesis-outcome").getText(),
