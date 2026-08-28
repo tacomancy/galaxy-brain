@@ -189,6 +189,49 @@ describe("TB15 missing PDF behavior", () => {
     });
   });
 
+  it("does not capture from changed bytes until the source is explicitly relinked", async () => {
+    const workingMaterial = createInMemoryWorkingMaterialRepository();
+    await workingMaterial.saveAnnotation(annotation);
+    const pdf = createFixturePdfAdapter();
+    const sourceProcessing = createSourceProcessing({
+      pdf,
+      workingMaterial,
+      sourceAsset: createFixtureSourceAssetAdapter({
+        sourceRecord,
+        initialIdentity: {
+          outcome: "available",
+          sourceIdentity: "source-identity-bayesian-statistics-v2",
+          contentIdentity: "content-identity-bayesian-statistics-v2",
+        },
+        replacementIdentity: {
+          outcome: "available",
+          sourceIdentity: "source-identity-bayesian-statistics-v2",
+          contentIdentity: "content-identity-bayesian-statistics-v2",
+        },
+        pdf,
+      }),
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.captureSourceClaim({
+        sourceRecord,
+        page: 2,
+        start: 0,
+        end: 54,
+        expectedSourceIdentity: "source-identity-bayesian-statistics-v1",
+        expectedContentIdentity: "content-identity-bayesian-statistics-v1",
+      }),
+      {
+        outcome: "source-unavailable",
+        detail: "The source status changed; relink is required before capture.",
+      },
+    );
+    assert.deepEqual(await workingMaterial.readAnnotation(annotation.id), {
+      outcome: "found",
+      annotation,
+    });
+  });
+
   it("rejects a relink whose verified identity does not match the requested replacement", async () => {
     const workingMaterial = createInMemoryWorkingMaterialRepository();
     await workingMaterial.saveAnnotation(annotation);
@@ -293,6 +336,8 @@ describe("TB15 missing PDF behavior", () => {
         page: 2,
         start: 0,
         end: 54,
+        expectedSourceIdentity: "source-identity-bayesian-statistics-v2",
+        expectedContentIdentity: "content-identity-bayesian-statistics-v2",
       }),
       {
         outcome: "captured",
@@ -372,6 +417,10 @@ describe("TB15 missing PDF behavior", () => {
         contentIdentity: "content-identity-bayesian-statistics-v1",
       },
     );
+    assert.deepEqual(await workingMaterial.readAnnotation(annotation.id), {
+      outcome: "found",
+      annotation,
+    });
   });
 
   it("does not mutate the link or annotation when relinking is unavailable", async () => {

@@ -44,10 +44,11 @@ Given the checked-in Bayesian fixture Source Record and one captured source-clai
 1. A baseline availability check returns `available` and the recorded source and content identities. Reading the existing annotation still returns the exact source reference, text, attribution, classification, and locator.
 2. When the linked PDF is missing or unreadable, the availability check returns `source-status-unavailable` with the literal warning `source status unavailable`. The Source Record remains present, and reading annotations for that Source Record returns the same annotation rather than an empty or deleted result.
 3. When the linked PDF is readable but either recorded identity differs from the current identity, the availability check returns `source-changed` with the literal warning `source status changed`. The result identifies that the saved linked asset and current bytes differ without replacing the saved link, changing the Source Record ID, changing annotation text, or changing the logical locator.
-4. An explicit relink request supplies a replacement linked asset, expected replacement identities, and a known page/range to verify. The Source Processing module asks the Source Asset Adapter to verify the replacement. The Adapter commits the machine-local replacement only after all checks succeed. The successful outcome is `relinked` and includes the now-available current identities; the existing annotation remains byte-for-byte equivalent at the domain level.
-5. A relink request whose replacement identity cannot be read, is unavailable, does not satisfy the requested expected identity, or cannot resolve the requested page/range returns `source-status-unavailable` or `source-changed` as appropriate. The Adapter does not mutate the stored link, and Source Processing does not mutate the Source Record reference, annotations, citations, or logical locators.
-6. Relinking does not remap an annotation to a different page or character range. If a replacement does not contain the known page/range, the source remains unavailable for that capture; the module does not guess a new range or silently rewrite the annotation.
-7. No availability check, failed relink, or successful relink creates a Proposal, invokes Synthesis, changes Governed Knowledge, or requires Git, a remote, credentials, or an Agent Provider.
+4. A capture request made while a composed Source Asset Adapter reports a changed identity returns `source-unavailable` with the detail `The source status changed; relink is required before capture.` It does not resolve or save new text from the changed bytes.
+5. An explicit relink request supplies a replacement linked asset, expected replacement identities, and a known page/range to verify. The Source Processing module asks the Source Asset Adapter to verify the replacement. The Adapter commits the machine-local replacement only after all checks succeed. The successful outcome is `relinked` and includes the now-available current identities; the existing annotation remains byte-for-byte equivalent at the domain level.
+6. A relink request whose replacement identity cannot be read, is unavailable, does not satisfy the requested expected identity, or cannot resolve the requested page/range returns `source-status-unavailable` or `source-changed` as appropriate. The Adapter does not mutate the stored link, and Source Processing does not mutate the Source Record reference, annotations, citations, or logical locators.
+7. Relinking does not remap an annotation to a different page or character range. If a replacement does not contain the known page/range, the source remains unavailable for that capture; the module does not guess a new range or silently rewrite the annotation.
+8. No availability check, failed relink, or successful relink creates a Proposal, invokes Synthesis, changes Governed Knowledge, or requires Git, a remote, credentials, or an Agent Provider.
 
 The caller-visible outcomes must distinguish a current source, an unavailable source, a changed source, and an explicitly verified relink. Infrastructure causes may be recorded through the existing diagnostics seam, but implementation-specific exception text is not a UI or domain contract.
 
@@ -131,6 +132,8 @@ export type RelinkSourceOutcome =
 
 The exact TypeScript names may change during implementation if the public behavior and ownership remain identical. The following are not negotiable: identity comparison is explicit, `source status unavailable` and `source status changed` remain distinguishable, relink is caller-authorized, and the module returns the original Source Record and annotations unchanged on every failure path.
 
+When a Source Asset Adapter is composed, `CaptureSourceClaimInput.expectedSourceIdentity` and `expectedContentIdentity` are required by the capture operation. A capture without them returns unavailable rather than bypassing the linked-asset check. Existing provider-free capture callers without a Source Asset Adapter retain the TB5 behavior.
+
 The `replacementReference` is an Adapter-facing machine-local value and must never cross into Repository Format content, renderer state, logs, or caller-visible portable artifacts. The module may pass it to the Adapter, but it must not expose an absolute path to the renderer or persist it in a Markdown annotation.
 
 ## Literal expected values
@@ -178,8 +181,9 @@ No S1 UI work is required to make the S3 contract true. A later Paper Desk prese
 4. Add one focused S3 test for a readable identity/content mismatch. Assert `source-changed`, the exact warning, and no mutation of the saved link or annotation.
 5. Add one focused S3 test for explicit relink to the known replacement. Assert `relinked`, the `v2` identities, the known page/range, and exact preservation of `page:2#chars=0-54`.
 6. Add failed-relink tests for an unavailable, mismatched, or locator-invalid replacement. Assert that the Adapter does not commit the prior link and the annotation remains unchanged.
-7. If a production linked-file Adapter is added, add its narrow S5 contract for SHA-256 comparison, missing paths, and machine-local path isolation.
-8. Run the focused S3/S5 tests, `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, and public documentation validation. Record Red/Green evidence and defer any UI/manual acceptance to a confirmed S1 slice.
+7. Add the changed-capture test and assert that Source Processing refuses to resolve changed bytes until relink succeeds.
+8. If a production linked-file Adapter is added, add its narrow S5 contract for SHA-256 comparison, missing paths, and machine-local path isolation.
+9. Run the focused S3/S5 tests, `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, and public documentation validation. Record Red/Green evidence and defer any UI/manual acceptance to a confirmed S1 slice.
 
 ## External System Seams
 
@@ -221,6 +225,7 @@ Implementation evidence is complete only when the S3 tests show all of the follo
 
 - unavailable source returns `source-status-unavailable` and `source status unavailable`;
 - changed source returns `source-changed` and `source status changed` with both expected and actual identities;
+- capture refuses changed bytes until explicit relink and preserves the existing annotation;
 - Source Record ID/title and the full Structured Annotation remain unchanged after both failure states;
 - explicit relink returns `relinked` only after replacement verification succeeds;
 - the known page is readable after relink and the logical locator remains `page:2#chars=0-54`;

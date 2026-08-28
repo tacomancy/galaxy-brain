@@ -103,7 +103,7 @@ export interface SynthesisSourceIdentityAdapter {
   readIdentity(sourceRecordId: string): Promise<SynthesisSourceIdentityOutcome>;
 }
 
-/** Current identity outcome for a linked Source Asset. */
+/** Current identity outcome for a linked Source Asset; unavailable is explicit. */
 export type SourceAssetIdentityOutcome =
   | {
       outcome: "available";
@@ -112,7 +112,7 @@ export type SourceAssetIdentityOutcome =
     }
   | { outcome: "unavailable"; detail: string };
 
-/** Outcome of verifying a replacement Source Asset before committing it. */
+/** Outcome of verifying a replacement before committing its machine-local link. */
 export type SourceAssetRelinkOutcome =
   | SourceAssetIdentityOutcome
   | {
@@ -331,9 +331,15 @@ export interface CaptureSourceClaimInput {
   page: number;
   start: number;
   end: number;
+  /**
+   * Required when a Source Asset Adapter is composed; prevents capture from
+   * bypassing linked-asset identity checks after the asset has changed.
+   */
+  expectedSourceIdentity?: string;
+  expectedContentIdentity?: string;
 }
 
-/** Input for checking the identity of a linked Source Asset. */
+/** Input for checking a linked Source Asset against its recorded identities. */
 export interface CheckSourceAvailabilityInput {
   sourceRecord: SourceRecordReference;
   expectedSourceIdentity: string;
@@ -364,7 +370,10 @@ export type CheckSourceAvailabilityOutcome =
       actualContentIdentity: string;
     };
 
-/** Input for a caller-authorized replacement of a linked Source Asset. */
+/**
+ * Input for a caller-authorized replacement. The Adapter must verify the
+ * expected replacement identities and locator before committing its link.
+ */
 export interface RelinkSourceInput {
   sourceRecord: SourceRecordReference;
   /** Machine-local replacement reference; never portable repository content. */
@@ -451,7 +460,11 @@ export type CaptureSourceClaimOutcome =
 
 /** Public Source Processing behavior used by S3 callers and tests. */
 export interface SourceProcessing {
-  /** Captures a located source claim without creating Synthesis or a Proposal. */
+  /**
+   * Captures a located source claim without creating Synthesis or a Proposal.
+   * With a Source Asset Adapter, expected identities are required and a
+   * changed or unavailable source is refused before PDF resolution.
+   */
   captureSourceClaim(
     input: CaptureSourceClaimInput,
   ): Promise<CaptureSourceClaimOutcome>;
@@ -513,6 +526,7 @@ export interface SourceProcessingDependencies {
   model?: SynthesisModelAdapter;
   results?: SynthesisResultRepository;
   sourceIdentity?: SynthesisSourceIdentityAdapter;
+  /** Optional for legacy provider-free capture; required for linked checks. */
   sourceAsset?: SourceAssetAdapter;
   diagnostics?: SourceProcessingDiagnostics;
 }
@@ -535,6 +549,27 @@ const sourceStatusUnavailable = (
   sourceRecord: { ...sourceRecord },
   warning: "source status unavailable",
   detail,
+});
+
+type SourceChangedOutcome = Extract<
+  CheckSourceAvailabilityOutcome,
+  { outcome: "source-changed" }
+>;
+
+const sourceChanged = (
+  sourceRecord: SourceRecordReference,
+  expectedSourceIdentity: string,
+  expectedContentIdentity: string,
+  actualSourceIdentity: string,
+  actualContentIdentity: string,
+): SourceChangedOutcome => ({
+  outcome: "source-changed",
+  sourceRecord: { ...sourceRecord },
+  warning: "source status changed",
+  expectedSourceIdentity,
+  expectedContentIdentity,
+  actualSourceIdentity,
+  actualContentIdentity,
 });
 
 const isValidLocator = (input: CaptureSourceClaimInput): boolean =>
@@ -685,15 +720,13 @@ export const createSourceProcessing = (
       identity.sourceIdentity !== input.expectedSourceIdentity ||
       identity.contentIdentity !== input.expectedContentIdentity
     ) {
-      return {
-        outcome: "source-changed",
+      return sourceChanged(
         sourceRecord,
-        warning: "source status changed",
-        expectedSourceIdentity: input.expectedSourceIdentity,
-        expectedContentIdentity: input.expectedContentIdentity,
-        actualSourceIdentity: identity.sourceIdentity,
-        actualContentIdentity: identity.contentIdentity,
-      };
+        input.expectedSourceIdentity,
+        input.expectedContentIdentity,
+        identity.sourceIdentity,
+        identity.contentIdentity,
+      );
     }
 
     return {
@@ -723,30 +756,26 @@ export const createSourceProcessing = (
     }
 
     if (identity.outcome === "changed") {
-      return {
-        outcome: "source-changed",
+      return sourceChanged(
         sourceRecord,
-        warning: "source status changed",
-        expectedSourceIdentity: input.expectedReplacementSourceIdentity,
-        expectedContentIdentity: input.expectedReplacementContentIdentity,
-        actualSourceIdentity: identity.sourceIdentity,
-        actualContentIdentity: identity.contentIdentity,
-      };
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+        identity.sourceIdentity,
+        identity.contentIdentity,
+      );
     }
 
     if (
       identity.sourceIdentity !== input.expectedReplacementSourceIdentity ||
       identity.contentIdentity !== input.expectedReplacementContentIdentity
     ) {
-      return {
-        outcome: "source-changed",
+      return sourceChanged(
         sourceRecord,
-        warning: "source status changed",
-        expectedSourceIdentity: input.expectedReplacementSourceIdentity,
-        expectedContentIdentity: input.expectedReplacementContentIdentity,
-        actualSourceIdentity: identity.sourceIdentity,
-        actualContentIdentity: identity.contentIdentity,
-      };
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+        identity.sourceIdentity,
+        identity.contentIdentity,
+      );
     }
 
     return {
@@ -765,6 +794,34 @@ export const createSourceProcessing = (
         outcome: "invalid-locator",
         detail: "The source locator is invalid.",
       };
+    }
+
+    if (dependencies.sourceAsset !== undefined) {
+      if (
+        input.expectedSourceIdentity === undefined ||
+        input.expectedContentIdentity === undefined
+      ) {
+        return {
+          outcome: "source-unavailable",
+          detail: "The linked source asset could not be checked.",
+        };
+      }
+
+      const availability = await checkSourceAvailability({
+        sourceRecord: input.sourceRecord,
+        expectedSourceIdentity: input.expectedSourceIdentity,
+        expectedContentIdentity: input.expectedContentIdentity,
+      });
+
+      if (availability.outcome !== "available") {
+        return {
+          outcome: "source-unavailable",
+          detail:
+            availability.outcome === "source-changed"
+              ? "The source status changed; relink is required before capture."
+              : availability.detail,
+        };
+      }
     }
 
     let sourceSelection: PdfSelectionOutcome;
