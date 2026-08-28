@@ -17,10 +17,44 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 from scripts.build_public_docs import (  # noqa: E402
     validate_tutorial_content,
     validate_tutorial_index,
+    validate_release_alignment,
 )
 
 
 class PublicDocumentationBuildTest(unittest.TestCase):
+    def test_security_policy_matches_current_release_sources(self) -> None:
+        package_content = '{"version": "0.8.0"}'
+        changelog_content = (
+            "# Changelog\n\n"
+            "## [Unreleased]\n\n"
+            "## [0.8.0](release-url) (2026-08-28)\n\n"
+            "## [0.7.0](release-url) (2026-08-27)\n"
+        )
+        security_content = "| Latest published release (`0.8.0`) | Yes |\n"
+
+        validate_release_alignment(
+            package_content,
+            changelog_content,
+            security_content,
+        )
+
+        with self.assertRaisesRegex(ValueError, "SECURITY.md reports 0.7.0.*0.8.0"):
+            validate_release_alignment(
+                package_content,
+                changelog_content,
+                security_content.replace("0.8.0", "0.7.0"),
+            )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "app/package.json reports 0.7.0.*app/CHANGELOG.md reports 0.8.0",
+        ):
+            validate_release_alignment(
+                package_content.replace("0.8.0", "0.7.0"),
+                changelog_content,
+                security_content,
+            )
+
     def test_tutorial_validation_requires_metadata_and_headings(self) -> None:
         page = {"source": "docs-site/tutorials/example.md", "kind": "tutorial"}
         content = """---

@@ -8,7 +8,8 @@ if one exists.
 
 | Version | Supported |
 | --- | --- |
-| `0.1.x` | Yes |
+| `main` | Yes |
+| Latest published release (`0.9.0`) | Yes |
 | Older versions | No |
 
 ## Reporting a vulnerability

@@ -53,6 +53,54 @@ TUTORIAL_HEADINGS = (
     "Expected result",
     "Troubleshooting",
 )
+RELEASE_VERSION_PATTERN = r"\d+\.\d+\.\d+"
+CHANGELOG_VERSION_PATTERN = re.compile(
+    rf"^##\s+\[(?P<version>{RELEASE_VERSION_PATTERN})\]",
+    re.MULTILINE,
+)
+SECURITY_VERSION_PATTERN = re.compile(
+    rf"^\|\s*Latest published release\s+\(`(?P<version>{RELEASE_VERSION_PATTERN})`\)\s*\|\s*Yes\s*\|\s*$",
+    re.MULTILINE,
+)
+
+
+def validate_release_alignment(
+    package_content: str,
+    changelog_content: str,
+    security_content: str,
+) -> None:
+    try:
+        package_document = json.loads(package_content)
+    except json.JSONDecodeError as error:
+        raise ValueError("app/package.json is not valid JSON") from error
+    package_version = package_document.get("version")
+    if not isinstance(package_version, str) or not package_version:
+        raise ValueError("app/package.json does not declare a version")
+
+    changelog_match = CHANGELOG_VERSION_PATTERN.search(changelog_content)
+    if changelog_match is None:
+        raise ValueError("app/CHANGELOG.md does not declare a latest release")
+    # The changelog keeps the newest published entry first; the pattern skips
+    # an optional Unreleased heading because it requires a semantic version.
+    changelog_version = changelog_match.group("version")
+
+    security_matches = list(SECURITY_VERSION_PATTERN.finditer(security_content))
+    if len(security_matches) != 1:
+        raise ValueError(
+            "SECURITY.md must identify the supported latest published release"
+        )
+    security_version = security_matches[0].group("version")
+
+    if package_version != changelog_version:
+        raise ValueError(
+            "Release version mismatch: app/package.json reports "
+            f"{package_version}, but app/CHANGELOG.md reports {changelog_version}"
+        )
+    if security_version != changelog_version:
+        raise ValueError(
+            "Release version mismatch: SECURITY.md reports "
+            f"{security_version}, but app/CHANGELOG.md reports {changelog_version}"
+        )
 
 
 def read_tutorial_metadata(content: str, source: str) -> dict[str, object]:
@@ -158,6 +206,11 @@ def validate_manifest_entries(
 
 
 def load_manifest() -> list[dict[str, object]]:
+    validate_release_alignment(
+        (REPOSITORY_ROOT / "app/package.json").read_text(encoding="utf-8"),
+        (REPOSITORY_ROOT / "app/CHANGELOG.md").read_text(encoding="utf-8"),
+        (REPOSITORY_ROOT / "SECURITY.md").read_text(encoding="utf-8"),
+    )
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     pages = validate_manifest_entries(manifest.get("pages"), "page")
     tutorials = validate_manifest_entries(manifest.get("tutorials"), "tutorial")
