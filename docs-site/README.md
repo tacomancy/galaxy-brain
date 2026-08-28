@@ -13,8 +13,8 @@ source of truth. The current navigation publishes:
 - the project overview, application README, project documentation overview,
   and security policy;
 - the V1 architecture overview, architecture, product decisions, repository
-  format, and test strategy; and
-- the human-agent collaboration guide; and
+  format, and test strategy;
+- the human-agent collaboration guide;
 - the engineering and domain glossaries; and
 - the first-release Tutorials section.
 
