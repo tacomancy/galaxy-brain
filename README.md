@@ -10,6 +10,7 @@ Galaxy Brain combines a human-owned knowledge base for personal research and con
 - [Application build and run instructions](app/README.md#build-and-run)
 - [Project documentation](docs/README.md)
 - [Public documentation site](https://tacomancy.github.io/galaxy-brain/)
+- [Public tutorials](https://tacomancy.github.io/galaxy-brain/tutorials/)
 - [V1 Knowledge Workbench architecture](docs/architecture/v1-ui/README.md)
 - [Human-agent collaboration](docs/agents/collaboration.md)
 - [Knowledge-base guidance](docs/agents/knowledge-base.md)

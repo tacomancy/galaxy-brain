@@ -13,6 +13,8 @@ import subprocess
 from pathlib import Path, PurePosixPath
 from urllib.parse import urldefrag, urlparse
 
+import yaml
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = REPOSITORY_ROOT / "docs-site" / "site-manifest.json"
@@ -44,31 +46,152 @@ SECRET_PATTERNS = (
 )
 MARKDOWN_LINK_PATTERN = re.compile(r"(!?)\[([^\]]*)\]\(([^)]+)\)")
 HTML_LINK_PATTERN = re.compile(r"(?:href|src)=\"([^\"]+)\"")
+TUTORIAL_HEADINGS = (
+    "Goal",
+    "Prerequisites",
+    "Steps",
+    "Expected result",
+    "Troubleshooting",
+)
 
 
-def load_manifest() -> list[dict[str, str]]:
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    pages = manifest.get("pages")
-    if not isinstance(pages, list) or not pages:
-        raise ValueError("The public documentation manifest must contain pages.")
+def read_tutorial_metadata(content: str, source: str) -> dict[str, object]:
+    frontmatter = re.match(r"\A---\n(.*?)\n---\n", content, re.DOTALL)
+    if frontmatter is None:
+        raise ValueError(f"Tutorial is missing YAML frontmatter: {source}")
 
-    normalized: list[dict[str, str]] = []
-    destinations: set[str] = set()
-    for page in pages:
+    metadata = yaml.safe_load(frontmatter.group(1))
+    if not isinstance(metadata, dict):
+        raise ValueError(f"Tutorial frontmatter must be a mapping: {source}")
+
+    required = ("title", "summary", "audience", "prerequisites", "nav_order")
+    missing = [field for field in required if field not in metadata]
+    if missing:
+        raise ValueError(
+            f"Tutorial metadata is missing {', '.join(missing)}: {source}"
+        )
+
+    for field in ("title", "summary", "audience"):
+        if not isinstance(metadata[field], str) or not metadata[field].strip():
+            raise ValueError(f"Tutorial metadata field {field} must be non-empty: {source}")
+
+    prerequisites = metadata["prerequisites"]
+    if not isinstance(prerequisites, list) or not all(
+        isinstance(item, str) and item.strip() for item in prerequisites
+    ):
+        raise ValueError(
+            f"Tutorial metadata field prerequisites must be a list of strings: {source}"
+        )
+
+    nav_order = metadata["nav_order"]
+    if isinstance(nav_order, bool) or not isinstance(nav_order, int) or nav_order < 0:
+        raise ValueError(
+            f"Tutorial metadata field nav_order must be a non-negative integer: {source}"
+        )
+
+    return metadata
+
+
+def validate_tutorial_content(page: dict[str, object], content: str) -> None:
+    source = str(page["source"])
+    metadata = read_tutorial_metadata(content, source)
+    if page["kind"] != "tutorial":
+        return
+
+    headings = re.findall(r"^##\s+(.+?)\s*$", content, re.MULTILINE)
+    positions: list[int] = []
+    for heading in TUTORIAL_HEADINGS:
+        if headings.count(heading) != 1:
+            raise ValueError(
+                f"Tutorial must contain one '## {heading}' heading: {source}"
+            )
+        positions.append(headings.index(heading))
+    if positions != sorted(positions):
+        raise ValueError(
+            "Tutorial headings must appear in the order Goal, Prerequisites, "
+            f"Steps, Expected result, Troubleshooting: {source}"
+        )
+
+    if metadata["nav_order"] == 0:
+        raise ValueError(f"Task tutorial nav_order must be greater than zero: {source}")
+
+
+def validate_tutorial_index(
+    index_content: str, tutorials: list[dict[str, object]]
+) -> None:
+    for tutorial in tutorials:
+        source = str(tutorial["source"])
+        filename = PurePosixPath(source).name
+        if f"]({filename})" not in index_content:
+            raise ValueError(f"Tutorial index does not link to {source}")
+
+
+def validate_manifest_entries(
+    entries: object, kind: str
+) -> list[dict[str, object]]:
+    if not isinstance(entries, list) or not entries:
+        raise ValueError(f"The public documentation manifest must contain {kind}.")
+
+    normalized: list[dict[str, object]] = []
+    for page in entries:
         if not isinstance(page, dict):
-            raise ValueError("Each public documentation page must be an object.")
+            raise ValueError(f"Each public {kind} must be an object.")
         source = page.get("source")
         destination = page.get("destination")
         if not isinstance(source, str) or not isinstance(destination, str):
-            raise ValueError("Each public page needs string source and destination.")
+            raise ValueError(f"Each public {kind} needs string source and destination.")
+        entry_kind = kind
+        if kind == "tutorial":
+            entry_kind = page.get("kind")
+            if entry_kind not in {"index", "tutorial"}:
+                raise ValueError(
+                    "Each tutorial must declare kind 'index' or 'tutorial'."
+                )
         manifest_path(destination, "destination")
-        if destination in destinations:
-            raise ValueError(f"Duplicate public documentation destination: {destination}")
-        destinations.add(destination)
         source_path = manifest_path(source, "source")
         if not source_path.is_file():
             raise ValueError(f"Public documentation source does not exist: {source}")
-        normalized.append({"source": source, "destination": destination})
+        normalized.append(
+            {"source": source, "destination": destination, "kind": entry_kind}
+        )
+    return normalized
+
+
+def load_manifest() -> list[dict[str, object]]:
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    pages = validate_manifest_entries(manifest.get("pages"), "page")
+    tutorials = validate_manifest_entries(manifest.get("tutorials"), "tutorial")
+    destinations: set[str] = set()
+    for page in [*pages, *tutorials]:
+        destination = str(page["destination"])
+        if destination in destinations:
+            raise ValueError(f"Duplicate public documentation destination: {destination}")
+        destinations.add(destination)
+
+    index_pages = [
+        page for page in tutorials if page["destination"] == "tutorials/index.md"
+    ]
+    if len(index_pages) != 1:
+        raise ValueError("The tutorial manifest must contain exactly one tutorials/index.md.")
+
+    task_tutorials = [page for page in tutorials if page["kind"] == "tutorial"]
+    tutorial_orders: list[int] = []
+    index_source = REPOSITORY_ROOT / str(index_pages[0]["source"])
+    index_content = index_source.read_text(encoding="utf-8")
+    validate_tutorial_index(index_content, task_tutorials)
+    for tutorial in task_tutorials:
+        source = str(tutorial["source"])
+        content = (REPOSITORY_ROOT / source).read_text(encoding="utf-8")
+        validate_tutorial_content(tutorial, content)
+        metadata = read_tutorial_metadata(content, source)
+        tutorial_orders.append(int(metadata["nav_order"]))
+
+    index_content_metadata = index_source.read_text(encoding="utf-8")
+    validate_tutorial_content(index_pages[0], index_content_metadata)
+    if tutorial_orders != list(range(1, len(task_tutorials) + 1)):
+        raise ValueError("Tutorial nav_order values must be consecutive starting at 1.")
+
+    normalized = [*pages, *tutorials]
     return normalized
 
 
@@ -131,14 +254,16 @@ def rewrite_links(
     return MARKDOWN_LINK_PATTERN.sub(replace, content)
 
 
-def stage_sources(pages: list[dict[str, str]]) -> None:
+def stage_sources(pages: list[dict[str, object]]) -> None:
     shutil.rmtree(STAGING_ROOT, ignore_errors=True)
     STAGING_ROOT.mkdir(parents=True)
-    source_to_destination = {page["source"]: page["destination"] for page in pages}
+    source_to_destination = {
+        str(page["source"]): str(page["destination"]) for page in pages
+    }
 
     for page in pages:
-        source = page["source"]
-        destination = page["destination"]
+        source = str(page["source"])
+        destination = str(page["destination"])
         content = (REPOSITORY_ROOT / source).read_text(encoding="utf-8")
         rewritten = rewrite_links(
             content,
@@ -201,7 +326,7 @@ def output_path_for_page(destination: str) -> Path:
     return destination_path.with_suffix("") / "index.html"
 
 
-def validate_site(output: Path, pages: list[dict[str, str]]) -> None:
+def validate_site(output: Path, pages: list[dict[str, object]]) -> None:
     files = [path for path in output.rglob("*") if path.is_file()]
     if not files:
         raise ValueError("The public documentation build produced no files.")
@@ -228,7 +353,9 @@ def validate_site(output: Path, pages: list[dict[str, str]]) -> None:
         if any(pattern.search(text) for pattern in SECRET_PATTERNS):
             raise ValueError(f"Possible secret was emitted: {path.relative_to(output)}")
 
-    expected_pages = {output_path_for_page(page["destination"]) for page in pages}
+    expected_pages = {
+        output_path_for_page(str(page["destination"])) for page in pages
+    }
     actual_pages = {path.relative_to(output) for path in files if path.suffix == ".html"}
     missing = expected_pages - actual_pages
     if missing:

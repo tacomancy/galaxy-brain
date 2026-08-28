@@ -14,7 +14,14 @@ source of truth. The current navigation publishes:
   and security policy;
 - the V1 architecture overview, architecture, product decisions, repository
   format, and test strategy; and
-- the engineering and domain glossaries.
+- the engineering and domain glossaries; and
+- the first-release Tutorials section.
+
+The `tutorials` section of the manifest separately lists user-facing tutorial
+pages. Tutorial sources use YAML frontmatter with `title`, `summary`,
+`audience`, `prerequisites`, and `nav_order`, followed by the standard task
+headings: Goal, Prerequisites, Steps, Expected result, and Troubleshooting.
+The tutorial index is the only exception because it is an orientation page.
 
 The build copies only those sources into a generated staging tree. It rewrites
 links to allowlisted pages and turns links to excluded repository material
