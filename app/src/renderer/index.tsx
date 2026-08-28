@@ -1,6 +1,6 @@
 /** Renderer entry point for the desktop Workbench shell. */
 import { createRoot } from "react-dom/client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import "./styles.css";
 import { Atlas } from "./atlas/Atlas";
@@ -44,6 +44,7 @@ const WorkbenchShell = ({
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
+  const shouldFocusSelectedContextAction = useRef(false);
   const [lastOutcome, setLastOutcome] = useState<
     | RepositoryOperationOutcome
     | WorkbenchContextSelectionOutcome
@@ -72,6 +73,18 @@ const WorkbenchShell = ({
   const [restoreOutcome, setRestoreOutcome] = useState<
     RestoreSynthesisResultOutcome | undefined
   >();
+
+  useEffect(() => {
+    if (!shouldFocusSelectedContextAction.current) {
+      return;
+    }
+
+    const nextAction = document.getElementById("atlas-topic-open-studio");
+    if (nextAction instanceof HTMLButtonElement) {
+      nextAction.focus();
+      shouldFocusSelectedContextAction.current = false;
+    }
+  }, [workbench]);
 
   const applyWorkspaceTransition = (
     outcome: WorkspaceTransitionOutcome,
@@ -118,12 +131,7 @@ const WorkbenchShell = ({
     if (outcome.outcome === "selected") {
       setLastOutcome(undefined);
       setWorkbench(outcome.workbench);
-      window.requestAnimationFrame(() => {
-        const nextAction = document.getElementById("atlas-topic-open-studio");
-        if (nextAction instanceof HTMLButtonElement) {
-          nextAction.focus();
-        }
-      });
+      shouldFocusSelectedContextAction.current = true;
       return;
     }
 
