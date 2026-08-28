@@ -492,7 +492,8 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Scope:** This cycle proves edited independent changes. Edited dependent changes, Judgment revision, durable edited-decision provenance, and UI behavior remain deferred.
 - **Red evidence:** The focused test first failed because the existing Judgment validator did not classify edited changes and returned the generic incomplete-classification result.
 - **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 70 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.27% statements, 73.19% branches, and 97.40% functions. `npm run lint:complexity` passed. The focused test proves the reviewer-edited exact replacement is applied, the original Proposal replacement is not applied, and the prior version remains retrievable.
-- **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and human acceptance remains pending.
+- **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
+- **Acceptance:** The user confirmed that the reviewer-supplied edited exact replacement is applied instead of the original Proposal replacement, while the prior governed version remains retrievable.
 - **Deferred work:** Edited dependent changes, Judgment revision, dependency-graph mutation, persistent edited multi-change provenance, UI behavior, Agent Provider use, Git, and network behavior remain explicitly deferred. Durable provenance must preserve both original and edited exact changes before the file-backed representation is expanded.
 - **Next behavior:** Complete the manual acceptance review for the edited independent-change behavior before selecting edited dependent changes or persistent edited-decision provenance.
 
