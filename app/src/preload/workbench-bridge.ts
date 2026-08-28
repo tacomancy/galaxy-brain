@@ -10,6 +10,8 @@ import type {
   FreshWorkbench,
   ReadingPositionOutcome,
   RepositoryOperationOutcome,
+  WorkbenchContextSelection,
+  WorkbenchContextSelectionOutcome,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
@@ -29,6 +31,10 @@ contextBridge.exposeInMainWorld("workbench", {
     ipcRenderer.invoke("workbench:create-repository"),
   openRepository: (): Promise<RepositoryOperationOutcome> =>
     ipcRenderer.invoke("workbench:open-repository"),
+  selectWorkbenchContext: (
+    selection: WorkbenchContextSelection,
+  ): Promise<WorkbenchContextSelectionOutcome> =>
+    ipcRenderer.invoke("workbench:select-context", selection),
   openTopicInStudio: (topicId: string): Promise<WorkspaceTransitionOutcome> =>
     ipcRenderer.invoke("workbench:open-topic-in-studio", topicId),
   openSourceRecordInPaperDesk: (

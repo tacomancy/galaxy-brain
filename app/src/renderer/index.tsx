@@ -1,6 +1,6 @@
 /** Renderer entry point for the desktop Workbench shell. */
 import { createRoot } from "react-dom/client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import "./styles.css";
 import { Atlas } from "./atlas/Atlas";
@@ -17,6 +17,8 @@ import type {
 import type {
   FreshWorkbench,
   RepositoryOperationOutcome,
+  WorkbenchContextSelection,
+  WorkbenchContextSelectionOutcome,
   WorkbenchState,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
@@ -42,8 +44,12 @@ const WorkbenchShell = ({
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
+  const shouldFocusSelectedContextAction = useRef(false);
   const [lastOutcome, setLastOutcome] = useState<
-    RepositoryOperationOutcome | WorkspaceTransitionOutcome | undefined
+    | RepositoryOperationOutcome
+    | WorkbenchContextSelectionOutcome
+    | WorkspaceTransitionOutcome
+    | undefined
   >(initialWorkbench.repositoryResumeFailure);
   const [synthesisPreview, setSynthesisPreview] = useState<
     SynthesisPreview | undefined
@@ -67,6 +73,18 @@ const WorkbenchShell = ({
   const [restoreOutcome, setRestoreOutcome] = useState<
     RestoreSynthesisResultOutcome | undefined
   >();
+
+  useEffect(() => {
+    if (!shouldFocusSelectedContextAction.current) {
+      return;
+    }
+
+    const nextAction = document.getElementById("atlas-topic-open-studio");
+    if (nextAction instanceof HTMLButtonElement) {
+      nextAction.focus();
+      shouldFocusSelectedContextAction.current = false;
+    }
+  }, [workbench]);
 
   const applyWorkspaceTransition = (
     outcome: WorkspaceTransitionOutcome,
@@ -103,6 +121,21 @@ const WorkbenchShell = ({
     const outcome = await window.workbench.openRepository();
     setLastOutcome(outcome);
     await refreshWorkbench();
+  };
+
+  const selectWorkbenchContext = async (
+    selection: WorkbenchContextSelection,
+  ): Promise<void> => {
+    const outcome = await window.workbench.selectWorkbenchContext(selection);
+
+    if (outcome.outcome === "selected") {
+      setLastOutcome(undefined);
+      setWorkbench(outcome.workbench);
+      shouldFocusSelectedContextAction.current = true;
+      return;
+    }
+
+    setLastOutcome(outcome);
   };
 
   const openTopicInStudio = async (topicId: string): Promise<void> => {
@@ -245,6 +278,7 @@ const WorkbenchShell = ({
         lastOutcome={lastOutcome}
         onCreateRepository={createRepository}
         onOpenRepository={openRepository}
+        onSelectWorkbenchContext={selectWorkbenchContext}
         onOpenTopicInStudio={openTopicInStudio}
       />
     );

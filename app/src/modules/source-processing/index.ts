@@ -329,11 +329,14 @@ export interface WorkingMaterialRepository {
   saveAnnotation(annotation: StructuredAnnotation): Promise<void>;
   /** Reopens an annotation or returns a caller-meaningful read outcome. */
   readAnnotation(annotationId: string): Promise<WorkingMaterialReadOutcome>;
-  /** Finds the saved annotation associated with one Source Record. */
+  /**
+   * Finds the lexicographically first saved annotation associated with one
+   * Source Record when several annotations match.
+   */
   readAnnotationForSourceRecord(
     sourceRecordId: string,
   ): Promise<WorkingMaterialReadOutcome>;
-  /** Finds all saved annotations associated with one Source Record. */
+  /** Finds all saved annotations associated with one Source Record in ID order. */
   readAnnotationsForSourceRecord?(
     sourceRecordId: string,
   ): Promise<WorkingMaterialListReadOutcome>;

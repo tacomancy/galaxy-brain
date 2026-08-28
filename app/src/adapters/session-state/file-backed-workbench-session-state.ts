@@ -10,6 +10,7 @@ import {
 } from "../file-backed-atomic-write";
 import type {
   ReadingPosition,
+  WorkbenchContextSelection,
   WorkbenchSessionSnapshot,
   WorkbenchSessionState,
   WorkbenchWorkspace,
@@ -18,6 +19,7 @@ import type {
 interface PersistedWorkbenchSession {
   selectedRepositoryPath: string;
   activeWorkspace?: WorkbenchWorkspace;
+  selectedContext?: WorkbenchContextSelection;
   readingPosition?: ReadingPosition;
 }
 
@@ -64,6 +66,22 @@ const isReadingPosition = (value: unknown): value is ReadingPosition => {
   );
 };
 
+const isContextSelection = (
+  value: unknown,
+): value is WorkbenchContextSelection => {
+  if (value === undefined) {
+    return true;
+  }
+
+  return (
+    isRecord(value) &&
+    typeof value.topicId === "string" &&
+    value.topicId.length > 0 &&
+    typeof value.sourceRecordId === "string" &&
+    value.sourceRecordId.length > 0
+  );
+};
+
 const isPersistedWorkbenchSession = (
   value: unknown,
 ): value is PersistedWorkbenchSession => {
@@ -75,6 +93,7 @@ const isPersistedWorkbenchSession = (
     typeof value.selectedRepositoryPath === "string" &&
     value.selectedRepositoryPath.length > 0 &&
     isWorkbenchWorkspace(value.activeWorkspace) &&
+    isContextSelection(value.selectedContext) &&
     isReadingPosition(value.readingPosition)
   );
 };
@@ -126,6 +145,9 @@ export const createFileBackedWorkbenchSessionState = (
         ...(parsed.activeWorkspace === undefined
           ? {}
           : { activeWorkspace: parsed.activeWorkspace }),
+        ...(parsed.selectedContext === undefined
+          ? {}
+          : { selectedContext: parsed.selectedContext }),
         ...(parsed.readingPosition === undefined
           ? {}
           : { readingPosition: parsed.readingPosition }),

@@ -225,6 +225,16 @@ After TB6 was accepted, the prototype-informed UI promotion was split into three
 
 These are presentation slices over existing Workbench Modules and Adapters. Do not promote the standalone prototype as a selectable production mode, introduce mock repository data, or implement later authoring, Synthesis, Governance, Discovery, or production PDF behavior speculatively.
 
+#### Issue 51 explicit-context selection completion record — August 28, 2026
+
+- **Public Behavior:** A valid Knowledge Repository with multiple complete topic contexts presents deterministic candidates in Atlas and requires an explicit choice; the selected topic and Source Record restore on relaunch while remaining machine-local. Multiple annotations for one Source Record are read in deterministic ID order.
+- **Test Seam:** S1 packaged desktop workflow and S5 Knowledge Repository, Workbench Session, session-state, and Working Material Adapter contracts.
+- **Red evidence:** The initial S5 repository test returned the first available context instead of an ambiguity outcome; the Session test lacked `selectWorkbenchContext`; the S1 workflow lacked the selection surface; the annotation contract initially returned the later-saved annotation. Each failure was observed before its corresponding implementation.
+- **Green evidence:** The focused packaged workflow passed with explicit focus transfer and relaunch restoration; `npm run check` passed formatting, linting, strict type checking, and 49 Vitest tests; focused S5 contracts passed with 23 tests.
+- **Scope confirmed:** The slice does not add repository discovery, automatic defaults, Git/GitHub behavior, network access, or new Test Seams. Incomplete extra candidates are ignored when complete candidates remain; a sole unreadable context remains an explicit unavailable outcome.
+- **Review:** Standards and spec reviews found and prompted fixes for focus transfer, stale-selection substitution, context persistence across later writes, and incomplete-candidate handling. No ADR was required; existing S1/S5 seams remain sufficient.
+- **Acceptance:** The implementation is ready for user review on the Issue 51 branch.
+
 ### 7. Synthesize selected evidence explicitly
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

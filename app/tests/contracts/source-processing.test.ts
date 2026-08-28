@@ -35,9 +35,21 @@ const expectedAnnotation: StructuredAnnotation = {
   classification: "source-claim",
 };
 
+const laterAnnotation: StructuredAnnotation = {
+  ...expectedAnnotation,
+  id: "annotation-z-later",
+  sourceLocator: {
+    page: 3,
+    start: 0,
+    end: 54,
+    logical: "page:3#chars=0-54",
+  },
+};
+
 const assertWorkingMaterialContract = async (
   repository: WorkingMaterialRepository,
 ): Promise<void> => {
+  await repository.saveAnnotation(laterAnnotation);
   await repository.saveAnnotation(expectedAnnotation);
 
   assert.deepEqual(await repository.readAnnotation(expectedAnnotation.id), {
@@ -51,6 +63,15 @@ const assertWorkingMaterialContract = async (
     {
       outcome: "found",
       annotation: expectedAnnotation,
+    },
+  );
+  assert.deepEqual(
+    await repository.readAnnotationsForSourceRecord?.(
+      expectedAnnotation.sourceRecord.id,
+    ),
+    {
+      outcome: "found",
+      annotations: [expectedAnnotation, laterAnnotation],
     },
   );
   assert.deepEqual(await repository.readAnnotation("missing-annotation"), {
@@ -99,6 +120,14 @@ describe("Source Processing Adapter contracts", () => {
       join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
       repositoryPath,
       { recursive: true },
+    );
+    await rm(
+      join(
+        repositoryPath,
+        "sources",
+        "annotations",
+        "annotation-bayesian-statistics-fixture-source-page-2-55-83.md",
+      ),
     );
 
     try {

@@ -24,6 +24,7 @@ This package follows the project-wide [documentation authority map](../../README
 - [Tracer Bullet 6.2 Studio UI brief](tracer-bullet-6-2-studio-ui-spec.md) coordinates promotion of the Studio view.
 - [Tracer Bullet 6.3 Paper Desk UI brief](tracer-bullet-6-3-paper-desk-ui-spec.md) coordinates promotion of the Paper Desk view.
 - [Tracer Bullet 7 brief](tracer-bullet-7-spec.md) coordinates the explicit Synthesis preview and provider-confirmation slice.
+- [Issue 51 explicit-context brief](issue-51-explicit-context-selection-spec.md) coordinates explicit context selection for repositories with multiple complete topics and Source Records.
 - [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
 - [Production complexity policy](complexity-policy.md) records the scoped ESLint limits, measured baseline, and verification evidence for the PR quality gate.
 - [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.

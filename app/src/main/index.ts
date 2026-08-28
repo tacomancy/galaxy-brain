@@ -261,6 +261,30 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.openRepository(selection.filePaths[0]);
   });
 
+  ipcMain.handle("workbench:select-context", (event, selection: unknown) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    if (
+      typeof selection !== "object" ||
+      selection === null ||
+      !("topicId" in selection) ||
+      !("sourceRecordId" in selection) ||
+      typeof selection.topicId !== "string" ||
+      selection.topicId.length === 0 ||
+      typeof selection.sourceRecordId !== "string" ||
+      selection.sourceRecordId.length === 0
+    ) {
+      throw new Error("Invalid Workbench context selection.");
+    }
+
+    return workbenchSession.selectWorkbenchContext({
+      topicId: selection.topicId,
+      sourceRecordId: selection.sourceRecordId,
+    });
+  });
+
   ipcMain.handle(
     "workbench:open-topic-in-studio",
     (event, topicId: unknown) => {
@@ -495,6 +519,7 @@ const createWindow = async (): Promise<void> => {
     ipcMain.removeHandler("workbench:open-fresh");
     ipcMain.removeHandler("workbench:create-repository");
     ipcMain.removeHandler("workbench:open-repository");
+    ipcMain.removeHandler("workbench:select-context");
     ipcMain.removeHandler("workbench:open-topic-in-studio");
     ipcMain.removeHandler("workbench:open-source-record-in-paper-desk");
     ipcMain.removeHandler("workbench:switch-workspace");
