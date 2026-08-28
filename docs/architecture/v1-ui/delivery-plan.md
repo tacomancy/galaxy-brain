@@ -471,7 +471,16 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Red evidence:** The focused test first failed because the existing Judgment had no rejected-change representation and dropped the explicit rejection before application.
 - **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 68 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.12% statements, 73.01% branches, and 97.31% functions. `npm run lint:complexity` passed. The focused test proves only the accepted change is applied and the prior version remains retrievable.
 - **Status:** Implementation is complete, the specification was confirmed before code changes, and human acceptance remains pending.
-- **Next behavior:** Complete human acceptance for this independent-decision behavior, then repeat the documentation prerequisite and specify edit/defer or dependent mixed-decision behavior before implementation.
+- **Next behavior:** Complete human acceptance for this independent-decision behavior, then repeat the documentation prerequisite and specify explicit per-change deferral before implementation.
+
+#### TB9 deferred change cycle — specification drafted August 28, 2026
+
+- **Proposed Public Behavior:** A Judgment explicitly accepts one independent Proposal change and defers another; Governance applies only the accepted change and preserves the deferred classification without treating it as rejection.
+- **Proposed Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
+- **Proposed shape:** Preserve `acceptedChangeIds` and `rejectedChangeIds`, add explicit `deferredChangeIds`, and require every Proposal change ID to appear exactly once across the three arrays.
+- **Scope:** This planned cycle proves explicit deferral for an independent change. Edited decisions, deferred-change re-review, dependent mixed decisions, durable mixed-decision provenance, and UI behavior remain deferred.
+- **Status:** The implementation specification is drafted and requires explicit human confirmation of the additive Judgment shape, accepted-only application, literal fixture, and deferrals before the Red test or implementation begins.
+- **Next behavior:** Confirm this specification, then run the focused Red-to-Green cycle for explicit per-change deferral.
 
 ### 10. Review through the desktop interface
 
