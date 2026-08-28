@@ -451,6 +451,15 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed that a Judgment reviewed for `bayesian-statistics-v1` is rejected with `stale-judgment` after `bayesian-statistics-v2` becomes current, while `v2` remains current and `v1` remains retrievable.
 - **Next behavior:** Repeat the documentation prerequisite and specify the invalid dependency-subset slice before writing its behavior test.
 
+#### TB9 invalid dependency-subset cycle — specification drafted August 28, 2026
+
+- **Proposed Public Behavior:** Governance rejects an accepted subset containing a dependent change without its prerequisite, returning `invalid-dependency-subset` before storage mutation.
+- **Proposed Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
+- **Proposed shape:** A Proposal exposes labeled exact changes with `dependsOn` IDs, and a Judgment exposes explicit `acceptedChangeIds`; the accepted subset must contain the direct and transitive dependency closure.
+- **Scope:** This planned cycle proves rejection only. Valid multi-change application, persistent multi-change provenance, and independently different per-change decisions remain deferred.
+- **Status:** The implementation specification is drafted and requires explicit human confirmation of the Interface shape, outcome, literal fixture, and deferrals before the Red test or implementation begins.
+- **Next behavior:** Confirm this specification, then run the focused Red-to-Green cycle for invalid dependency subsets.
+
 ### 10. Review through the desktop interface
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

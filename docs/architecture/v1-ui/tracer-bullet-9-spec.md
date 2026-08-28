@@ -167,3 +167,155 @@ The user confirmed this proposed outcome and literal stale-review scenario befor
 - human confirmation that a Judgment accepted for `bayesian-statistics-v1` is visibly rejected after `bayesian-statistics-v2` becomes current, while the newer version remains current and the prior version remains retrievable.
 
 The focused Red run returned the prior generic `not-eligible` outcome as expected. The focused Green run now returns the exact `stale-judgment` result, preserves the current and prior versions, and does not call the storage Adapter's mutation operation. The user accepted this first slice on August 28, 2026. That acceptance is scoped to this first slice; it does not approve dependency subsets, multi-change decisions, or the TB10 review UI.
+
+## Required second cycle: reject an invalid dependency subset
+
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was reviewed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the accepted first TB9 stale-Judgment slice on August 28, 2026. The concrete multi-change shape and caller-visible outcome below are proposed for this cycle and require confirmation before implementation.
+
+### Scope
+
+The second TB9 cycle proves that Governance rejects a Judgment whose accepted change subset omits a required dependency. One Proposal contains two exact changes: a prerequisite change and a dependent change. The test supplies a Judgment that accepts only the dependent change. Governance returns a caller-visible `invalid-dependency-subset` outcome before storage mutation, preserving the current governed version and requiring the dependent change's prerequisites to be included in any future accepted subset.
+
+This cycle does not implement successful multi-change application, independently different decisions for each change, dependency editing, dependency inference, the S1 Proposal Review route, or a Repository Format change. It continues to use the existing S2 Governance Interface and deterministic in-memory version-storage Adapter.
+
+### Documentation prerequisite for this cycle
+
+Before writing the Red test or implementation code, explicitly complete these to-do items:
+
+1. Recheck the accepted Product Decisions, Architecture, Test Strategy, applicable ADRs, TB8 persistence decisions, and the accepted first TB9 cycle.
+2. Confirm this section's proposed `ProposalChange` shape, `acceptedChangeIds` Judgment field, `invalid-dependency-subset` outcome, and literal two-change fixture.
+3. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
+4. Obtain explicit human confirmation that this slice rejects only non-closed accepted subsets and does not silently rebase, drop, or auto-accept dependencies.
+
+Implementation must not begin until this second-cycle documentation review and confirmation task is complete. A new dependency graph policy, persistent multi-change representation, or Test Seam requires stopping and revising this brief before proceeding.
+
+### Proposed public behavior
+
+Given a current `bayesian-statistics-v1` version, a Proposal with changes `change-tb9-source-evidence` and `change-tb9-claim-update`, and an accepted Judgment containing only `change-tb9-claim-update`:
+
+1. Governance validates the Proposal and records the accepted Judgment without changing Governed Knowledge.
+2. `applyProposal` calculates the required dependency closure for the accepted change IDs.
+3. Because `change-tb9-claim-update` depends on `change-tb9-source-evidence`, the accepted subset is not closed.
+4. Governance returns:
+
+```text
+{
+  outcome: "invalid-dependency-subset",
+  detail: "The accepted change subset omits a required dependency."
+}
+```
+
+5. Governance does not call the storage Adapter's mutation operation, create a new version, alter the current version, or remove the accepted Judgment. It does not add the omitted prerequisite automatically. A later Judgment must explicitly include the prerequisite before this dependent change can be eligible.
+
+The dependency rule for this fixture is transitive closure: every accepted change must include all of its direct and indirect `dependsOn` change IDs. The check is performed by Governance before any call to `applyVersion`. The first cycle observes only rejection; it does not define the order or mechanics of applying a valid closed subset.
+
+### Proposed Interface shape
+
+The existing single-change Proposal is normalized to a list of change records:
+
+```text
+ProposalChange {
+  id: string
+  exactChange: ExactChange
+  dependsOn: string[]
+}
+```
+
+The proposed `Proposal` Interface exposes `changes: ProposalChange[]` instead of one unlabelled `exactChange`. A one-change Proposal remains valid as a list containing one change with an empty `dependsOn` list. Change IDs are unique within a Proposal; dependencies refer only to changes in that same Proposal. The first fixture uses an acyclic graph with one direct dependency.
+
+The proposed `Judgment` Interface adds `acceptedChangeIds: string[]` alongside its existing exact Proposal fingerprint, base version, and accepted decision. For this cycle, `decision: "accepted"` means the listed subset was the person's explicit accepted selection; it does not make omitted changes accepted and does not introduce `edit`, `defer`, or `reject` statuses. Governance validates that every accepted ID exists and that the selected IDs form a dependency-closed subset before application.
+
+This is an Interface change, not a new Adapter or Test Seam. Governance owns dependency closure and eligibility. The version-storage Adapter continues to own version retrieval and mutation mechanics. The TB8 file-backed applied-record representation remains single-change-compatible; applying a valid multi-change Proposal and persisting its complete change/dependency/decision provenance are deferred until the later multi-change cycle defines that durable representation.
+
+### Literal fixture and expected values
+
+Use the existing TB8 fixture target and `bayesian-statistics-v1` content:
+
+- Target ID: `bayesian-statistics`.
+- Target title: `Bayesian statistics`.
+- Target path: `knowledge/bayesian-statistics.md`.
+- Proposal ID: `proposal-tb9-invalid-dependency-subset-bayesian-statistics`.
+- Proposal fingerprint: `proposal-fingerprint-tb9-invalid-dependency-subset-bayesian-statistics`.
+- Working Material ID: `working-material-tb9-invalid-dependency-subset-bayesian-statistics`.
+- Judgment ID: `judgment-tb9-invalid-dependency-subset-bayesian-statistics`.
+- Base version: `bayesian-statistics-v1`.
+
+Change `change-tb9-source-evidence` is the prerequisite:
+
+- `dependsOn: []`.
+- Exact `before`: `source_record: sources/papers/bayesian-statistics.md`.
+- Exact `after`: `source_record: sources/papers/bayesian-statistics.md\nreviewed_claim: fixture-evidence`.
+
+Change `change-tb9-claim-update` is the dependent change:
+
+- `dependsOn: ["change-tb9-source-evidence"]`.
+- Exact `before`: `This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.`.
+- Exact `after`: `Bayesian statistics uses evidence to update prior belief.`.
+
+The Working Material content contains both exact changes in the target, with the prerequisite line added and the fixture sentence replaced. The invalid Judgment contains:
+
+```text
+{
+  proposalFingerprint: "proposal-fingerprint-tb9-invalid-dependency-subset-bayesian-statistics",
+  baseVersionId: "bayesian-statistics-v1",
+  decision: "accepted",
+  acceptedChangeIds: ["change-tb9-claim-update"]
+}
+```
+
+The accepted subset is invalid because it omits `change-tb9-source-evidence`. The current version remains the independently known `bayesian-statistics-v1` content, and no `bayesian-statistics-v2` or applied record is created by this rejected attempt.
+
+### Test Seam and minimum vertical path
+
+Use the existing S2 public Governance Interface with the deterministic in-memory Governance version-storage Adapter. Add a behavior-named test at `app/tests/governance/reject-invalid-dependency-subset.test.ts` or extend the existing Governance behavior test only if that keeps the public behavior clearer.
+
+The test must:
+
+- create the two-change Proposal with the literal IDs, exact replacements, and one dependency;
+- record the accepted Judgment containing only the dependent change ID;
+- attempt application through Governance;
+- assert the exact `invalid-dependency-subset` outcome and detail;
+- observe through an injected version-storage Adapter seam that `applyVersion` was not called;
+- assert through `loadCurrentVersion` that `bayesian-statistics-v1` remains current; and
+- assert through `getVersion` that the original version remains retrievable.
+
+The test must not inspect private Governance maps, calculate expected closure through a helper shared with the implementation, read repository files as a side channel, or test dependency traversal by calling a private function. The expected dependency closure is the literal two-node relationship above.
+
+Minimum path:
+
+1. Confirm the proposed Interface shape, outcome, fixture, and boundaries.
+2. Add the one behavior test and observe the expected failure because the current single-change Governance model has no dependency-subset outcome.
+3. Add the smallest normalized change/dependency and accepted-ID representation needed to express this fixture.
+4. Add the Governance closure check and return before storage mutation.
+5. Run the focused S2 test, `npm run check`, coverage, and complexity checks.
+6. Record Red/Green evidence and human acceptance before selecting the independently reviewable multi-change decision slice.
+
+### Boundaries, alternatives, and deferrals
+
+This cycle explicitly defers:
+
+- successful application of a valid multi-change Proposal;
+- dependency ordering during mutation and rollback of multiple changes;
+- independently accepting, editing, deferring, or rejecting each change;
+- dependency editing, graph inference, cross-Proposal dependencies, cycles, and missing dependency repair;
+- persistent applied-record/schema changes for multi-change provenance;
+- Proposal Review UI, Atlas/Studio routing, Agent Provider use, Git, remote synchronization, and network behavior.
+
+The following alternatives are discarded or deferred for this cycle:
+
+- **Silently add omitted dependencies:** discarded because it would manufacture human Judgment for material the person did not explicitly accept.
+- **Drop the dependent change and apply the remaining subset:** discarded because the requested application would no longer match the accepted Proposal and could create an incoherent result.
+- **Return generic `not-eligible`:** proposed as insufficient because callers need to distinguish an incoherent dependency selection from stale review and other eligibility failures. If a generic outcome is preferred, revise this section before the Red test.
+- **Let the storage Adapter enforce dependency closure:** discarded because dependency eligibility is Governance policy and must remain consistent across Adapters.
+- **Implement full per-change decision vocabulary now:** deferred because it is the next distinct behavior after proving that dependency closure prevents incoherent application.
+
+### Acceptance evidence and required confirmation
+
+This second cycle is not implementation-ready until the user confirms:
+
+- the `ProposalChange` and `acceptedChangeIds` shape;
+- the `invalid-dependency-subset` outcome and exact detail;
+- the rule that accepted subsets must contain the full direct/transitive dependency closure; and
+- the literal two-change fixture and the explicit deferrals above.
+
+After confirmation, completion requires the focused Red/Green evidence, full automated gates, proof that no mutation occurred, and human confirmation that a dependent change cannot be applied without its explicitly accepted prerequisite. Acceptance of this cycle will not approve successful multi-change persistence or the later per-change decision vocabulary.
