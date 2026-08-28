@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/tacomancy/galaxy-brain/compare/v0.6.1...v0.7.0) (2026-08-28)
+
+
+### Features
+
+* require explicit Workbench context selection ([#66](https://github.com/tacomancy/galaxy-brain/issues/66)) ([f81a99e](https://github.com/tacomancy/galaxy-brain/commit/f81a99e2e114eb63b53a2a256403e9b055d9718e))
+
 ## [0.6.1](https://github.com/tacomancy/galaxy-brain/compare/v0.6.0...v0.6.1) (2026-08-28)
 
 
