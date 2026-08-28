@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0](https://github.com/tacomancy/galaxy-brain/compare/v0.10.0...v0.11.0) (2026-08-28)
+
+
+### Features
+
+* add TB10 Proposal Review workflow ([#100](https://github.com/tacomancy/galaxy-brain/issues/100)) ([3993d50](https://github.com/tacomancy/galaxy-brain/commit/3993d50df40750fd5308a43202501cd6237a5bfc))
+* persist TB9 edited governance provenance ([#99](https://github.com/tacomancy/galaxy-brain/issues/99)) ([17c6b37](https://github.com/tacomancy/galaxy-brain/commit/17c6b3736c9cdfd147aab80c75c527a710623fcf))
+
 ## [0.10.0](https://github.com/tacomancy/galaxy-brain/compare/v0.9.0...v0.10.0) (2026-08-28)
 
 
