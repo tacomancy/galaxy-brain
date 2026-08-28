@@ -25,12 +25,32 @@ import type {
   ProposalReviewApplyOutcome,
   ProposalReviewReadOutcome,
 } from "../modules/proposal-review";
+import type {
+  AuthoringConstruct,
+  AuthoringMode,
+  AuthoringOperationOutcome,
+  AuthoringReadOutcome,
+} from "../modules/knowledge-authoring";
 
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
   // serializable state needed to render the current workspace.
   openFreshWorkbench: (): Promise<FreshWorkbench> =>
     ipcRenderer.invoke("workbench:open-fresh"),
+  readAuthoringDraft: (): Promise<AuthoringReadOutcome> =>
+    ipcRenderer.invoke("workbench:read-authoring-draft"),
+  openAuthoringDraft: (): Promise<AuthoringReadOutcome> =>
+    ipcRenderer.invoke("workbench:open-authoring-draft"),
+  openAuthoringConstruct: (
+    construct: AuthoringConstruct,
+  ): Promise<AuthoringReadOutcome> =>
+    ipcRenderer.invoke("workbench:open-authoring-construct", construct),
+  editAuthoringSemanticText: (
+    nextText: string,
+  ): Promise<AuthoringOperationOutcome> =>
+    ipcRenderer.invoke("workbench:edit-authoring-semantic-text", nextText),
+  setAuthoringMode: (mode: AuthoringMode): Promise<AuthoringOperationOutcome> =>
+    ipcRenderer.invoke("workbench:set-authoring-mode", mode),
   readProposalReview: (): Promise<ProposalReviewReadOutcome> =>
     ipcRenderer.invoke("workbench:read-proposal-review"),
   openProposalReview: (): Promise<ProposalReviewReadOutcome> =>

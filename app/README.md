@@ -58,6 +58,14 @@ npm run test:workflow
 
 The workflow test currently targets the macOS Electron package and therefore requires macOS as well as the pinned Node.js version. The first-run Workbench does not require an API key or Agent Provider configuration.
 
+For a visible human review of the current transient fixture-backed slice, launch the packaged binary with the explicit review mode:
+
+```bash
+open "out/Galaxy Brain-darwin-arm64/Galaxy Brain.app" --args --galaxy-brain-test-mode=review --galaxy-brain-session-state=/tmp/galaxy-brain-tb11-review.json
+```
+
+Review mode is local acceptance tooling only. It composes deterministic fixture content after a repository is opened; it does not represent normal product behavior, does not persist authoring drafts, and must not be used as evidence that a normal launch exposes fixture content.
+
 ## Dependency security
 
 `package.json` contains narrowly scoped npm overrides for patched transitive build and test dependencies. They address vulnerable archive extraction, temporary-directory, archive parsing, object-merging, serialization, and browser-download paths without downgrading the accepted Electron Forge or WebdriverIO toolchain. Keep the overrides and `package-lock.json` together; after dependency changes, run `npm audit`, `npm audit --omit=dev`, `npm run check`, `npm run package`, and the packaged workflow test. The remaining audit findings are moderate Webpack development-tool findings and are tracked separately from the resolved high and critical advisories.

@@ -3,7 +3,7 @@ title: Current capabilities
 summary: Versioned distinction between released, current-main, and planned Workbench behavior.
 applies_to_release: "0.11.0"
 tracks_main: true
-verified_commit: "5aeb14980b1ea407bc6fbb6fa19db27143cdfd38"
+verified_commit: "87272d6bc99c32fcebf2249fd77a1f1ca486d653"
 reviewed_on: "2026-08-28"
 ---
 
@@ -22,7 +22,7 @@ This page was reviewed on **2026-08-28** against the following two baselines:
 | Baseline                 | Marker                                                                                                 | Meaning                                                                                                                               |
 | ------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
 | Latest published release | [0.11.0 release notes](../app/CHANGELOG.md)                                                           | The version identified by the application package, changelog, and support policy.                                                     |
-| Current `main` snapshot  | [`5aeb149`](https://github.com/tacomancy/galaxy-brain/commit/5aeb14980b1ea407bc6fbb6fa19db27143cdfd38) | The `main` revision reviewed for this page; later commits may change current-main behavior without changing the release claims above. |
+| Current `main` snapshot  | [`87272d6`](https://github.com/tacomancy/galaxy-brain/commit/87272d6bc99c32fcebf2249fd77a1f1ca486d653) | The `main` revision reviewed for this page; later commits may change current-main behavior without changing the release claims above. |
 
 The support classes used below are deliberate:
 
@@ -39,8 +39,8 @@ The support classes used below are deliberate:
 
 The latest published release is **0.11.0**. Its desktop-supported baseline is
 the accepted TB1–TB7 Workbench behavior. The 0.11.0 release also contains the
-TB8 file-backed implementation, but that work remains module-only pending the
-human acceptance recorded in the project status documents.
+TB8 file-backed implementation, but that work remains module-only because the
+published release has no desktop persistence or rollback workflow.
 
 | Capability                                                                                                                    | Support class     | What a reader can rely on                                                                                                                                                                                                                                            |
 | ----------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -49,22 +49,22 @@ human acceptance recorded in the project status documents.
 | Navigate Atlas, Studio, and Paper Desk; read Source Records; and reopen captured Structured Annotations                       | Desktop-supported | The packaged Workbench presents the accepted reading and navigation flows, including source-bound capture and recovery states.                                                                                                                                       |
 | Review a Synthesis preview, remove whole context items, and decline, cancel, or confirm deliberately                          | Desktop-supported | The exact payload is inspectable before confirmation; cancellation and decline make no provider request and preserve local state. With no production Model Adapter composed, confirmation reports the explicit unavailable outcome rather than fabricating a result. |
 | Open explicitly saved Synthesis results and restore retained versions                                                         | Desktop-supported | Saved results remain Working Material with agent provenance, and restore creates a new current version without making a provider request.                                                                                                                            |
-| File-backed Governance persistence, applied audit records, targeted rollback data, and recoverable transaction handling (TB8) | Module-only       | The implementation and compatible packaged verification exist in `main`, but human acceptance is pending. There is no desktop Proposal Review or rollback UI.                                                                                                        |
+| File-backed Governance persistence, applied audit records, targeted rollback data, and recoverable transaction handling (TB8) | Module-only       | The implementation, compatible packaged verification, and human acceptance are recorded; the published release has no desktop Proposal Review or rollback UI.                                                                                                        |
 
 ## Current `main` snapshot
 
 Current `main` is reviewed at commit
-[`5aeb149`](https://github.com/tacomancy/galaxy-brain/commit/5aeb14980b1ea407bc6fbb6fa19db27143cdfd38).
-It contains the 0.9.0 application behavior plus documentation, verification,
-and status corrections. The public desktop support boundary is therefore the
-same accepted TB1–TB7 surface described above; the newer TB8 implementation is
-still module-only.
+[`87272d6`](https://github.com/tacomancy/galaxy-brain/commit/87272d6bc99c32fcebf2249fd77a1f1ca486d653).
+It contains the 0.11.0 application behavior plus the merged TB10 desktop
+Proposal Review implementation. TB8, TB9, and TB10 have implementation,
+automated evidence, and recorded human acceptance for their bounded scopes.
 
 | Capability                                                    | Support class     | Current-main status                                                                                                                         |
 | ------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Accepted TB1–TB7 local Workbench workflows                    | Desktop-supported | Available through the packaged Workbench as described in the release table above.                                                           |
-| TB8 Governance persistence and recoverable local transactions | Module-only       | Implemented and tested on `main`; compatible packaged verification is complete; human acceptance remains pending.                           |
-| First TB9 stale-Judgment policy slice                         | Planned           | Implemented and tested on a separate feature branch, but not merged into `main` or release 0.9.0. It is not a current-main user capability. |
+| TB8 Governance persistence and recoverable local transactions | Module-only       | Implemented, packaged-verified, and human-accepted on `main`; it remains module-only because no desktop persistence/rollback workflow is supported. |
+| TB9 Governance decision slices                                | Module-only       | Stale, dependency, deferred, edited, edited-dependent, and persisted-provenance behavior is implemented and human-accepted on `main`; it remains module-only because the recorded slices have no desktop review surface. |
+| TB10 bounded desktop Proposal Review                          | Desktop-supported | The packaged route, exact-diff review, explicit apply boundary, and file-backed application are implemented, automatically verified, and human-accepted on `main`; richer review controls remain deferred. |
 
 ## Planned capabilities and known limits
 
@@ -74,10 +74,10 @@ brief, or future issue exists.
 
 | Capability                                                                                           | Support class | Boundary                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| General Knowledge Authoring and rich/source editing                                                  | Planned       | The Studio presents current contextual and Synthesis surfaces, but a general authoring workflow is deferred to Tracer Bullet 11.                            |
+| General Knowledge Authoring and rich/source editing                                                  | Planned       | TB11's bounded six-construct transient review slice is implemented and human-accepted on the feature branch, but it is not current-main support; durable drafts, broad syntax, and general authoring remain deferred to later work. |
 | Production PDF import, rendering, capture, availability, and relinking                               | Planned       | Paper Desk currently uses the accepted source-reading boundary; a production PDF engine and complete import workflow are not selected.                      |
 | Production Model Adapter and live provider-backed Synthesis                                          | Planned       | Provider configuration is optional and an API key alone does not compose a production Model Adapter. No provider request should be implied by the local UI. |
-| Desktop Proposal Review, exact Proposal editing, human Judgment, apply, and rollback controls        | Planned       | Governance persistence is module-only; a desktop review and rollback route remains outside the current Workbench.                                           |
+| Richer Proposal Review, exact Proposal editing, selective Judgment, and rollback controls             | Planned       | The bounded TB10 review/apply route is present on current `main`; selective decisions, pending-Proposal persistence, Judgment revision, and rollback UI remain deferred. |
 | Search, Ask, Jump, Generated Relationships, and authority-aware discovery                            | Planned       | Discovery is a later tracer bullet and is not part of the current desktop surface.                                                                          |
 | Learning Routes, learning goals, and human-confirmed progress suggestions                            | Planned       | Learning remains a later capability and has no current Workbench workflow.                                                                                  |
 | Signed/notarized installers, downloadable releases, auto-update, and supported end-user distribution | Planned       | `npm run package` creates an unsigned local macOS package for development verification; it is not an end-user distribution channel.                         |

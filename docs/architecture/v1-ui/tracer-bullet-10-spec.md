@@ -150,6 +150,8 @@ Automated acceptance requires the focused packaged workflow and all repository g
 
 Record the human confirmation, Red/Green evidence, changed files, and any newly discovered deferral in the TB10 section of the delivery plan before starting another slice.
 
+Human acceptance record: the user confirmed all five checks on August 28, 2026. The accepted scope is limited to the bounded fixture Proposal Review route, explicit **Accept and apply** boundary, file-backed application result, retained prior version, and local-save communication; pending-Proposal persistence, richer review controls, and rollback UI remain deferred.
+
 ## Required confirmation
 
 Implementation is blocked until the user confirms all of the following proposed decisions:
