@@ -92,6 +92,12 @@ Troubleshooting.
                 "tutorials/open-knowledge-repository/index.html",
                 "tutorials/resume-workbench-session/index.html",
                 "tutorials/navigate-workspaces/index.html",
+                "tutorials/read-source-record/index.html",
+                "tutorials/prepare-synthesis-request/index.html",
+                "tutorials/confirm-synthesis-request/index.html",
+                "tutorials/understand-synthesis-results/index.html",
+                "tutorials/repository-format-overview/index.html",
+                "tutorials/safety-and-privacy/index.html",
             }
             actual_pages = {
                 path.relative_to(output).as_posix()

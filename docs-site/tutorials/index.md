@@ -19,6 +19,12 @@ matches your situation:
 - [Open a Knowledge Repository](open-knowledge-repository.md)
 - [Resume a Workbench session](resume-workbench-session.md)
 - [Navigate among workspaces](navigate-workspaces.md)
+- [Read a Source Record](read-source-record.md)
+- [Prepare a Synthesis request](prepare-synthesis-request.md)
+- [Confirm, decline, or cancel Synthesis](confirm-synthesis-request.md)
+- [Understand saved Synthesis results](understand-synthesis-results.md)
+- [Repository Format overview](repository-format-overview.md)
+- [Safety and privacy](safety-and-privacy.md)
 
 These guides use the canonical terms and boundaries defined in the
 [V1 architecture](../../docs/architecture/v1-ui/README.md), the

@@ -54,6 +54,12 @@ nav:
       - Open a Knowledge Repository: tutorials/open-knowledge-repository.md
       - Resume a Workbench session: tutorials/resume-workbench-session.md
       - Navigate among workspaces: tutorials/navigate-workspaces.md
+      - Read a Source Record: tutorials/read-source-record.md
+      - Prepare a Synthesis request: tutorials/prepare-synthesis-request.md
+      - Confirm, decline, or cancel Synthesis: tutorials/confirm-synthesis-request.md
+      - Understand saved Synthesis results: tutorials/understand-synthesis-results.md
+      - Repository Format overview: tutorials/repository-format-overview.md
+      - Safety and privacy: tutorials/safety-and-privacy.md
   - Architecture:
       - V1 architecture: architecture/index.md
       - Architecture: architecture/architecture.md

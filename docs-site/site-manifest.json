@@ -60,6 +60,36 @@
       "source": "docs-site/tutorials/navigate-workspaces.md",
       "destination": "tutorials/navigate-workspaces.md",
       "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/read-source-record.md",
+      "destination": "tutorials/read-source-record.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/prepare-synthesis-request.md",
+      "destination": "tutorials/prepare-synthesis-request.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/confirm-synthesis-request.md",
+      "destination": "tutorials/confirm-synthesis-request.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/understand-synthesis-results.md",
+      "destination": "tutorials/understand-synthesis-results.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/repository-format-overview.md",
+      "destination": "tutorials/repository-format-overview.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/safety-and-privacy.md",
+      "destination": "tutorials/safety-and-privacy.md",
+      "kind": "tutorial"
     }
   ]
 }
