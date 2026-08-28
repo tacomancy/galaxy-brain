@@ -524,6 +524,8 @@ const buildSavedSynthesisResult = (
  * Composes capture policy behind the Source Processing Interface. The PDF
  * Adapter resolves source material; this Module owns attribution, locator
  * representation, and the Working Material state.
+ * @param dependencies The PDF, Working Material, and model Adapters.
+ * @returns The Source Processing Module Interface.
  */
 export const createSourceProcessing = (
   dependencies: SourceProcessingDependencies,

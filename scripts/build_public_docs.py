@@ -53,6 +53,152 @@ TUTORIAL_HEADINGS = (
     "Expected result",
     "Troubleshooting",
 )
+RELEASE_VERSION_PATTERN = r"\d+\.\d+\.\d+"
+CHANGELOG_VERSION_PATTERN = re.compile(
+    rf"^##\s+\[(?P<version>{RELEASE_VERSION_PATTERN})\]",
+    re.MULTILINE,
+)
+SECURITY_VERSION_PATTERN = re.compile(
+    rf"^\|\s*Latest published release\s+\(`(?P<version>{RELEASE_VERSION_PATTERN})`\)\s*\|\s*Yes\s*\|\s*$",
+    re.MULTILINE,
+)
+CURRENT_CAPABILITIES_SOURCE = "docs-site/current-capabilities.md"
+CURRENT_CAPABILITIES_SUPPORT_CLASSES = (
+    "Desktop-supported",
+    "Module-only",
+    "Planned",
+)
+
+
+def validate_release_alignment(
+    package_content: str,
+    changelog_content: str,
+    security_content: str,
+) -> str:
+    try:
+        package_document = json.loads(package_content)
+    except json.JSONDecodeError as error:
+        raise ValueError("app/package.json is not valid JSON") from error
+    package_version = package_document.get("version")
+    if not isinstance(package_version, str) or not package_version:
+        raise ValueError("app/package.json does not declare a version")
+
+    changelog_match = CHANGELOG_VERSION_PATTERN.search(changelog_content)
+    if changelog_match is None:
+        raise ValueError("app/CHANGELOG.md does not declare a latest release")
+    # The changelog keeps the newest published entry first; the pattern skips
+    # an optional Unreleased heading because it requires a semantic version.
+    changelog_version = changelog_match.group("version")
+
+    security_matches = list(SECURITY_VERSION_PATTERN.finditer(security_content))
+    if len(security_matches) != 1:
+        raise ValueError(
+            "SECURITY.md must identify the supported latest published release"
+        )
+    security_version = security_matches[0].group("version")
+
+    if package_version != changelog_version:
+        raise ValueError(
+            "Release version mismatch: app/package.json reports "
+            f"{package_version}, but app/CHANGELOG.md reports {changelog_version}"
+        )
+    if security_version != changelog_version:
+        raise ValueError(
+            "Release version mismatch: SECURITY.md reports "
+            f"{security_version}, but app/CHANGELOG.md reports {changelog_version}"
+        )
+
+    return changelog_version
+
+
+def validate_current_capabilities(content: str, latest_release: str) -> None:
+    frontmatter = re.match(r"\A---\n(.*?)\n---\n", content, re.DOTALL)
+    if frontmatter is None:
+        raise ValueError(
+            "Current capabilities page is missing YAML frontmatter: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    metadata = yaml.safe_load(frontmatter.group(1))
+    if not isinstance(metadata, dict):
+        raise ValueError(
+            "Current capabilities frontmatter must be a mapping: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    required = (
+        "title",
+        "summary",
+        "applies_to_release",
+        "tracks_main",
+        "verified_commit",
+        "reviewed_on",
+    )
+    missing = [field for field in required if field not in metadata]
+    if missing:
+        raise ValueError(
+            "Current capabilities metadata is missing "
+            f"{', '.join(missing)}: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    for field in ("title", "summary"):
+        if not isinstance(metadata[field], str) or not metadata[field].strip():
+            raise ValueError(
+                "Current capabilities metadata field "
+                f"{field} must be non-empty: {CURRENT_CAPABILITIES_SOURCE}"
+            )
+
+    if metadata["applies_to_release"] != latest_release:
+        raise ValueError(
+            "Current capabilities applies_to_release must match the latest "
+            f"published release {latest_release}: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+    if metadata["tracks_main"] is not True:
+        raise ValueError(
+            "Current capabilities tracks_main must be true: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    verified_commit = metadata["verified_commit"]
+    if not isinstance(verified_commit, str) or not re.fullmatch(
+        r"[0-9a-f]{7,40}", verified_commit
+    ):
+        raise ValueError(
+            "Current capabilities verified_commit must be a hexadecimal Git "
+            f"commit: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    reviewed_on = metadata["reviewed_on"]
+    if not isinstance(reviewed_on, str) or not re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}", reviewed_on
+    ):
+        raise ValueError(
+            "Current capabilities reviewed_on must be an ISO date: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    required_headings = (
+        f"## Latest published release: {latest_release}",
+        "## Current `main` snapshot",
+        "## Planned capabilities and known limits",
+    )
+    missing_headings = [heading for heading in required_headings if heading not in content]
+    if missing_headings:
+        raise ValueError(
+            "Current capabilities page is missing required sections "
+            f"{', '.join(missing_headings)}: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    missing_classes = [
+        support_class
+        for support_class in CURRENT_CAPABILITIES_SUPPORT_CLASSES
+        if not re.search(rf"\b{re.escape(support_class)}\b", content)
+    ]
+    if missing_classes:
+        raise ValueError(
+            "Current capabilities page must name all support classes "
+            f"{', '.join(missing_classes)}: {CURRENT_CAPABILITIES_SOURCE}"
+        )
 
 
 def read_tutorial_metadata(content: str, source: str) -> dict[str, object]:
@@ -158,9 +304,26 @@ def validate_manifest_entries(
 
 
 def load_manifest() -> list[dict[str, object]]:
+    latest_release = validate_release_alignment(
+        (REPOSITORY_ROOT / "app/package.json").read_text(encoding="utf-8"),
+        (REPOSITORY_ROOT / "app/CHANGELOG.md").read_text(encoding="utf-8"),
+        (REPOSITORY_ROOT / "SECURITY.md").read_text(encoding="utf-8"),
+    )
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     pages = validate_manifest_entries(manifest.get("pages"), "page")
     tutorials = validate_manifest_entries(manifest.get("tutorials"), "tutorial")
+    current_capabilities_pages = [
+        page for page in pages if page["source"] == CURRENT_CAPABILITIES_SOURCE
+    ]
+    if len(current_capabilities_pages) != 1:
+        raise ValueError(
+            "The public documentation manifest must contain exactly one "
+            f"{CURRENT_CAPABILITIES_SOURCE} page."
+        )
+    current_capabilities_content = (
+        REPOSITORY_ROOT / CURRENT_CAPABILITIES_SOURCE
+    ).read_text(encoding="utf-8")
+    validate_current_capabilities(current_capabilities_content, latest_release)
     destinations: set[str] = set()
     for page in [*pages, *tutorials]:
         destination = str(page["destination"])

@@ -1,3 +1,8 @@
+/**
+ * Filesystem persistence Adapter. It canonicalizes repository paths, checks
+ * the target fingerprint before replacement, and preserves external edits
+ * while translating storage failures into caller-facing outcomes.
+ */
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
@@ -294,6 +299,10 @@ const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
  * Persists source annotations as portable Markdown Working Material. The
  * adapter canonicalizes and checks the repository path, protects the target
  * against external changes, and preserves read failures for diagnostics.
+ * @param repositoryPath The selected Knowledge Repository path.
+ * @param diagnostics Optional sink for non-public storage causes.
+ * @param filesystem The filesystem Adapter used for safe persistence.
+ * @returns The Working Material repository Adapter.
  */
 export const createFileBackedWorkingMaterialRepository = (
   repositoryPath: string,

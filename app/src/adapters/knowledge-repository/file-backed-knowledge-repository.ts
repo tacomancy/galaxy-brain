@@ -1,3 +1,8 @@
+/**
+ * Filesystem transaction Adapter. It copies a starter into a temporary
+ * sibling, validates the complete skeleton, and renames only into a new or
+ * explicitly empty destination, so failed creation cannot overwrite data.
+ */
 import {
   lstat,
   mkdir,
@@ -709,6 +714,9 @@ const resolveOpenTarget = async (
  * Creates Knowledge Repositories from the bundled empty starter skeleton.
  * Creation is staged in a temporary sibling and selects the destination only
  * after validation and the final rename succeed.
+ * @param starterRoot The empty starter skeleton to copy.
+ * @param filesystem The filesystem Adapter used for recoverable creation.
+ * @returns The file-backed Knowledge Repository Adapter.
  */
 export const createFileBackedKnowledgeRepository = (
   starterRoot: string,

@@ -78,12 +78,18 @@ describe("Governance", () => {
       target,
       baseVersionId: "bayesian-statistics-v1",
       workingMaterial,
-      exactChange: {
-        path: "knowledge/bayesian-statistics.md",
-        before:
-          "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
-        after: "Bayesian statistics uses evidence to update prior belief.",
-      },
+      changes: [
+        {
+          id: "change-tb8-bayesian-statistics-evidence",
+          exactChange: {
+            path: "knowledge/bayesian-statistics.md",
+            before:
+              "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+            after: "Bayesian statistics uses evidence to update prior belief.",
+          },
+          dependsOn: [],
+        },
+      ],
     });
 
     assert.deepEqual(proposalOutcome, {
@@ -95,12 +101,19 @@ describe("Governance", () => {
         target,
         baseVersionId: "bayesian-statistics-v1",
         workingMaterialId: "working-material-tb8-bayesian-statistics-evidence",
-        exactChange: {
-          path: "knowledge/bayesian-statistics.md",
-          before:
-            "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
-          after: "Bayesian statistics uses evidence to update prior belief.",
-        },
+        changes: [
+          {
+            id: "change-tb8-bayesian-statistics-evidence",
+            exactChange: {
+              path: "knowledge/bayesian-statistics.md",
+              before:
+                "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+              after:
+                "Bayesian statistics uses evidence to update prior belief.",
+            },
+            dependsOn: [],
+          },
+        ],
       },
     });
 
@@ -115,6 +128,10 @@ describe("Governance", () => {
       proposalFingerprint:
         "proposal-fingerprint-tb8-bayesian-statistics-evidence",
       decision: "accepted",
+      acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+      rejectedChangeIds: [],
+      deferredChangeIds: [],
+      editedChanges: [],
     });
 
     assert.deepEqual(judgmentOutcome, {
@@ -126,6 +143,10 @@ describe("Governance", () => {
           "proposal-fingerprint-tb8-bayesian-statistics-evidence",
         baseVersionId: "bayesian-statistics-v1",
         decision: "accepted",
+        acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+        rejectedChangeIds: [],
+        deferredChangeIds: [],
+        editedChanges: [],
       },
     });
 

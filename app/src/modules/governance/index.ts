@@ -29,6 +29,19 @@ export interface ExactChange {
   after: string;
 }
 
+/** One labeled exact change in a Proposal and its local prerequisites. */
+export interface ProposalChange {
+  id: string;
+  exactChange: ExactChange;
+  dependsOn: string[];
+}
+
+/** A reviewer-supplied replacement for one independently reviewable change. */
+export interface EditedChange {
+  changeId: string;
+  exactChange: ExactChange;
+}
+
 /** A manually authored Proposal awaiting Judgment. */
 export interface Proposal {
   id: string;
@@ -37,7 +50,7 @@ export interface Proposal {
   target: GovernedTarget;
   baseVersionId: string;
   workingMaterialId: string;
-  exactChange: ExactChange;
+  changes: ProposalChange[];
 }
 
 /** An explicit Judgment bound to one exact Proposal fingerprint. */
@@ -47,6 +60,10 @@ export interface Judgment {
   proposalFingerprint: string;
   baseVersionId: string;
   decision: "accepted";
+  acceptedChangeIds: string[];
+  rejectedChangeIds: string[];
+  deferredChangeIds: string[];
+  editedChanges: EditedChange[];
 }
 
 /** Immutable identity and provenance for one applied Proposal. */
@@ -67,7 +84,7 @@ export interface CreateProposalInput {
   target: GovernedTarget;
   baseVersionId: string;
   workingMaterial: WorkingMaterialDraft;
-  exactChange: ExactChange;
+  changes: ProposalChange[];
 }
 
 /** Caller input for an explicit Judgment. */
@@ -76,6 +93,10 @@ export interface RecordJudgmentInput {
   proposalId: string;
   proposalFingerprint: string;
   decision: "accepted";
+  acceptedChangeIds: string[];
+  rejectedChangeIds: string[];
+  deferredChangeIds: string[];
+  editedChanges: EditedChange[];
 }
 
 /** Caller input for applying one reviewed Proposal. */
@@ -155,6 +176,8 @@ export type ApplyProposalOutcome =
     }
   | { outcome: "judgment-required"; detail: string }
   | { outcome: "not-eligible"; detail: string }
+  | { outcome: "stale-judgment"; detail: string }
+  | { outcome: "invalid-dependency-subset"; detail: string }
   | { outcome: "external-change"; detail: string }
   | { outcome: "not-found"; detail: string }
   | { outcome: "operation-failed"; detail: string };
@@ -178,6 +201,7 @@ export interface Governance {
   getVersion(targetId: string, versionId: string): Promise<GetVersionOutcome>;
 }
 
+/** Dependencies supplied to the Governance Module composition function. */
 export interface GovernanceDependencies {
   store: GovernanceVersionStore;
 }
@@ -192,10 +216,23 @@ const copyVersion = (version: GovernedVersion): GovernedVersion => ({
 const copyProposal = (proposal: Proposal): Proposal => ({
   ...proposal,
   target: copyTarget(proposal.target),
-  exactChange: { ...proposal.exactChange },
+  changes: proposal.changes.map((change) => ({
+    ...change,
+    exactChange: { ...change.exactChange },
+    dependsOn: [...change.dependsOn],
+  })),
 });
 
-const copyJudgment = (judgment: Judgment): Judgment => ({ ...judgment });
+const copyJudgment = (judgment: Judgment): Judgment => ({
+  ...judgment,
+  acceptedChangeIds: [...judgment.acceptedChangeIds],
+  rejectedChangeIds: [...judgment.rejectedChangeIds],
+  deferredChangeIds: [...judgment.deferredChangeIds],
+  editedChanges: judgment.editedChanges.map((editedChange) => ({
+    ...editedChange,
+    exactChange: { ...editedChange.exactChange },
+  })),
+});
 
 const isSameTarget = (left: GovernedTarget, right: GovernedTarget): boolean =>
   left.id === right.id &&
@@ -231,18 +268,187 @@ const hasValidWorkingMaterial = (input: CreateProposalInput): boolean =>
   input.workingMaterial.baseVersionId === input.baseVersionId &&
   isSameTarget(input.workingMaterial.target, input.target);
 
-const hasValidExactChange = (input: CreateProposalInput): boolean =>
-  input.exactChange.path === input.target.path &&
-  input.exactChange.before.length > 0 &&
-  input.exactChange.after.length > 0 &&
-  input.exactChange.before !== input.exactChange.after;
+const hasValidExactChange = (
+  change: ProposalChange,
+  target: GovernedTarget,
+  changeIds: Set<string>,
+): boolean =>
+  change.id.length > 0 &&
+  change.exactChange.path === target.path &&
+  change.exactChange.before.length > 0 &&
+  change.exactChange.after.length > 0 &&
+  change.exactChange.before !== change.exactChange.after &&
+  change.dependsOn.every(
+    (dependencyId) => dependencyId !== change.id && changeIds.has(dependencyId),
+  );
 
 const hasValidProposalInput = (input: CreateProposalInput): boolean =>
   hasValidProposalIdentity(input) &&
   hasValidWorkingMaterial(input) &&
-  hasValidExactChange(input);
+  input.changes.length > 0 &&
+  new Set(input.changes.map((change) => change.id)).size ===
+    input.changes.length &&
+  input.changes.every((change) =>
+    hasValidExactChange(
+      change,
+      input.target,
+      new Set(input.changes.map((candidate) => candidate.id)),
+    ),
+  );
 
-/** Composes Governance policy behind the confirmed S2 Interface. */
+const hasValidChangeClassification = (
+  proposal: Proposal,
+  acceptedChangeIds: string[],
+  rejectedChangeIds: string[],
+  deferredChangeIds: string[],
+  editedChanges: EditedChange[],
+): boolean => {
+  const changeIds = new Set(proposal.changes.map((change) => change.id));
+  const accepted = new Set(acceptedChangeIds);
+  const rejected = new Set(rejectedChangeIds);
+  const deferred = new Set(deferredChangeIds);
+  const edited = new Set(editedChanges.map((change) => change.changeId));
+  const classified = new Set([
+    ...acceptedChangeIds,
+    ...rejectedChangeIds,
+    ...deferredChangeIds,
+    ...editedChanges.map((change) => change.changeId),
+  ]);
+
+  return (
+    accepted.size > 0 &&
+    new Set(acceptedChangeIds).size === acceptedChangeIds.length &&
+    rejected.size === rejectedChangeIds.length &&
+    deferred.size === deferredChangeIds.length &&
+    edited.size === editedChanges.length &&
+    acceptedChangeIds.every((changeId) => changeIds.has(changeId)) &&
+    rejectedChangeIds.every((changeId) => changeIds.has(changeId)) &&
+    deferredChangeIds.every((changeId) => changeIds.has(changeId)) &&
+    editedChanges.every((editedChange) =>
+      changeIds.has(editedChange.changeId),
+    ) &&
+    accepted.size + rejected.size + deferred.size + edited.size ===
+      classified.size &&
+    classified.size === changeIds.size
+  );
+};
+
+const hasValidEditedChanges = (
+  proposal: Proposal,
+  editedChanges: EditedChange[],
+  baseContent: string | undefined,
+): boolean => {
+  const proposalChangesById = new Map(
+    proposal.changes.map((change) => [change.id, change]),
+  );
+
+  return (
+    editedChanges.length === 0 ||
+    (baseContent !== undefined &&
+      editedChanges.every((editedChange) => {
+        const proposalChange = proposalChangesById.get(editedChange.changeId);
+
+        return (
+          proposalChange !== undefined &&
+          editedChange.exactChange.path === proposalChange.exactChange.path &&
+          editedChange.exactChange.before.length > 0 &&
+          editedChange.exactChange.after.length > 0 &&
+          editedChange.exactChange.before !== editedChange.exactChange.after &&
+          replaceExactOnce(baseContent, editedChange.exactChange) !== undefined
+        );
+      }))
+  );
+};
+
+const applyChanges = (
+  content: string,
+  changes: ProposalChange[],
+): string | undefined => {
+  let nextContent = content;
+
+  for (const change of changes) {
+    const replaced = replaceExactOnce(nextContent, change.exactChange);
+
+    if (replaced === undefined) {
+      return undefined;
+    }
+
+    nextContent = replaced;
+  }
+
+  return nextContent;
+};
+
+const applySingleProposalChange = (
+  content: string,
+  proposal: Proposal,
+  acceptedChangeIds: string[],
+  editedChanges: EditedChange[],
+): string | undefined => {
+  const accepted = new Set(acceptedChangeIds);
+  const editedChangesById = new Map(
+    editedChanges.map((editedChange) => [editedChange.changeId, editedChange]),
+  );
+  const changes = proposal.changes
+    .filter((change) => accepted.has(change.id))
+    .map((change) => {
+      const editedChange = editedChangesById.get(change.id);
+
+      return editedChange === undefined
+        ? change
+        : { ...change, exactChange: { ...editedChange.exactChange } };
+    });
+
+  return changes.length > 0 ? applyChanges(content, changes) : undefined;
+};
+
+const hasClosedDependencySubset = (
+  proposal: Proposal,
+  acceptedChangeIds: string[],
+): boolean => {
+  const changesById = new Map(
+    proposal.changes.map((change) => [change.id, change]),
+  );
+  const accepted = new Set(acceptedChangeIds);
+  const required = new Set(acceptedChangeIds);
+  const pending = [...acceptedChangeIds];
+
+  while (pending.length > 0) {
+    const changeId = pending.pop();
+    const change =
+      changeId === undefined ? undefined : changesById.get(changeId);
+
+    if (change === undefined) {
+      return false;
+    }
+
+    for (const dependencyId of change.dependsOn) {
+      if (!required.has(dependencyId)) {
+        required.add(dependencyId);
+        pending.push(dependencyId);
+      }
+    }
+  }
+
+  return [...required].every((changeId) => accepted.has(changeId));
+};
+
+const hasEligibleJudgment = (
+  proposal: Proposal,
+  judgment: Judgment,
+  appliedProposalIds: Set<string>,
+): boolean =>
+  judgment.proposalId === proposal.id &&
+  judgment.proposalFingerprint === proposal.fingerprint &&
+  judgment.baseVersionId === proposal.baseVersionId &&
+  judgment.decision === "accepted" &&
+  !appliedProposalIds.has(proposal.id);
+
+/**
+ * Composes Governance policy behind the confirmed S2 Interface.
+ * @param dependencies The storage Adapter that owns durable versions.
+ * @returns The Governance Module Interface.
+ */
 export const createGovernance = (
   dependencies: GovernanceDependencies,
 ): Governance => {
@@ -254,6 +460,8 @@ export const createGovernance = (
   const loadCurrentVersion = async (
     targetId: string,
   ): Promise<LoadCurrentVersionOutcome> => {
+    // Recovery rationale: reopening recovers any durable transaction before
+    // the caller can observe the governed version.
     const recovery = await dependencies.store.recoverTransactions();
     const version = await dependencies.store.readCurrentVersion(targetId);
 
@@ -306,10 +514,7 @@ export const createGovernance = (
       );
     }
 
-    const proposedContent = replaceExactOnce(
-      currentVersion.content,
-      input.exactChange,
-    );
+    const proposedContent = applyChanges(currentVersion.content, input.changes);
 
     if (
       proposedContent === undefined ||
@@ -327,7 +532,11 @@ export const createGovernance = (
       target: copyTarget(input.target),
       baseVersionId: input.baseVersionId,
       workingMaterialId: input.workingMaterial.id,
-      exactChange: { ...input.exactChange },
+      changes: input.changes.map((change) => ({
+        ...change,
+        exactChange: { ...change.exactChange },
+        dependsOn: [...change.dependsOn],
+      })),
     };
 
     proposals.set(proposal.id, copyProposal(proposal));
@@ -358,6 +567,35 @@ export const createGovernance = (
       };
     }
 
+    if (
+      !hasValidChangeClassification(
+        proposal,
+        input.acceptedChangeIds,
+        input.rejectedChangeIds,
+        input.deferredChangeIds,
+        input.editedChanges,
+      )
+    ) {
+      return {
+        outcome: "invalid-judgment",
+        detail:
+          "The Judgment must classify every Proposal change exactly once.",
+      };
+    }
+
+    if (
+      !hasValidEditedChanges(
+        proposal,
+        input.editedChanges,
+        proposalBaseContents.get(proposal.id),
+      )
+    ) {
+      return {
+        outcome: "invalid-judgment",
+        detail: "The Judgment contains an invalid edited change.",
+      };
+    }
+
     if (judgments.has(input.judgmentId)) {
       return {
         outcome: "invalid-judgment",
@@ -371,6 +609,13 @@ export const createGovernance = (
       proposalFingerprint: proposal.fingerprint,
       baseVersionId: proposal.baseVersionId,
       decision: input.decision,
+      acceptedChangeIds: [...input.acceptedChangeIds],
+      rejectedChangeIds: [...input.rejectedChangeIds],
+      deferredChangeIds: [...input.deferredChangeIds],
+      editedChanges: input.editedChanges.map((editedChange) => ({
+        ...editedChange,
+        exactChange: { ...editedChange.exactChange },
+      })),
     };
 
     judgments.set(judgment.id, copyJudgment(judgment));
@@ -401,13 +646,7 @@ export const createGovernance = (
       };
     }
 
-    if (
-      judgment.proposalId !== proposal.id ||
-      judgment.proposalFingerprint !== proposal.fingerprint ||
-      judgment.baseVersionId !== proposal.baseVersionId ||
-      judgment.decision !== "accepted" ||
-      appliedProposalIds.has(proposal.id)
-    ) {
+    if (!hasEligibleJudgment(proposal, judgment, appliedProposalIds)) {
       return {
         outcome: "not-eligible",
         detail:
@@ -426,19 +665,38 @@ export const createGovernance = (
       };
     }
 
-    if (
-      currentVersion.id !== proposal.baseVersionId ||
-      !isSameTarget(currentVersion.target, proposal.target)
-    ) {
+    if (currentVersion.id !== proposal.baseVersionId) {
+      return {
+        outcome: "stale-judgment",
+        detail:
+          "The Judgment is stale because the current governed version changed after review.",
+      };
+    }
+
+    if (!isSameTarget(currentVersion.target, proposal.target)) {
       return {
         outcome: "not-eligible",
         detail: "The Proposal is not based on the current governed version.",
       };
     }
 
-    const proposedContent = replaceExactOnce(
+    const effectiveAcceptedChangeIds = [
+      ...judgment.acceptedChangeIds,
+      ...judgment.editedChanges.map((editedChange) => editedChange.changeId),
+    ];
+
+    if (!hasClosedDependencySubset(proposal, effectiveAcceptedChangeIds)) {
+      return {
+        outcome: "invalid-dependency-subset",
+        detail: "The accepted change subset omits a required dependency.",
+      };
+    }
+
+    const proposedContent = applySingleProposalChange(
       currentVersion.content,
-      proposal.exactChange,
+      proposal,
+      effectiveAcceptedChangeIds,
+      judgment.editedChanges,
     );
 
     if (proposedContent === undefined) {

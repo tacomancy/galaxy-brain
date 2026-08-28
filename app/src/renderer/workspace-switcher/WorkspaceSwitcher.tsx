@@ -26,7 +26,11 @@ const workspaces: ReadonlyArray<{
   },
 ];
 
-/** A compact, context-preserving switcher shared by the three workspaces. */
+/**
+ * A compact, context-preserving switcher shared by the three workspaces.
+ * @param props The active workspace, context state, and transition callback.
+ * @returns The workspace navigation element.
+ */
 export const WorkspaceSwitcher = ({
   activeWorkspace,
   hasContext,

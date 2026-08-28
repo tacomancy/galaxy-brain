@@ -1,3 +1,8 @@
+/**
+ * Filesystem transaction and rollback Adapter. It journals staged target,
+ * audit, and exact prior bytes, rechecks the target before installation, and
+ * restores those bytes during recovery without overwriting an external edit.
+ */
 import { createHash } from "node:crypto";
 import {
   mkdir,
@@ -33,6 +38,7 @@ export interface GovernanceFileSystem {
   writeFile: typeof writeFile;
 }
 
+/** Default filesystem Adapter used by file-backed Governance. */
 export const defaultGovernanceFileSystem: GovernanceFileSystem = {
   lstat,
   mkdir,
@@ -43,6 +49,7 @@ export const defaultGovernanceFileSystem: GovernanceFileSystem = {
   writeFile,
 };
 
+/** Configuration for the file-backed Governance storage Adapter. */
 export interface FileBackedGovernanceStoreInput {
   repositoryPath: string;
   target: GovernedTarget;
@@ -149,6 +156,16 @@ const replaceExactOnce = (
   }
 
   return `${content.slice(0, firstIndex)}${after}${content.slice(firstIndex + before.length)}`;
+};
+
+const onlyProposalChange = (proposal: Proposal) => {
+  if (proposal.changes.length !== 1 || proposal.changes[0] === undefined) {
+    throw new GovernanceStorageError(
+      "Multi-change Proposal persistence is deferred.",
+    );
+  }
+
+  return proposal.changes[0];
 };
 
 const relativePath = (root: string, absolutePath: string): string => {
@@ -274,21 +291,27 @@ const parseAppliedRecord = (
     throw new GovernanceStorageError("The applied Proposal record is invalid.");
   }
 
+  // Rationale: the preceding type guard validates every persisted field before
+  // this narrow conversion to the internal snake_case representation.
   return value as unknown as PersistedAppliedRecord;
 };
 
-const persistedProposal = (proposal: Proposal): PersistedProposal => ({
-  id: proposal.id,
-  fingerprint: proposal.fingerprint,
-  target: copyTarget(proposal.target),
-  base_version_id: proposal.baseVersionId,
-  working_material_id: proposal.workingMaterialId,
-  exact_change: {
-    path: proposal.exactChange.path,
-    before: proposal.exactChange.before,
-    after: proposal.exactChange.after,
-  },
-});
+const persistedProposal = (proposal: Proposal): PersistedProposal => {
+  const change = onlyProposalChange(proposal);
+
+  return {
+    id: proposal.id,
+    fingerprint: proposal.fingerprint,
+    target: copyTarget(proposal.target),
+    base_version_id: proposal.baseVersionId,
+    working_material_id: proposal.workingMaterialId,
+    exact_change: {
+      path: change.exactChange.path,
+      before: change.exactChange.before,
+      after: change.exactChange.after,
+    },
+  };
+};
 
 const persistedJudgment = (judgment: Judgment): PersistedJudgment => ({
   id: judgment.id,
@@ -331,6 +354,11 @@ const ensureDirectory = async (
   await filesystem.mkdir(directoryPath, { recursive: true });
 };
 
+/**
+ * Creates a file-backed Governance storage Adapter for one target.
+ * @param input Repository, target, version, and filesystem configuration.
+ * @returns The configured Governance version store.
+ */
 export const createFileBackedGovernanceStore = ({
   repositoryPath,
   target,
@@ -485,6 +513,8 @@ export const createFileBackedGovernanceStore = ({
       throw new GovernanceStorageError("The transaction journal is invalid.");
     }
 
+    // Rationale: the preceding validation establishes the journal invariant
+    // before this conversion to the internal persisted representation.
     return value as unknown as TransactionJournal;
   };
 
@@ -821,10 +851,12 @@ export const createFileBackedGovernanceStore = ({
       );
     }
 
+    const change = onlyProposalChange(input.proposal);
+
     const expectedContent = replaceExactOnce(
       input.expectedBaseContent,
-      input.proposal.exactChange.before,
-      input.proposal.exactChange.after,
+      change.exactChange.before,
+      change.exactChange.after,
     );
 
     if (expectedContent === undefined || expectedContent !== input.content) {

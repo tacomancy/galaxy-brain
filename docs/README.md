@@ -16,6 +16,14 @@ Keep each statement in the narrowest document that owns it. Other documents shou
 - **Test Strategy** owns the confirmed observation points and verification obligations.
 - **Delivery Plan** owns implementation order and tracer-bullet sequencing.
 - **ADRs** own hard-to-reverse architectural trade-offs and their consequences.
+- **Current Capabilities** owns the public distinction among latest-release,
+  current-`main`, and planned behavior, including the reviewed revision and
+  support class for each capability.
+- **Changelog/release notes** own behavior included in published application
+  versions.
+- **Tutorials** own task instructions for supported workflows and should state
+  their applicable version or boundary.
 - **Agent guidance** owns collaboration and execution rules, and points back to the applicable authority above.
+- **Code documentation policy** owns the minimum public-contract and rationale documentation expected before a PR.
 
 The [grilling ledger](reviews/v1-document-grilling-review-ledger.md) indexes concerns and records their disposition; it does not override the document that owns a decision.

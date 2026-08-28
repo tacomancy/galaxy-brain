@@ -157,6 +157,7 @@ export interface WorkbenchSessionSnapshot {
   readingPosition?: ReadingPosition;
 }
 
+/** Machine-local persistence Interface for resumable Workbench state. */
 export interface WorkbenchSessionState {
   /** Missing, malformed, or unreadable state is treated as first launch. */
   readSession(): Promise<WorkbenchSessionSnapshot | undefined>;
@@ -199,6 +200,9 @@ export interface WorkbenchSession {
  * Workbench Session Interface. It keeps repository context in memory and
  * persists only exact-root resume and machine-local active-work convenience
  * state.
+ * @param knowledgeRepository The selected repository Adapter.
+ * @param sessionState The machine-local session-state Adapter.
+ * @returns The Workbench Session Module Interface.
  */
 export const createWorkbenchSession = (
   knowledgeRepository: KnowledgeRepository,

@@ -1,5 +1,7 @@
 # Currently supported user stories
 
+> **Historical snapshot:** This review describes the committed desktop application at `e8c0bc38c83286a333092c2848bd2a5b39c7e0dd` (`app` version `0.7.0`). It is preserved as evidence for that revision, not as a current capability statement for `main`, a later feature branch, or a published release.
+
 Date: 2026-08-28
 Reviewed revision: `e8c0bc38c83286a333092c2848bd2a5b39c7e0dd` (`app` version `0.7.0`)
 Scope: the committed desktop application, its public module interfaces and adapters, its automated tests, and version-matched project documentation.
