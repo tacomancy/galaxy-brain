@@ -142,6 +142,7 @@ describe("Governance stale Judgment", () => {
           proposalFingerprint: proposalA.proposalFingerprint,
           decision: "accepted",
           acceptedChangeIds: [`${proposalA.proposalId}-change`],
+          rejectedChangeIds: [],
         })
       ).outcome,
       "judgment-recorded",
@@ -158,6 +159,7 @@ describe("Governance stale Judgment", () => {
           proposalFingerprint: proposalB.proposalFingerprint,
           decision: "accepted",
           acceptedChangeIds: [`${proposalB.proposalId}-change`],
+          rejectedChangeIds: [],
         })
       ).outcome,
       "judgment-recorded",

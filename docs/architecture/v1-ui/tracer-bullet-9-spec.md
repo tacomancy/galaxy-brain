@@ -259,7 +259,8 @@ The Working Material content contains both exact changes in the target, with the
   proposalFingerprint: "proposal-fingerprint-tb9-invalid-dependency-subset-bayesian-statistics",
   baseVersionId: "bayesian-statistics-v1",
   decision: "accepted",
-  acceptedChangeIds: ["change-tb9-claim-update"]
+  acceptedChangeIds: ["change-tb9-claim-update"],
+  rejectedChangeIds: ["change-tb9-source-evidence"]
 }
 ```
 
@@ -331,7 +332,7 @@ After confirmation, completion requires the focused Red/Green evidence, full aut
 
 ## Required third cycle: apply independently judged changes
 
-This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the accepted first and second TB9 cycles. The concrete mixed-decision shape and caller-visible application behavior below are proposed for confirmation before implementation.
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the accepted first and second TB9 cycles. The concrete mixed-decision shape and caller-visible application behavior below were confirmed before implementation.
 
 ### Scope
 
@@ -348,9 +349,9 @@ Before writing the Red test or implementation code, explicitly complete these to
 3. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
 4. Obtain explicit human confirmation that rejected changes are not silently applied, omitted IDs are not inferred as rejection, and accepted changes still require their complete dependency closure.
 
-Implementation must not begin until this third-cycle documentation review and confirmation task is complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam requires stopping and revising this brief before proceeding.
+Implementation began only after this third-cycle documentation review and confirmation task was complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam would require stopping and revising this brief before proceeding.
 
-### Proposed public behavior
+### Public behavior
 
 Given the current `bayesian-statistics-v1` version and a Proposal containing two independent changes:
 
@@ -363,7 +364,7 @@ Given the current `bayesian-statistics-v1` version and a Proposal containing two
 
 The dependency rule remains the second-cycle rule: every accepted change must include all direct and indirect `dependsOn` IDs. Rejecting a dependent change does not require rejecting its prerequisite; accepting a dependent change without accepting its prerequisite remains `invalid-dependency-subset`. This cycle observes only independent changes so that mixed decisions and dependency closure remain separately observable.
 
-### Proposed Interface shape
+### Interface shape
 
 Keep the accepted dependency-subset representation confirmed in the second cycle and add the explicit rejected set:
 
@@ -466,9 +467,9 @@ The following alternatives are discarded or deferred for this cycle:
 - **Let the storage Adapter select accepted changes:** discarded because per-change Judgment policy belongs to Governance and must remain Adapter-independent.
 - **Persist multi-change mixed decisions now:** deferred because durable change-level audit and rollback provenance need a separate representation decision.
 
-### Acceptance evidence and required confirmation
+### Acceptance evidence
 
-This third cycle is not implementation-ready until the user confirms:
+The user confirmed this third-cycle design on August 28, 2026. Completion requires:
 
 - the additive `rejectedChangeIds` Judgment shape and exact classification rule;
 - the accepted-only application behavior;
@@ -476,3 +477,12 @@ This third cycle is not implementation-ready until the user confirms:
 - the literal independent two-change fixture and explicit deferrals above.
 
 After confirmation, completion requires the focused Red/Green evidence, full automated gates, proof that the rejected change was not applied, and human confirmation that the resulting version contains only the explicitly accepted change while the prior version remains retrievable. Acceptance of this cycle will not approve `edit`/`defer`, dependent mixed decisions, or persistent mixed-decision provenance.
+
+### Third-cycle implementation evidence
+
+- **Confirmation:** The user confirmed the additive `rejectedChangeIds` Judgment shape, explicit classification rule, accepted-only application behavior, dependency-closure rule, literal fixture, and deferrals before the Red test on August 28, 2026.
+- **Red evidence:** The focused test first failed because the existing Judgment had no rejected-change representation and dropped the explicit rejection before application.
+- **Green evidence:** The focused independent-decision test passed. `npm run check` passed formatting, linting, strict type checking, and 68 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.12% statements, 73.01% branches, and 97.31% functions. `npm run lint:complexity` passed.
+- **Behavior evidence:** Governance applied only `change-tb9-independent-source-evidence`; the explicitly rejected claim update was absent from `bayesian-statistics-v2`, the storage mutation occurred once, and `bayesian-statistics-v1` remained retrievable.
+- **Compatibility evidence:** Existing stale-Judgment, invalid-dependency-subset, single-change, and file-backed contract tests pass. The file-backed applied-record representation remains the accepted TB8 single-change `exact_change` shape; mixed multi-change persistence remains deferred.
+- **Acceptance:** Human acceptance of this independently judged-change behavior remains pending. The user has confirmed the implementation specification, not the completed behavior.

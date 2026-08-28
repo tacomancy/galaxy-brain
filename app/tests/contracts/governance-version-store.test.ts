@@ -140,6 +140,7 @@ const prepareAcceptedProposal = async (
       "proposal-fingerprint-tb8-bayesian-statistics-evidence",
     decision: "accepted",
     acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+    rejectedChangeIds: [],
   });
 };
 
@@ -209,6 +210,7 @@ describe("file-backed Governance version storage", () => {
           "proposal-fingerprint-tb8-bayesian-statistics-evidence",
         decision: "accepted",
         acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+        rejectedChangeIds: [],
       }),
       {
         outcome: "judgment-recorded",
@@ -220,6 +222,7 @@ describe("file-backed Governance version storage", () => {
           baseVersionId: "bayesian-statistics-v1",
           decision: "accepted",
           acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+          rejectedChangeIds: [],
         },
       },
     );

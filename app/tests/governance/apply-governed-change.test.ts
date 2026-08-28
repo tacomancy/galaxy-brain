@@ -129,6 +129,7 @@ describe("Governance", () => {
         "proposal-fingerprint-tb8-bayesian-statistics-evidence",
       decision: "accepted",
       acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+      rejectedChangeIds: [],
     });
 
     assert.deepEqual(judgmentOutcome, {
@@ -141,6 +142,7 @@ describe("Governance", () => {
         baseVersionId: "bayesian-statistics-v1",
         decision: "accepted",
         acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+        rejectedChangeIds: [],
       },
     });
 

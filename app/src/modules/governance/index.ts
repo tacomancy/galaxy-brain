@@ -55,6 +55,7 @@ export interface Judgment {
   baseVersionId: string;
   decision: "accepted";
   acceptedChangeIds: string[];
+  rejectedChangeIds: string[];
 }
 
 /** Immutable identity and provenance for one applied Proposal. */
@@ -85,6 +86,7 @@ export interface RecordJudgmentInput {
   proposalFingerprint: string;
   decision: "accepted";
   acceptedChangeIds: string[];
+  rejectedChangeIds: string[];
 }
 
 /** Caller input for applying one reviewed Proposal. */
@@ -213,6 +215,7 @@ const copyProposal = (proposal: Proposal): Proposal => ({
 const copyJudgment = (judgment: Judgment): Judgment => ({
   ...judgment,
   acceptedChangeIds: [...judgment.acceptedChangeIds],
+  rejectedChangeIds: [...judgment.rejectedChangeIds],
 });
 
 const isSameTarget = (left: GovernedTarget, right: GovernedTarget): boolean =>
@@ -277,16 +280,24 @@ const hasValidProposalInput = (input: CreateProposalInput): boolean =>
     ),
   );
 
-const hasValidAcceptedChangeIds = (
+const hasValidChangeClassification = (
   proposal: Proposal,
   acceptedChangeIds: string[],
+  rejectedChangeIds: string[],
 ): boolean => {
   const changeIds = new Set(proposal.changes.map((change) => change.id));
+  const accepted = new Set(acceptedChangeIds);
+  const rejected = new Set(rejectedChangeIds);
+  const classified = new Set([...acceptedChangeIds, ...rejectedChangeIds]);
 
   return (
-    acceptedChangeIds.length > 0 &&
+    accepted.size > 0 &&
     new Set(acceptedChangeIds).size === acceptedChangeIds.length &&
-    acceptedChangeIds.every((changeId) => changeIds.has(changeId))
+    rejected.size === rejectedChangeIds.length &&
+    acceptedChangeIds.every((changeId) => changeIds.has(changeId)) &&
+    rejectedChangeIds.every((changeId) => changeIds.has(changeId)) &&
+    accepted.size + rejected.size === classified.size &&
+    classified.size === changeIds.size
   );
 };
 
@@ -312,12 +323,12 @@ const applyChanges = (
 const applySingleProposalChange = (
   content: string,
   proposal: Proposal,
+  acceptedChangeIds: string[],
 ): string | undefined => {
-  const change = proposal.changes[0];
+  const accepted = new Set(acceptedChangeIds);
+  const changes = proposal.changes.filter((change) => accepted.has(change.id));
 
-  return proposal.changes.length === 1 && change !== undefined
-    ? replaceExactOnce(content, change.exactChange)
-    : undefined;
+  return changes.length > 0 ? applyChanges(content, changes) : undefined;
 };
 
 const hasClosedDependencySubset = (
@@ -479,10 +490,17 @@ export const createGovernance = (
       };
     }
 
-    if (!hasValidAcceptedChangeIds(proposal, input.acceptedChangeIds)) {
+    if (
+      !hasValidChangeClassification(
+        proposal,
+        input.acceptedChangeIds,
+        input.rejectedChangeIds,
+      )
+    ) {
       return {
         outcome: "invalid-judgment",
-        detail: "The Judgment contains an unknown or duplicate change ID.",
+        detail:
+          "The Judgment must classify every Proposal change exactly once.",
       };
     }
 
@@ -500,6 +518,7 @@ export const createGovernance = (
       baseVersionId: proposal.baseVersionId,
       decision: input.decision,
       acceptedChangeIds: [...input.acceptedChangeIds],
+      rejectedChangeIds: [...input.rejectedChangeIds],
     };
 
     judgments.set(judgment.id, copyJudgment(judgment));
@@ -571,16 +590,10 @@ export const createGovernance = (
       };
     }
 
-    if (proposal.changes.length !== 1) {
-      return {
-        outcome: "not-eligible",
-        detail: "Applying a valid multi-change Proposal is deferred.",
-      };
-    }
-
     const proposedContent = applySingleProposalChange(
       currentVersion.content,
       proposal,
+      judgment.acceptedChangeIds,
     );
 
     if (proposedContent === undefined) {

@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9's first stale-Judgment slice is implemented and accepted on August 28, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9 stale-Judgment and invalid dependency-subset slices are implemented and accepted on August 28, 2026, while the independently judged changes slice is implemented with human acceptance pending; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -462,14 +462,16 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Status:** Implementation is complete, the specification was confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
 - **Next behavior:** Repeat the documentation prerequisite and specify independently reviewable multi-change decisions before implementation.
 
-#### TB9 independently judged changes cycle — specification drafted August 28, 2026
+#### TB9 independently judged changes cycle — implementation complete, human acceptance pending August 28, 2026
 
-- **Proposed Public Behavior:** A Judgment explicitly accepts one independent Proposal change and rejects another; Governance applies only the accepted change and preserves the rejected change as unapplied.
-- **Proposed Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
-- **Proposed shape:** Preserve `acceptedChangeIds` and add explicit `rejectedChangeIds`; every Proposal change ID must appear exactly once across the two arrays, and accepted IDs must remain dependency-closed.
-- **Scope:** This planned cycle proves mixed accepted/rejected decisions for independent changes. Edit/defer decisions, dependent mixed decisions, durable mixed-decision provenance, and UI behavior remain deferred.
-- **Status:** The implementation specification is drafted and requires explicit human confirmation of the additive Judgment shape, accepted-only application, literal fixture, and deferrals before the Red test or implementation begins.
-- **Next behavior:** Confirm this specification, then run the focused Red-to-Green cycle for independently judged changes.
+- **Public Behavior:** A Judgment explicitly accepts one independent Proposal change and rejects another; Governance applies only the accepted change and preserves the rejected change as unapplied.
+- **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
+- **Shape confirmed:** Preserve `acceptedChangeIds` and add explicit `rejectedChangeIds`; every Proposal change ID must appear exactly once across the two arrays, and accepted IDs must remain dependency-closed.
+- **Scope:** This cycle proves mixed accepted/rejected decisions for independent changes. Edit/defer decisions, dependent mixed decisions, durable mixed-decision provenance, and UI behavior remain deferred.
+- **Red evidence:** The focused test first failed because the existing Judgment had no rejected-change representation and dropped the explicit rejection before application.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 68 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.12% statements, 73.01% branches, and 97.31% functions. `npm run lint:complexity` passed. The focused test proves only the accepted change is applied and the prior version remains retrievable.
+- **Status:** Implementation is complete, the specification was confirmed before code changes, and human acceptance remains pending.
+- **Next behavior:** Complete human acceptance for this independent-decision behavior, then repeat the documentation prerequisite and specify edit/defer or dependent mixed-decision behavior before implementation.
 
 ### 10. Review through the desktop interface
 
