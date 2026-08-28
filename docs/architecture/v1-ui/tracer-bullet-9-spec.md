@@ -993,3 +993,200 @@ Completion requires focused Red/Green evidence, full automated gates, proof that
 - **Compatibility evidence:** Existing single-change, stale-Judgment, invalid-dependency-subset, independent-decision, deferred-decision, edited-change, and file-backed contract tests pass. Generic dependency reordering and persistent edited multi-change provenance remain deferred as specified.
 - **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed that the edited dependent applies only with its accepted prerequisite, the missing-prerequisite path returns `invalid-dependency-subset` before mutation, and the prior version remains retrievable.
 - **Status:** This implementation cycle is complete and accepted. Generic dependency reordering, post-prerequisite exact matching, multi-level graphs, and persistent edited-decision provenance remain deferred.
+
+## Required seventh cycle: persist edited multi-change provenance
+
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2/S5 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 Repository Format and persistence representation, and the completed first six TB9 cycles. The backward-compatible persisted representation and caller-visible reopen behavior below are proposed for confirmation before implementation.
+
+### Scope
+
+The seventh TB9 cycle closes the durable-provenance gap for the accepted in-memory decision vocabulary. A file-backed application of a multi-change Proposal persists the complete original Proposal change list and the complete Judgment classification, including the exact reviewer-supplied replacement for an edited change. Reopening the repository retains the resulting current version and prior version, and the immutable applied record remains sufficient to explain what was proposed, accepted, rejected, deferred, or edited.
+
+This cycle keeps the existing S2 Governance Interface, S5 file-backed Adapter, one-target version lineage, targeted rollback bytes, and transaction directory. It does not revise the Repository Format version, migrate existing scalar TB8 records in place, add general schema negotiation, support multiple applied records or branching history, or introduce UI behavior.
+
+### Documentation prerequisite for this cycle
+
+Before writing the Red test or implementation code, explicitly complete these to-do items:
+
+1. Recheck the accepted Product Decisions, Architecture, Repository Format, Test Strategy S2/S5 guidance, applicable ADRs, and the completed first six TB9 cycles.
+2. Confirm that the persisted multi-change record is an audit/history representation rather than a second current-content authority, and that rollback remains the exact prior target bytes.
+3. Confirm the backward-compatibility boundary: legacy scalar `proposal.exact_change` records remain readable, are not silently rewritten, and new multi-change applications use plural change/classification fields.
+4. Confirm the exact persisted field names, literal fixture, reopen/history behavior, and file-backed validation boundary below.
+5. Record any changed public Interface, Repository Format authority, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
+6. Obtain explicit human confirmation of the persisted shape, compatibility behavior, exact audit values, and explicit deferrals.
+
+Implementation must not begin until this seventh-cycle documentation review and confirmation task is complete. A Repository Format revision, migration policy, new Test Seam, or change to current-content authority requires stopping and revising this brief before proceeding.
+
+### Proposed public behavior
+
+Given the file-backed TB8 fixture repository and a Proposal containing an accepted prerequisite and an edited dependent change:
+
+1. Governance records the same dependency-closed Judgment already accepted in the sixth cycle.
+2. The file-backed Adapter applies the resulting content as one recoverable target transaction and writes one immutable applied record under `proposals/applied/<applied-record-id>.json`.
+3. The record preserves the Proposal's ordered `changes` array, each change ID, each original exact replacement, and each `depends_on` list.
+4. The record preserves the Judgment's exact accepted, rejected, and deferred ID arrays and the edited change's `change_id`, path, `before`, and reviewer-selected `after` text.
+5. Reopening the repository through a new file-backed Governance instance returns `bayesian-statistics-v2` as current and `bayesian-statistics-v1` with its original bytes as retrievable history.
+6. The rollback file remains the exact original target bytes, and the persisted record's fingerprints and rollback path remain internally consistent.
+7. Existing legacy TB8 single-change records continue to reopen successfully without migration or shape rewriting.
+
+The persisted record is provenance and recovery data. The ordinary target file remains the current-content authority; the applied record and rollback bytes do not become alternate current versions.
+
+### Proposed persisted representation
+
+Keep `format: galaxy-brain` and `format_version: 1`. Do not add an in-record schema version in this slice. The Adapter accepts both the existing legacy shape and the new multi-change shape:
+
+Legacy records remain readable with:
+
+```json
+{
+  "proposal": {
+    "exact_change": {
+      "path": "knowledge/bayesian-statistics.md",
+      "before": "...",
+      "after": "..."
+    }
+  },
+  "judgment": {
+    "decision": "accepted"
+  }
+}
+```
+
+New multi-change records use:
+
+```json
+{
+  "proposal": {
+    "id": "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+    "fingerprint": "proposal-fingerprint-tb9-persisted-edited-provenance-bayesian-statistics",
+    "target": {
+      "id": "bayesian-statistics",
+      "title": "Bayesian statistics",
+      "path": "knowledge/bayesian-statistics.md"
+    },
+    "base_version_id": "bayesian-statistics-v1",
+    "working_material_id": "working-material-tb9-persisted-edited-provenance-bayesian-statistics",
+    "changes": [
+      {
+        "id": "change-tb9-persisted-edited-source-evidence",
+        "exact_change": {
+          "path": "knowledge/bayesian-statistics.md",
+          "before": "source_record: sources/papers/bayesian-statistics.md",
+          "after": "source_record: sources/papers/bayesian-statistics.md\nreviewed_claim: fixture-evidence"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "change-tb9-persisted-edited-claim-update",
+        "exact_change": {
+          "path": "knowledge/bayesian-statistics.md",
+          "before": "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+          "after": "Bayesian statistics uses evidence to update prior belief."
+        },
+        "depends_on": ["change-tb9-persisted-edited-source-evidence"]
+      }
+    ]
+  },
+  "judgment": {
+    "id": "judgment-tb9-persisted-edited-provenance-bayesian-statistics",
+    "proposal_id": "proposal-tb9-persisted-edited-provenance-bayesian-statistics",
+    "proposal_fingerprint": "proposal-fingerprint-tb9-persisted-edited-provenance-bayesian-statistics",
+    "base_version_id": "bayesian-statistics-v1",
+    "decision": "accepted",
+    "accepted_change_ids": ["change-tb9-persisted-edited-source-evidence"],
+    "rejected_change_ids": [],
+    "deferred_change_ids": [],
+    "edited_changes": [
+      {
+        "change_id": "change-tb9-persisted-edited-claim-update",
+        "exact_change": {
+          "path": "knowledge/bayesian-statistics.md",
+          "before": "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+          "after": "Bayesian statistics updates prior belief from evidence."
+        }
+      }
+    ]
+  }
+}
+```
+
+The outer applied-record fields remain the accepted TB8 fields: `id`, `target`, `previous_version`, `new_version`, and `rollback_path`. The new multi-change record keeps Proposal order and stores original Proposal exact changes separately from the Judgment's edited exact change; it never overwrites the original `after` text.
+
+### Literal fixture and expected values
+
+Use the existing TB8 file-backed fixture repository and target:
+
+- Target ID: `bayesian-statistics`.
+- Target title: `Bayesian statistics`.
+- Target path: `knowledge/bayesian-statistics.md`.
+- Proposal ID: `proposal-tb9-persisted-edited-provenance-bayesian-statistics`.
+- Proposal fingerprint: `proposal-fingerprint-tb9-persisted-edited-provenance-bayesian-statistics`.
+- Working Material ID: `working-material-tb9-persisted-edited-provenance-bayesian-statistics`.
+- Judgment ID: `judgment-tb9-persisted-edited-provenance-bayesian-statistics`.
+- Applied record ID: `applied-proposal-tb9-persisted-edited-provenance-bayesian-statistics`.
+- Base version: `bayesian-statistics-v1`.
+- New version: `bayesian-statistics-v2`.
+
+The Proposal has these two changes in order:
+
+1. `change-tb9-persisted-edited-source-evidence`, accepted unchanged, with the source-record replacement and `depends_on: []` shown above.
+2. `change-tb9-persisted-edited-claim-update`, dependent on the source change, with the original Proposal replacement shown above.
+
+The Judgment accepts the source change and edits the claim change to `Bayesian statistics updates prior belief from evidence.`. The expected current file contains `reviewed_claim: fixture-evidence` and that edited sentence, but not the original Proposal sentence `Bayesian statistics uses evidence to update prior belief.`. The expected rollback file contains the complete original `bayesian-statistics-v1` bytes.
+
+### Test Seam and minimum vertical path
+
+Use the existing S5 file-backed Governance contract at `app/tests/contracts/governance-version-store.test.ts`, exercised through the public Governance Interface. Add a behavior-named test or cohesive contract case for the persisted multi-change record; do not inspect Adapter-private state.
+
+The test must:
+
+- create the file-backed fixture repository and record the literal two-change Proposal and Judgment;
+- apply through Governance and assert the exact `applied` outcome and resulting content;
+- assert the exact plural applied-record JSON, including original Proposal changes, dependency IDs, Judgment classifications, and edited exact change;
+- assert the exact rollback bytes;
+- reopen with a new file-backed Governance instance and assert current `bayesian-statistics-v2` plus retrievable `bayesian-statistics-v1`;
+- retain the existing legacy single-change contract proving the scalar TB8 record remains readable; and
+- assert that unrelated repository content remains unchanged.
+
+The test must use independently written expected JSON/content and must not call `persistedProposal`, `persistedJudgment`, `onlyProposalChange`, or another implementation helper to derive expectations. Existing filesystem injection may be used only for the established transaction/recovery contract; no new seam is needed for this slice.
+
+Minimum path:
+
+1. Complete this documentation review and obtain confirmation before the Red test.
+2. Add the file-backed multi-change contract and observe the expected failure because the Adapter currently rejects multi-change persistence through `onlyProposalChange` and omits Judgment classifications.
+3. Add the smallest backward-compatible persisted unions, validators, writers, and multi-change content-integrity check required for the literal case.
+4. Prove new multi-change records reopen correctly while legacy scalar records remain readable and no migration occurs.
+5. Run the focused contract test, `npm run check`, coverage, complexity, and public documentation checks.
+6. Record Red/Green evidence and human acceptance before selecting schema migration, multiple applied records, or broader history.
+
+### Boundaries, alternatives, and deferrals
+
+This cycle explicitly defers:
+
+- Repository Format version 2 or an in-record schema-version field;
+- migration or rewriting of existing scalar TB8 applied records;
+- multiple applied records, branching lineage, or general version allocation;
+- audit records for rejected or deferred applications that never mutate a target;
+- new transaction-failure permutations specific to the plural record shape;
+- Judgment revision, proposal history, UI rendering, Agent Provider use, Git, remote synchronization, and network behavior.
+
+The following alternatives are discarded or deferred for this cycle:
+
+- **Rewrite all legacy scalar records into the plural shape:** discarded because opening a repository must not perform incidental mutation and existing accepted audit artifacts must remain byte-stable.
+- **Bump `format_version` to 2:** deferred because this slice adds a backward-compatible applied-record representation without changing the repository-wide interoperability contract; a future schema revision needs migration and negotiation policy.
+- **Store only the effective edited changes:** discarded because durable provenance must show what the Proposal originally requested and what the Judgment changed.
+- **Store only the Judgment and derive Proposal changes from current content:** discarded because current content is mutable and cannot reconstruct reviewed identity, dependency context, or original exact replacements.
+- **Move provenance into a sidecar database or application cache:** discarded because the Repository Format is portable, application-independent, and file-backed; audit history must travel with the repository.
+- **Persist every accepted/rejected/deferred Judgment before application:** deferred because this slice persists the successful applied record only; non-applied review history needs a separate retention and identity policy.
+
+### Acceptance evidence and required confirmation
+
+This seventh cycle is not implementation-ready until the user confirms:
+
+- the legacy scalar-read/new plural-write compatibility boundary;
+- the exact `changes`, `depends_on`, classification-array, and `edited_changes` fields;
+- preservation of original Proposal exact changes alongside reviewer-edited replacements;
+- reopen/current-history and rollback expectations; and
+- the explicit deferrals and discarded alternatives.
+
+After confirmation, completion requires focused Red/Green evidence, full automated gates, exact persisted JSON and rollback evidence, legacy-record compatibility evidence, and human confirmation that reopening preserves the edited application and prior version. Acceptance will not approve format migration, multi-record history, branching lineage, or UI behavior.

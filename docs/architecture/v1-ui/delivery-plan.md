@@ -509,7 +509,17 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
 - **Acceptance:** The user confirmed that the edited dependent applies only with its accepted prerequisite, the missing-prerequisite path returns `invalid-dependency-subset` before storage mutation, and the prior governed version remains retrievable.
 - **Deferred work:** Generic dependency reordering, post-prerequisite exact replacements, multi-level graphs, edited prerequisites combined with edited dependents, Judgment revision, persistent edited multi-change provenance, and UI behavior remain explicitly deferred.
-- **Next behavior:** Complete the manual acceptance review for edited dependent changes before selecting out-of-order dependency handling, multi-level graphs, or persistent edited-decision provenance.
+- **Next behavior:** Repeat the documentation prerequisite and specify the persistent edited-decision provenance behavior before implementation.
+
+#### TB9 persistent edited-decision provenance cycle — specification drafted August 28, 2026
+
+- **Public Behavior:** A file-backed governed application with multiple Proposal changes persists the complete Proposal change list and the complete Judgment classification, including the reviewer-supplied edited exact change. Reopening the repository preserves the applied and prior versions, while the immutable applied record exposes the original and edited provenance.
+- **Test Seam:** The existing S5 file-backed Governance version-storage Adapter exercised through the public S2 Governance Interface and its contract test; no new storage seam is proposed.
+- **Representation:** Preserve existing legacy single-change applied records. New multi-change records use plural `proposal.changes` entries with IDs, exact changes, and `depends_on`, plus Judgment `accepted_change_ids`, `rejected_change_ids`, `deferred_change_ids`, and `edited_changes` entries. No Repository Format version bump is proposed.
+- **Compatibility:** Existing scalar `proposal.exact_change` records remain readable and are not migrated in place. The writer may retain the legacy shape for one-change applications and must use the plural shape for multi-change applications, avoiding a broad rewrite of accepted TB8 artifacts.
+- **Scope:** This cycle proves durable provenance for one accepted prerequisite and one edited dependent change, including exact applied-audit JSON and reopen/history behavior. Judgment revision, audit migration tooling, multi-record history, branching lineage, transaction-failure permutations specific to the new shape, and UI behavior remain deferred.
+- **Status:** The implementation specification is drafted and requires explicit human confirmation of the backward-compatible persisted shape, legacy-read behavior, new-write boundary, exact audit fields, and deferrals before the Red test or implementation begins.
+- **Next behavior:** Confirm this specification, then run the focused file-backed contract Red-to-Green cycle.
 
 ### 10. Review through the desktop interface
 
