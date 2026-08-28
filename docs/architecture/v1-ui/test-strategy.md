@@ -1,6 +1,6 @@
 # Test strategy
 
-Status: **accepted on August 26, 2026**.
+Status: **accepted on August 26, 2026**. Coverage enforcement requirements for [Issue #47](https://github.com/tacomancy/galaxy-brain/issues/47) were documented on August 28, 2026; numeric thresholds remain pending baseline measurement.
 
 Tests should describe behavior through public interfaces and survive changes to framework, editor engine, route implementation, persistence layout, and internal module composition. The following seams intentionally cover the highest-risk behavior without testing every internal module.
 
@@ -23,6 +23,29 @@ The seams form a layered test surface:
 ```
 
 S1 proves that the assembled product works. S2 through S4 provide economical, precise coverage of the highest-risk application rules. S5 proves that production and test infrastructure mean the same thing. The layers overlap deliberately at a small number of critical workflows; they do not duplicate every assertion at every seam.
+
+## Coverage enforcement
+
+[Issue #47](https://github.com/tacomancy/galaxy-brain/issues/47) defines the coverage gate that complements these Test Seams. The gate is a verification obligation, not a new Test Seam and not evidence that behavior is correct by itself.
+
+The measured production surface is the TypeScript and TSX source under `app/src/`. Coverage configuration must select that surface explicitly rather than measuring only files imported by the current tests. TypeScript declaration files (`*.d.ts`), generated output, dependencies, test files, and workflow artifacts are outside the measured surface. The exact include and exclude patterns belong to the Vitest configuration once the gate is implemented.
+
+The gate measures Vitest's four supported dimensions:
+
+- lines;
+- functions;
+- branches; and
+- statements.
+
+Vitest does not expose a separate `conditions` dimension. Branch coverage is therefore the initial proxy for condition coverage; documentation and CI must not describe the two as identical. Exact condition coverage would require a separately justified post-processing or tooling decision.
+
+Before selecting numeric floors, the implementation must record a baseline for the explicitly selected production surface and inspect the uncovered files and locations. Global thresholds and per-file floors are then chosen from that evidence and the importance of the covered surface. The issue's initial candidates—80% lines, 80% functions, 70% branches, and 80% statements—are calibration inputs, not an accepted policy. Thresholds should ratchet upward deliberately rather than being lowered merely to make the current branch pass.
+
+The implementation will expose `npm run test:coverage` from `app/`. That command must emit text for local feedback, HTML for human inspection, LCOV for tooling, and a machine-readable report. Failures must identify the breached dimension and the uncovered files or locations clearly. The command must retain the existing `npm test` behavior and remain part of the broader verification story rather than replacing behavioral, contract, accessibility, security, packaging, or human review.
+
+GitHub Actions will run a clearly named `Coverage limits` job for pull requests targeting `main`. The job must be unconditional for applicable pull requests, preserve the existing verification and desktop workflow jobs, and become a required status check through branch protection or a repository ruleset. Desktop Electron/WebdriverIO coverage remains a separate concern because the current Vitest command does not automatically instrument those workflows.
+
+Issue #47 is not complete until the measured baseline, final global and per-file floors, local command, reports, pull-request job, required-check configuration, and green existing verification gate are all recorded. Broad exclusion lists, thresholds chosen without a baseline, and claims that coverage proves correctness are outside this policy.
 
 ## S1 — Desktop workflow seam
 
