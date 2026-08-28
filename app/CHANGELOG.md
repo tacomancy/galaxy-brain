@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/tacomancy/galaxy-brain/compare/v0.8.0...v0.9.0) (2026-08-28)
+
+
+### Features
+
+* persist governed changes through file-backed storage ([#83](https://github.com/tacomancy/galaxy-brain/issues/83)) ([b5bf417](https://github.com/tacomancy/galaxy-brain/commit/b5bf41716c30d49accced9e79f9392062b9b4a97))
+
 ## [0.8.0](https://github.com/tacomancy/galaxy-brain/compare/v0.7.0...v0.8.0) (2026-08-28)
 
 
