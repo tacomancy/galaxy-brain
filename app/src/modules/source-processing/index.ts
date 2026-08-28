@@ -127,8 +127,12 @@ export type SourceAssetRelinkOutcome =
  * Processing owns caller-visible status and preservation policy.
  */
 export interface SourceAssetAdapter {
+  /** Returns unavailable rather than throwing when identity cannot be read. */
   readIdentity(sourceRecordId: string): Promise<SourceAssetIdentityOutcome>;
-  /** Commits a replacement only after all requested verification succeeds. */
+  /**
+   * Returns unavailable or changed without committing when verification fails;
+   * commits only after identity and locator verification succeeds.
+   */
   relink(input: RelinkSourceInput): Promise<SourceAssetRelinkOutcome>;
 }
 
@@ -451,11 +455,18 @@ export interface SourceProcessing {
   captureSourceClaim(
     input: CaptureSourceClaimInput,
   ): Promise<CaptureSourceClaimOutcome>;
-  /** Checks linked Source Asset identity without changing portable source data. */
+  /**
+   * Checks linked identity without changing portable source data. Returns
+   * available, source-status-unavailable, or source-changed; Adapters
+   * translate infrastructure failures into the unavailable outcome.
+   */
   checkSourceAvailability(
     input: CheckSourceAvailabilityInput,
   ): Promise<CheckSourceAvailabilityOutcome>;
-  /** Explicitly verifies and accepts a replacement linked Source Asset. */
+  /**
+   * Explicitly verifies and accepts a replacement linked Source Asset.
+   * Returns relinked, source-changed, or source-status-unavailable.
+   */
   relinkSource(input: RelinkSourceInput): Promise<RelinkSourceOutcome>;
   /** Prepares an inspectable Synthesis request without contacting a provider. */
   prepareSynthesis(
@@ -662,19 +673,9 @@ export const createSourceProcessing = (
       );
     }
 
-    let identity: SourceAssetIdentityOutcome;
-
-    try {
-      identity = await dependencies.sourceAsset.readIdentity(
-        input.sourceRecord.id,
-      );
-    } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
-      return sourceStatusUnavailable(
-        sourceRecord,
-        "The linked source asset could not be checked.",
-      );
-    }
+    const identity = await dependencies.sourceAsset.readIdentity(
+      input.sourceRecord.id,
+    );
 
     if (identity.outcome === "unavailable") {
       return sourceStatusUnavailable(sourceRecord, identity.detail);
@@ -715,17 +716,7 @@ export const createSourceProcessing = (
       );
     }
 
-    let identity: SourceAssetRelinkOutcome;
-
-    try {
-      identity = await dependencies.sourceAsset.relink(input);
-    } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
-      return sourceStatusUnavailable(
-        sourceRecord,
-        "The linked source asset could not be relinked.",
-      );
-    }
+    const identity = await dependencies.sourceAsset.relink(input);
 
     if (identity.outcome === "unavailable") {
       return sourceStatusUnavailable(sourceRecord, identity.detail);

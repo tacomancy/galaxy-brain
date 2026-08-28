@@ -2,6 +2,8 @@ import { strict as assert } from "node:assert";
 
 import { describe, it } from "vitest";
 
+import { createFixturePdfAdapter } from "../../src/adapters/pdf/fixture-pdf-adapter";
+import { createFixtureSourceAssetAdapter } from "../../src/adapters/pdf/fixture-source-asset-adapter";
 import { createInMemoryWorkingMaterialRepository } from "../../src/adapters/working-material/in-memory-working-material-repository";
 import { createSourceProcessing } from "../../src/modules/source-processing";
 
@@ -105,7 +107,7 @@ describe("TB15 missing PDF behavior", () => {
     });
   });
 
-  it("translates an identity-check failure into unavailable status", async () => {
+  it("reports an unavailable identity-check outcome", async () => {
     const sourceProcessing = createSourceProcessing({
       pdf: {
         readSelection: async () => ({
@@ -115,9 +117,10 @@ describe("TB15 missing PDF behavior", () => {
       },
       workingMaterial: createInMemoryWorkingMaterialRepository(),
       sourceAsset: {
-        readIdentity: async () => {
-          throw new Error("simulated identity reader failure");
-        },
+        readIdentity: async () => ({
+          outcome: "unavailable" as const,
+          detail: "The linked source asset could not be checked.",
+        }),
         relink: async () => ({
           outcome: "unavailable" as const,
           detail: "The linked fixture PDF is missing.",
@@ -193,25 +196,16 @@ describe("TB15 missing PDF behavior", () => {
       sourceIdentity: "source-identity-bayesian-statistics-v1",
       contentIdentity: "content-identity-bayesian-statistics-v1",
     };
+    const pdf = createFixturePdfAdapter();
     const sourceProcessing = createSourceProcessing({
-      pdf: {
-        readSelection: async () => ({
-          outcome: "located" as const,
-          text: annotation.text,
-        }),
-      },
+      pdf,
       workingMaterial,
-      sourceAsset: {
-        readIdentity: async () => ({
-          outcome: "available" as const,
-          ...currentIdentity,
-        }),
-        relink: async () => ({
-          outcome: "available" as const,
-          sourceIdentity: currentIdentity.sourceIdentity,
-          contentIdentity: currentIdentity.contentIdentity,
-        }),
-      },
+      sourceAsset: createFixtureSourceAssetAdapter({
+        sourceRecord,
+        initialIdentity: { outcome: "available", ...currentIdentity },
+        replacementIdentity: { outcome: "available", ...currentIdentity },
+        pdf,
+      }),
     });
 
     assert.deepEqual(
@@ -257,36 +251,24 @@ describe("TB15 missing PDF behavior", () => {
   it("accepts only an explicit verified relink and preserves the logical locator", async () => {
     const workingMaterial = createInMemoryWorkingMaterialRepository();
     await workingMaterial.saveAnnotation(annotation);
-    let currentIdentity = {
+    const currentIdentity = {
       sourceIdentity: "source-identity-bayesian-statistics-v1",
       contentIdentity: "content-identity-bayesian-statistics-v1",
     };
+    const pdf = createFixturePdfAdapter();
     const sourceProcessing = createSourceProcessing({
-      pdf: {
-        readSelection: async () => ({
-          outcome: "located" as const,
-          text: annotation.text,
-        }),
-      },
+      pdf,
       workingMaterial,
-      sourceAsset: {
-        readIdentity: async () => ({
-          outcome: "available" as const,
-          ...currentIdentity,
-        }),
-        relink: async (input) => {
-          assert.deepEqual(input.verificationLocator, {
-            page: 2,
-            start: 0,
-            end: 54,
-          });
-          currentIdentity = {
-            sourceIdentity: "source-identity-bayesian-statistics-v2",
-            contentIdentity: "content-identity-bayesian-statistics-v2",
-          };
-          return { outcome: "available" as const, ...currentIdentity };
+      sourceAsset: createFixtureSourceAssetAdapter({
+        sourceRecord,
+        initialIdentity: { outcome: "available", ...currentIdentity },
+        replacementIdentity: {
+          outcome: "available",
+          sourceIdentity: "source-identity-bayesian-statistics-v2",
+          contentIdentity: "content-identity-bayesian-statistics-v2",
         },
-      },
+        pdf,
+      }),
     });
 
     const outcome = await sourceProcessing.relinkSource({
@@ -305,6 +287,18 @@ describe("TB15 missing PDF behavior", () => {
       sourceIdentity: "source-identity-bayesian-statistics-v2",
       contentIdentity: "content-identity-bayesian-statistics-v2",
     });
+    assert.deepEqual(
+      await sourceProcessing.captureSourceClaim({
+        sourceRecord,
+        page: 2,
+        start: 0,
+        end: 54,
+      }),
+      {
+        outcome: "captured",
+        annotation,
+      },
+    );
     assert.deepEqual(
       await sourceProcessing.checkSourceAvailability({
         sourceRecord,
@@ -331,31 +325,20 @@ describe("TB15 missing PDF behavior", () => {
       sourceIdentity: "source-identity-bayesian-statistics-v1",
       contentIdentity: "content-identity-bayesian-statistics-v1",
     };
+    const pdf = createFixturePdfAdapter();
     const sourceProcessing = createSourceProcessing({
-      pdf: {
-        readSelection: async () => ({
-          outcome: "located" as const,
-          text: annotation.text,
-        }),
-      },
+      pdf,
       workingMaterial,
-      sourceAsset: {
-        readIdentity: async () => ({
-          outcome: "available" as const,
-          ...currentIdentity,
-        }),
-        relink: async (input) => {
-          assert.deepEqual(input.verificationLocator, {
-            page: 3,
-            start: 0,
-            end: 54,
-          });
-          return {
-            outcome: "unavailable" as const,
-            detail: "The replacement fixture page is unavailable.",
-          };
+      sourceAsset: createFixtureSourceAssetAdapter({
+        sourceRecord,
+        initialIdentity: { outcome: "available", ...currentIdentity },
+        replacementIdentity: {
+          outcome: "available",
+          sourceIdentity: "source-identity-bayesian-statistics-v2",
+          contentIdentity: "content-identity-bayesian-statistics-v2",
         },
-      },
+        pdf,
+      }),
     });
 
     assert.deepEqual(
@@ -373,7 +356,7 @@ describe("TB15 missing PDF behavior", () => {
         outcome: "source-status-unavailable",
         sourceRecord,
         warning: "source status unavailable",
-        detail: "The replacement fixture page is unavailable.",
+        detail: "The requested fixture PDF passage is unavailable.",
       },
     );
     assert.deepEqual(
