@@ -3,7 +3,7 @@ title: Current capabilities
 summary: Versioned distinction between released, current-main, and planned Workbench behavior.
 applies_to_release: "0.10.0"
 tracks_main: true
-verified_commit: "0f70e39f922f7480fd83e5096c48614e7447799a"
+verified_commit: "5aeb14980b1ea407bc6fbb6fa19db27143cdfd38"
 reviewed_on: "2026-08-28"
 ---
 
@@ -21,8 +21,8 @@ This page was reviewed on **2026-08-28** against the following two baselines:
 
 | Baseline                 | Marker                                                                                                 | Meaning                                                                                                                               |
 | ------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Latest published release | [0.10.0 release notes](../app/CHANGELOG.md)                                                            | The version identified by the application package, changelog, and support policy.                                                     |
-| Current `main` snapshot  | [`0f70e39`](https://github.com/tacomancy/galaxy-brain/commit/0f70e39f922f7480fd83e5096c48614e7447799a) | The `main` revision reviewed for this page; later commits may change current-main behavior without changing the release claims above. |
+| Latest published release | [0.10.0 release notes](../app/CHANGELOG.md)                                                           | The version identified by the application package, changelog, and support policy.                                                     |
+| Current `main` snapshot  | [`5aeb149`](https://github.com/tacomancy/galaxy-brain/commit/5aeb14980b1ea407bc6fbb6fa19db27143cdfd38) | The `main` revision reviewed for this page; later commits may change current-main behavior without changing the release claims above. |
 
 The support classes used below are deliberate:
 
@@ -39,10 +39,8 @@ The support classes used below are deliberate:
 
 The latest published release is **0.10.0**. Its desktop-supported baseline is
 the accepted TB1–TB7 Workbench behavior. The 0.10.0 release also contains the
-TB8 file-backed implementation and the TB9
-Governance decision slices. The file-backed and TB9 Governance work remains
-module-only pending the human acceptance recorded in the project status
-documents.
+TB8 file-backed implementation, but that work remains module-only pending the
+human acceptance recorded in the project status documents.
 
 | Capability                                                                                                                    | Support class     | What a reader can rely on                                                                                                                                                                                                                                            |
 | ----------------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,17 +54,17 @@ documents.
 ## Current `main` snapshot
 
 Current `main` is reviewed at commit
-[`0f70e39`](https://github.com/tacomancy/galaxy-brain/commit/0f70e39f922f7480fd83e5096c48614e7447799a).
-It contains the 0.10.0 application behavior plus documentation, verification,
+[`5aeb149`](https://github.com/tacomancy/galaxy-brain/commit/5aeb14980b1ea407bc6fbb6fa19db27143cdfd38).
+It contains the 0.9.0 application behavior plus documentation, verification,
 and status corrections. The public desktop support boundary is therefore the
-same accepted TB1–TB7 surface described above; the newer TB8 implementation
-and TB9 Governance decision slices remain module-only.
+same accepted TB1–TB7 surface described above; the newer TB8 implementation is
+still module-only.
 
 | Capability                                                    | Support class     | Current-main status                                                                                                                         |
 | ------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Accepted TB1–TB7 local Workbench workflows                    | Desktop-supported | Available through the packaged Workbench as described in the release table above.                                                           |
 | TB8 Governance persistence and recoverable local transactions | Module-only       | Implemented and tested on `main`; compatible packaged verification is complete; human acceptance remains pending.                           |
-| TB9 Governance decision slices                                | Module-only       | Implemented and tested on `main`; desktop Proposal Review remains unimplemented and human acceptance remains pending.                    |
+| First TB9 stale-Judgment policy slice                         | Planned           | Implemented and tested on a separate feature branch, but not merged into `main` or release 0.9.0. It is not a current-main user capability. |
 
 ## Planned capabilities and known limits
 
