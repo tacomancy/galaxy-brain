@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -31,3 +33,12 @@ jobs:
 
       - name: Enforce coverage limits
         run: npm run test:coverage
+
+      - name: Enforce changed-lines coverage
+        run: >-
+          npm run check:changed-coverage --
+          --lcov coverage/lcov.info
+          --base-ref "origin/${GITHUB_BASE_REF}"
+          --head-ref HEAD
+          --repository-root ..
+          --coverage-root .

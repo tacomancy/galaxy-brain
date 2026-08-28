@@ -20,6 +20,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "tests/**/*.ts",
+    "tools/**/*.ts",
     "forge.config.ts",
     "webpack.*.ts",
     "wdio.conf.ts"
