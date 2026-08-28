@@ -36,6 +36,12 @@ export interface ProposalChange {
   dependsOn: string[];
 }
 
+/** A reviewer-supplied replacement for one independently reviewable change. */
+export interface EditedChange {
+  changeId: string;
+  exactChange: ExactChange;
+}
+
 /** A manually authored Proposal awaiting Judgment. */
 export interface Proposal {
   id: string;
@@ -57,6 +63,7 @@ export interface Judgment {
   acceptedChangeIds: string[];
   rejectedChangeIds: string[];
   deferredChangeIds: string[];
+  editedChanges: EditedChange[];
 }
 
 /** Immutable identity and provenance for one applied Proposal. */
@@ -89,6 +96,7 @@ export interface RecordJudgmentInput {
   acceptedChangeIds: string[];
   rejectedChangeIds: string[];
   deferredChangeIds: string[];
+  editedChanges: EditedChange[];
 }
 
 /** Caller input for applying one reviewed Proposal. */
@@ -219,6 +227,10 @@ const copyJudgment = (judgment: Judgment): Judgment => ({
   acceptedChangeIds: [...judgment.acceptedChangeIds],
   rejectedChangeIds: [...judgment.rejectedChangeIds],
   deferredChangeIds: [...judgment.deferredChangeIds],
+  editedChanges: judgment.editedChanges.map((editedChange) => ({
+    ...editedChange,
+    exactChange: { ...editedChange.exactChange },
+  })),
 });
 
 const isSameTarget = (left: GovernedTarget, right: GovernedTarget): boolean =>
@@ -288,15 +300,18 @@ const hasValidChangeClassification = (
   acceptedChangeIds: string[],
   rejectedChangeIds: string[],
   deferredChangeIds: string[],
+  editedChanges: EditedChange[],
 ): boolean => {
   const changeIds = new Set(proposal.changes.map((change) => change.id));
   const accepted = new Set(acceptedChangeIds);
   const rejected = new Set(rejectedChangeIds);
   const deferred = new Set(deferredChangeIds);
+  const edited = new Set(editedChanges.map((change) => change.changeId));
   const classified = new Set([
     ...acceptedChangeIds,
     ...rejectedChangeIds,
     ...deferredChangeIds,
+    ...editedChanges.map((change) => change.changeId),
   ]);
 
   return (
@@ -304,11 +319,43 @@ const hasValidChangeClassification = (
     new Set(acceptedChangeIds).size === acceptedChangeIds.length &&
     rejected.size === rejectedChangeIds.length &&
     deferred.size === deferredChangeIds.length &&
+    edited.size === editedChanges.length &&
     acceptedChangeIds.every((changeId) => changeIds.has(changeId)) &&
     rejectedChangeIds.every((changeId) => changeIds.has(changeId)) &&
     deferredChangeIds.every((changeId) => changeIds.has(changeId)) &&
-    accepted.size + rejected.size + deferred.size === classified.size &&
+    editedChanges.every((editedChange) =>
+      changeIds.has(editedChange.changeId),
+    ) &&
+    accepted.size + rejected.size + deferred.size + edited.size ===
+      classified.size &&
     classified.size === changeIds.size
+  );
+};
+
+const hasValidEditedChanges = (
+  proposal: Proposal,
+  editedChanges: EditedChange[],
+  baseContent: string | undefined,
+): boolean => {
+  const proposalChangesById = new Map(
+    proposal.changes.map((change) => [change.id, change]),
+  );
+
+  return (
+    editedChanges.length === 0 ||
+    (baseContent !== undefined &&
+      editedChanges.every((editedChange) => {
+        const proposalChange = proposalChangesById.get(editedChange.changeId);
+
+        return (
+          proposalChange !== undefined &&
+          editedChange.exactChange.path === proposalChange.exactChange.path &&
+          editedChange.exactChange.before.length > 0 &&
+          editedChange.exactChange.after.length > 0 &&
+          editedChange.exactChange.before !== editedChange.exactChange.after &&
+          replaceExactOnce(baseContent, editedChange.exactChange) !== undefined
+        );
+      }))
   );
 };
 
@@ -335,9 +382,21 @@ const applySingleProposalChange = (
   content: string,
   proposal: Proposal,
   acceptedChangeIds: string[],
+  editedChanges: EditedChange[],
 ): string | undefined => {
   const accepted = new Set(acceptedChangeIds);
-  const changes = proposal.changes.filter((change) => accepted.has(change.id));
+  const editedChangesById = new Map(
+    editedChanges.map((editedChange) => [editedChange.changeId, editedChange]),
+  );
+  const changes = proposal.changes
+    .filter((change) => accepted.has(change.id))
+    .map((change) => {
+      const editedChange = editedChangesById.get(change.id);
+
+      return editedChange === undefined
+        ? change
+        : { ...change, exactChange: { ...editedChange.exactChange } };
+    });
 
   return changes.length > 0 ? applyChanges(content, changes) : undefined;
 };
@@ -507,12 +566,26 @@ export const createGovernance = (
         input.acceptedChangeIds,
         input.rejectedChangeIds,
         input.deferredChangeIds,
+        input.editedChanges,
       )
     ) {
       return {
         outcome: "invalid-judgment",
         detail:
           "The Judgment must classify every Proposal change exactly once.",
+      };
+    }
+
+    if (
+      !hasValidEditedChanges(
+        proposal,
+        input.editedChanges,
+        proposalBaseContents.get(proposal.id),
+      )
+    ) {
+      return {
+        outcome: "invalid-judgment",
+        detail: "The Judgment contains an invalid edited change.",
       };
     }
 
@@ -532,6 +605,10 @@ export const createGovernance = (
       acceptedChangeIds: [...input.acceptedChangeIds],
       rejectedChangeIds: [...input.rejectedChangeIds],
       deferredChangeIds: [...input.deferredChangeIds],
+      editedChanges: input.editedChanges.map((editedChange) => ({
+        ...editedChange,
+        exactChange: { ...editedChange.exactChange },
+      })),
     };
 
     judgments.set(judgment.id, copyJudgment(judgment));
@@ -596,7 +673,12 @@ export const createGovernance = (
       };
     }
 
-    if (!hasClosedDependencySubset(proposal, judgment.acceptedChangeIds)) {
+    const effectiveAcceptedChangeIds = [
+      ...judgment.acceptedChangeIds,
+      ...judgment.editedChanges.map((editedChange) => editedChange.changeId),
+    ];
+
+    if (!hasClosedDependencySubset(proposal, effectiveAcceptedChangeIds)) {
       return {
         outcome: "invalid-dependency-subset",
         detail: "The accepted change subset omits a required dependency.",
@@ -606,7 +688,8 @@ export const createGovernance = (
     const proposedContent = applySingleProposalChange(
       currentVersion.content,
       proposal,
-      judgment.acceptedChangeIds,
+      effectiveAcceptedChangeIds,
+      judgment.editedChanges,
     );
 
     if (proposedContent === undefined) {

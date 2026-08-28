@@ -649,7 +649,7 @@ After confirmation, completion requires the focused Red/Green evidence, full aut
 
 ## Required fifth cycle: apply an edited independently reviewable change
 
-This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the completed first four TB9 cycles. The edited-change representation and caller-visible application behavior below are proposed for confirmation before implementation.
+This is the fifth TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the completed first four TB9 cycles. The user confirmed the edited-change representation and caller-visible application behavior below before implementation.
 
 ### Scope
 
@@ -657,7 +657,7 @@ The fifth TB9 cycle proves that a person can explicitly edit one independently r
 
 This cycle uses the existing S2 Governance Interface and deterministic in-memory version-storage Adapter. It does not implement edited dependent changes, re-editing or changing a recorded Judgment, durable mixed-decision provenance, the S1 Proposal Review route, or a multi-change Repository Format representation.
 
-### Documentation prerequisite for this cycle
+### Documentation prerequisite for this cycle — complete
 
 Before writing the Red test or implementation code, explicitly complete these to-do items:
 
@@ -666,9 +666,9 @@ Before writing the Red test or implementation code, explicitly complete these to
 3. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
 4. Obtain explicit human confirmation that an edited change replaces only the reviewed Proposal change, remains bound to the same exact base version, and is not silently treated as the Proposal's original replacement.
 
-Implementation must not begin until this fifth-cycle documentation review and confirmation task is complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam requires stopping and revising this brief before proceeding.
+Implementation began only after this fifth-cycle documentation review and confirmation task was complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam would require stopping and revising this brief before proceeding.
 
-### Proposed public behavior
+### Public behavior
 
 Given the current `bayesian-statistics-v1` version and a Proposal containing two independent changes:
 
@@ -681,7 +681,7 @@ Given the current `bayesian-statistics-v1` version and a Proposal containing two
 
 An edited change is an explicit accepted decision for the reviewer-supplied exact replacement. Its `before` text must still match the reviewed base content, its path must remain the Proposal target path, and its `after` text must be non-empty and different from `before`. Dependencies continue to refer to Proposal change IDs; an edited dependent change still requires a dependency-closed effective accepted subset.
 
-### Proposed Interface shape
+### Interface shape
 
 Keep the accepted, rejected, and deferred classification sets and add an explicit edited-change record to `Judgment`:
 
@@ -802,11 +802,20 @@ The following alternatives are discarded or deferred for this cycle:
 
 ### Acceptance evidence and required confirmation
 
-This fifth cycle is not implementation-ready until the user confirms:
+The user confirmed these implementation decisions on August 28, 2026:
 
 - the `editedChanges` Judgment shape and exactly-once classification rule;
 - the effective accepted-subset and edited-only replacement behavior;
 - the continued direct/transitive dependency-closure rule; and
 - the literal independent two-change fixture and explicit deferrals above.
 
-After confirmation, completion requires the focused Red/Green evidence, full automated gates, proof that the original Proposal replacement was not applied for the edited item, and human confirmation that the resulting version contains the explicitly edited change while the prior version remains retrievable. Acceptance of this cycle will not approve edited dependent changes, Proposal revision workflows, or persistent edited-decision provenance.
+Completion requires the focused Red/Green evidence, full automated gates, proof that the original Proposal replacement was not applied for the edited item, and human confirmation that the resulting version contains the explicitly edited change while the prior version remains retrievable. Acceptance of this cycle will not approve edited dependent changes, Proposal revision workflows, or persistent edited-decision provenance.
+
+### Fifth-cycle implementation evidence
+
+- **Confirmation:** The user confirmed the `editedChanges` Judgment shape, exactly-once classification rule, effective accepted-subset behavior, literal fixture, and explicit deferrals before implementation on August 28, 2026.
+- **Red evidence:** The focused test first failed because the existing Judgment validator did not classify edited changes and returned `invalid-judgment` with `The Judgment must classify every Proposal change exactly once.`.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 70 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.27% statements, 73.19% branches, and 97.40% functions. `npm run lint:complexity` passed.
+- **Behavior evidence:** `apply-edited-change-decision.test.ts` proves that Governance applies the accepted source change and the reviewer-supplied claim replacement, excludes the original Proposal replacement, invokes storage mutation once, and preserves `bayesian-statistics-v1`.
+- **Compatibility evidence:** Existing single-change, stale-Judgment, invalid-dependency-subset, independent-decision, deferred-decision, and file-backed contract tests pass. Persistent edited multi-change provenance remains deferred as specified.
+- **Status:** Implementation is complete and human acceptance is pending. The next manual review must confirm the resulting version contains `Bayesian statistics updates prior belief with evidence.` rather than the original Proposal text, while the prior version remains retrievable.

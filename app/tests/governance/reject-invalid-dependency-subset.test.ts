@@ -155,6 +155,7 @@ describe("Governance dependency subsets", () => {
         acceptedChangeIds: ["change-tb9-claim-update"],
         rejectedChangeIds: ["change-tb9-source-evidence"],
         deferredChangeIds: [],
+        editedChanges: [],
       }),
       {
         outcome: "judgment-recorded",
@@ -169,6 +170,7 @@ describe("Governance dependency subsets", () => {
           acceptedChangeIds: ["change-tb9-claim-update"],
           rejectedChangeIds: ["change-tb9-source-evidence"],
           deferredChangeIds: [],
+          editedChanges: [],
         },
       },
     );

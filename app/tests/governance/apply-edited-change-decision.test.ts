@@ -30,7 +30,7 @@ This fixture topic gives the S1 workflow a stable item to carry between
 workspaces.
 `;
 
-const acceptedOnlyContent = `---
+const editedContent = `---
 id: bayesian-statistics
 title: Bayesian statistics
 type: topic
@@ -41,8 +41,7 @@ reviewed_claim: fixture-evidence
 
 # Bayesian statistics
 
-This fixture topic gives the S1 workflow a stable item to carry between
-workspaces.
+Bayesian statistics updates prior belief with evidence.
 `;
 
 const currentVersion: GovernedVersion = {
@@ -52,7 +51,7 @@ const currentVersion: GovernedVersion = {
 };
 
 const workingMaterial: WorkingMaterialDraft = {
-  id: "working-material-tb9-independent-change-decisions-bayesian-statistics",
+  id: "working-material-tb9-edited-change-bayesian-statistics",
   state: "working-material",
   target,
   baseVersionId: "bayesian-statistics-v1",
@@ -71,8 +70,8 @@ Bayesian statistics uses evidence to update prior belief.
 `,
 };
 
-describe("Governance independent change decisions", () => {
-  it("applies only the explicitly accepted independent change", async () => {
+describe("Governance edited change decisions", () => {
+  it("applies the reviewer-edited replacement instead of the Proposal replacement", async () => {
     const store = createInMemoryGovernanceStore({
       currentVersion,
       nextVersionId: "bayesian-statistics-v2",
@@ -87,16 +86,15 @@ describe("Governance independent change decisions", () => {
 
     assert.deepEqual(
       await governance.createProposal({
-        proposalId:
-          "proposal-tb9-independent-change-decisions-bayesian-statistics",
+        proposalId: "proposal-tb9-edited-change-bayesian-statistics",
         proposalFingerprint:
-          "proposal-fingerprint-tb9-independent-change-decisions-bayesian-statistics",
+          "proposal-fingerprint-tb9-edited-change-bayesian-statistics",
         target,
         baseVersionId: "bayesian-statistics-v1",
         workingMaterial,
         changes: [
           {
-            id: "change-tb9-independent-source-evidence",
+            id: "change-tb9-edited-source-evidence",
             exactChange: {
               path: "knowledge/bayesian-statistics.md",
               before: "source_record: sources/papers/bayesian-statistics.md",
@@ -106,7 +104,7 @@ describe("Governance independent change decisions", () => {
             dependsOn: [],
           },
           {
-            id: "change-tb9-independent-claim-update",
+            id: "change-tb9-edited-claim-update",
             exactChange: {
               path: "knowledge/bayesian-statistics.md",
               before:
@@ -121,17 +119,17 @@ describe("Governance independent change decisions", () => {
       {
         outcome: "proposal-created",
         proposal: {
-          id: "proposal-tb9-independent-change-decisions-bayesian-statistics",
+          id: "proposal-tb9-edited-change-bayesian-statistics",
           fingerprint:
-            "proposal-fingerprint-tb9-independent-change-decisions-bayesian-statistics",
+            "proposal-fingerprint-tb9-edited-change-bayesian-statistics",
           state: "draft",
           target,
           baseVersionId: "bayesian-statistics-v1",
           workingMaterialId:
-            "working-material-tb9-independent-change-decisions-bayesian-statistics",
+            "working-material-tb9-edited-change-bayesian-statistics",
           changes: [
             {
-              id: "change-tb9-independent-source-evidence",
+              id: "change-tb9-edited-source-evidence",
               exactChange: {
                 path: "knowledge/bayesian-statistics.md",
                 before: "source_record: sources/papers/bayesian-statistics.md",
@@ -141,7 +139,7 @@ describe("Governance independent change decisions", () => {
               dependsOn: [],
             },
             {
-              id: "change-tb9-independent-claim-update",
+              id: "change-tb9-edited-claim-update",
               exactChange: {
                 path: "knowledge/bayesian-statistics.md",
                 before:
@@ -158,58 +156,72 @@ describe("Governance independent change decisions", () => {
 
     assert.deepEqual(
       await governance.recordJudgment({
-        judgmentId:
-          "judgment-tb9-independent-change-decisions-bayesian-statistics",
-        proposalId:
-          "proposal-tb9-independent-change-decisions-bayesian-statistics",
+        judgmentId: "judgment-tb9-edited-change-bayesian-statistics",
+        proposalId: "proposal-tb9-edited-change-bayesian-statistics",
         proposalFingerprint:
-          "proposal-fingerprint-tb9-independent-change-decisions-bayesian-statistics",
+          "proposal-fingerprint-tb9-edited-change-bayesian-statistics",
         decision: "accepted",
-        acceptedChangeIds: ["change-tb9-independent-source-evidence"],
-        rejectedChangeIds: ["change-tb9-independent-claim-update"],
+        acceptedChangeIds: ["change-tb9-edited-source-evidence"],
+        rejectedChangeIds: [],
         deferredChangeIds: [],
-        editedChanges: [],
+        editedChanges: [
+          {
+            changeId: "change-tb9-edited-claim-update",
+            exactChange: {
+              path: "knowledge/bayesian-statistics.md",
+              before:
+                "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+              after: "Bayesian statistics updates prior belief with evidence.",
+            },
+          },
+        ],
       }),
       {
         outcome: "judgment-recorded",
         judgment: {
-          id: "judgment-tb9-independent-change-decisions-bayesian-statistics",
-          proposalId:
-            "proposal-tb9-independent-change-decisions-bayesian-statistics",
+          id: "judgment-tb9-edited-change-bayesian-statistics",
+          proposalId: "proposal-tb9-edited-change-bayesian-statistics",
           proposalFingerprint:
-            "proposal-fingerprint-tb9-independent-change-decisions-bayesian-statistics",
+            "proposal-fingerprint-tb9-edited-change-bayesian-statistics",
           baseVersionId: "bayesian-statistics-v1",
           decision: "accepted",
-          acceptedChangeIds: ["change-tb9-independent-source-evidence"],
-          rejectedChangeIds: ["change-tb9-independent-claim-update"],
+          acceptedChangeIds: ["change-tb9-edited-source-evidence"],
+          rejectedChangeIds: [],
           deferredChangeIds: [],
-          editedChanges: [],
+          editedChanges: [
+            {
+              changeId: "change-tb9-edited-claim-update",
+              exactChange: {
+                path: "knowledge/bayesian-statistics.md",
+                before:
+                  "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+                after:
+                  "Bayesian statistics updates prior belief with evidence.",
+              },
+            },
+          ],
         },
       },
     );
 
     assert.deepEqual(
       await governance.applyProposal({
-        proposalId:
-          "proposal-tb9-independent-change-decisions-bayesian-statistics",
-        judgmentId:
-          "judgment-tb9-independent-change-decisions-bayesian-statistics",
+        proposalId: "proposal-tb9-edited-change-bayesian-statistics",
+        judgmentId: "judgment-tb9-edited-change-bayesian-statistics",
       }),
       {
         outcome: "applied",
         currentVersion: {
           id: "bayesian-statistics-v2",
           target,
-          content: acceptedOnlyContent,
+          content: editedContent,
           parentVersionId: "bayesian-statistics-v1",
         },
         previousVersion: currentVersion,
         appliedRecord: {
-          id: "applied-proposal-tb9-independent-change-decisions-bayesian-statistics",
-          proposalId:
-            "proposal-tb9-independent-change-decisions-bayesian-statistics",
-          judgmentId:
-            "judgment-tb9-independent-change-decisions-bayesian-statistics",
+          id: "applied-proposal-tb9-edited-change-bayesian-statistics",
+          proposalId: "proposal-tb9-edited-change-bayesian-statistics",
+          judgmentId: "judgment-tb9-edited-change-bayesian-statistics",
           targetId: "bayesian-statistics",
           previousVersionId: "bayesian-statistics-v1",
           newVersionId: "bayesian-statistics-v2",
@@ -218,6 +230,12 @@ describe("Governance independent change decisions", () => {
       },
     );
     assert.equal(applyVersionCalls, 1);
+    assert.equal(
+      editedContent.includes(
+        "Bayesian statistics uses evidence to update prior belief.",
+      ),
+      false,
+    );
     assert.deepEqual(
       await governance.getVersion(target.id, "bayesian-statistics-v1"),
       {

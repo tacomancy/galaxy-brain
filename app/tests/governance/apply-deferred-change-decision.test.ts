@@ -165,6 +165,7 @@ describe("Governance deferred change decisions", () => {
         acceptedChangeIds: ["change-tb9-deferred-source-evidence"],
         rejectedChangeIds: [],
         deferredChangeIds: ["change-tb9-deferred-claim-update"],
+        editedChanges: [],
       }),
       {
         outcome: "judgment-recorded",
@@ -178,6 +179,7 @@ describe("Governance deferred change decisions", () => {
           acceptedChangeIds: ["change-tb9-deferred-source-evidence"],
           rejectedChangeIds: [],
           deferredChangeIds: ["change-tb9-deferred-claim-update"],
+          editedChanges: [],
         },
       },
     );

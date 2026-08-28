@@ -144,6 +144,7 @@ describe("Governance stale Judgment", () => {
           acceptedChangeIds: [`${proposalA.proposalId}-change`],
           rejectedChangeIds: [],
           deferredChangeIds: [],
+          editedChanges: [],
         })
       ).outcome,
       "judgment-recorded",
@@ -162,6 +163,7 @@ describe("Governance stale Judgment", () => {
           acceptedChangeIds: [`${proposalB.proposalId}-change`],
           rejectedChangeIds: [],
           deferredChangeIds: [],
+          editedChanges: [],
         })
       ).outcome,
       "judgment-recorded",
