@@ -154,11 +154,12 @@ def stage_sources(pages: list[dict[str, str]]) -> None:
 def build_site(output: Path) -> None:
     output = output.resolve()
     generated_root = (REPOSITORY_ROOT / ".generated").resolve()
+    expected_output = generated_root / "public-site"
     if output == REPOSITORY_ROOT or output == generated_root:
         raise ValueError("The public site output must be an artifact directory.")
-    if output.exists() and generated_root not in output.parents:
+    if output.exists() and output != expected_output:
         raise ValueError(
-            "Refusing to replace an existing output outside the repository .generated directory."
+            "Refusing to replace an existing output outside .generated/public-site."
         )
     shutil.rmtree(output, ignore_errors=True)
     output.parent.mkdir(parents=True, exist_ok=True)

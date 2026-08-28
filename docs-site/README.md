@@ -22,6 +22,12 @@ into plain text. It never publishes docs/agents/, docs/reviews/,
 docs/proposals/, application tests or fixtures, generated output, dependencies,
 or user Knowledge Repository content.
 
+The standalone build and test tools use Python's conventional `snake_case`
+filenames and identifiers. The repository's `kebab-case`/`camelCase` naming
+guidance continues to apply to the TypeScript application and its modules; this
+small Python tooling boundary follows the language ecosystem's standard naming
+convention.
+
 Mermaid fences are rendered by Material for MkDocs using
 pymdownx.superfences. The generated artifact is checked for required pages,
 expected index headings, local link resolution, Mermaid output, excluded
