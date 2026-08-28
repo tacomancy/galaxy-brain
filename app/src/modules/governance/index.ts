@@ -201,7 +201,7 @@ export interface Governance {
   getVersion(targetId: string, versionId: string): Promise<GetVersionOutcome>;
 }
 
-/** Dependencies supplied to the Governance Module composition function. */
+/** Dependencies supplied when composing the Governance Module. */
 export interface GovernanceDependencies {
   store: GovernanceVersionStore;
 }
@@ -316,7 +316,7 @@ const hasValidChangeClassification = (
   ]);
 
   return (
-    accepted.size > 0 &&
+    accepted.size + edited.size > 0 &&
     new Set(acceptedChangeIds).size === acceptedChangeIds.length &&
     rejected.size === rejectedChangeIds.length &&
     deferred.size === deferredChangeIds.length &&

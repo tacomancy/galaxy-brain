@@ -495,7 +495,35 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
 - **Acceptance:** The user confirmed that the reviewer-supplied edited exact replacement is applied instead of the original Proposal replacement, while the prior governed version remains retrievable.
 - **Deferred work:** Edited dependent changes, Judgment revision, dependency-graph mutation, persistent edited multi-change provenance, UI behavior, Agent Provider use, Git, and network behavior remain explicitly deferred. Durable provenance must preserve both original and edited exact changes before the file-backed representation is expanded.
-- **Next behavior:** Complete the manual acceptance review for the edited independent-change behavior before selecting edited dependent changes or persistent edited-decision provenance.
+- **Next behavior:** Repeat the documentation prerequisite and specify the edited dependent-change behavior before implementation.
+
+#### TB9 edited dependent change cycle — implementation complete, human acceptance pending August 28, 2026
+
+- **Public Behavior:** A Judgment accepts one Proposal prerequisite unchanged and edits a dependent Proposal change. Governance applies both because the effective accepted subset is dependency-closed, using the reviewer-supplied exact replacement for the dependent change.
+- **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
+- **Shape confirmed from the prior slice:** Reuse `editedChanges`; no new Judgment representation is proposed. The dependent edited ID joins the effective accepted subset, while `dependsOn` continues to reference Proposal change IDs.
+- **Scope:** This cycle proves one edited dependent change with a two-change graph. The fixture keeps the prerequisite before the dependent in Proposal order and keeps the dependent `before` text present in the reviewed base version. Generic dependency reordering, post-prerequisite exact replacements, multi-level graphs, persistent edited provenance, and UI behavior remain deferred.
+- **Failure behavior:** If the Judgment edits the dependent change but rejects its prerequisite, Governance returns `invalid-dependency-subset` before storage mutation.
+- **Red evidence:** The focused test first failed because the existing classification validator required a non-empty `acceptedChangeIds` array, even when an edited change was the only effective accepted change; it returned the generic incomplete-classification result instead of allowing the dependency-closure check.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 71 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.27% statements, 73.28% branches, and 97.40% functions. `npm run lint:complexity` passed. Public documentation validation passed with `python scripts/test_public_docs.py` under the documented Python 3.11 environment.
+- **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
+- **Acceptance:** The user confirmed that the edited dependent applies only with its accepted prerequisite, the missing-prerequisite path returns `invalid-dependency-subset` before storage mutation, and the prior governed version remains retrievable.
+- **Deferred work:** Generic dependency reordering, post-prerequisite exact replacements, multi-level graphs, edited prerequisites combined with edited dependents, Judgment revision, persistent edited multi-change provenance, and UI behavior remain explicitly deferred.
+- **Next behavior:** Repeat the documentation prerequisite and specify the persistent edited-decision provenance behavior before implementation.
+
+#### TB9 persistent edited-decision provenance cycle — implementation complete, human acceptance pending August 28, 2026
+
+- **Public Behavior:** A file-backed governed application with multiple Proposal changes persists the complete Proposal change list and the complete Judgment classification, including the reviewer-supplied edited exact change. Reopening the repository preserves the applied and prior versions, while the immutable applied record exposes the original and edited provenance.
+- **Test Seam:** The existing S5 file-backed Governance version-storage Adapter exercised through the public S2 Governance Interface and its contract test; no new storage seam is proposed.
+- **Representation:** Preserve existing legacy single-change applied records. New multi-change records use plural `proposal.changes` entries with IDs, exact changes, and `depends_on`, plus Judgment `accepted_change_ids`, `rejected_change_ids`, `deferred_change_ids`, and `edited_changes` entries. No Repository Format version bump is proposed.
+- **Compatibility:** Existing scalar `proposal.exact_change` records remain readable and are not migrated in place. The writer may retain the legacy shape for one-change applications and must use the plural shape for multi-change applications, avoiding a broad rewrite of accepted TB8 artifacts.
+- **Scope:** This cycle proves durable provenance for one accepted prerequisite and one edited dependent change, including exact applied-audit JSON and reopen/history behavior. Judgment revision, audit migration tooling, multi-record history, branching lineage, transaction-failure permutations specific to the new shape, and UI behavior remain deferred.
+- **Red evidence:** The focused file-backed contract first failed because the Adapter rejected the multi-change Proposal through the TB8 `onlyProposalChange` guard and returned `operation-failed`.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 72 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.60% statements, 73.97% branches, and 97.52% functions. `npm run lint:complexity` passed. Public documentation validation passed with `python scripts/test_public_docs.py` under the documented Python 3.11 environment.
+- **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
+- **Acceptance:** The user confirmed the plural applied-record provenance, legacy scalar-record compatibility, reopen/current-history behavior, exact rollback bytes, and preservation of unrelated repository content.
+- **Deferred work:** Repository Format migration, schema negotiation, rewriting legacy records, multiple applied records, branching history, persisted non-applied Judgments, Judgment revision, new transaction-failure permutations, and UI behavior remain explicitly deferred.
+- **Next behavior:** Complete the manual acceptance review for the persisted edited-decision provenance and legacy-record compatibility behavior.
 
 ### 10. Review through the desktop interface
 
