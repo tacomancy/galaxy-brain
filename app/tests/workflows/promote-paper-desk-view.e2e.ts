@@ -54,9 +54,14 @@ describe("Promote the Paper Desk view", () => {
     assert.equal(await action.getText(), "Open saved annotation");
     assert.equal(await action.isEnabled(), true);
     await action.click();
-    assert.equal(
-      await $("#paper-desk-reading-position").getText(),
-      "Page 2, character 0",
+    await browser.waitUntil(
+      async () =>
+        (await $("#paper-desk-reading-position").getText()) ===
+        "Page 2, character 0",
+      {
+        timeout: 5_000,
+        timeoutMsg: "The saved reading position did not become visible.",
+      },
     );
   });
 });

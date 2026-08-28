@@ -13,6 +13,7 @@ import type {
   SourceLocator,
   StructuredAnnotation,
   WorkingMaterialReadOutcome,
+  WorkingMaterialListReadOutcome,
   WorkingMaterialRepository,
 } from "../../modules/source-processing";
 
@@ -242,6 +243,30 @@ const ensureAnnotationDirectory = async (
   return directoryPath;
 };
 
+const readAnnotationDirectory = async (
+  canonicalPath: string,
+): Promise<string | undefined> => {
+  const directoryPath = resolve(canonicalPath, annotationDirectoryName);
+
+  try {
+    const stats = await lstat(directoryPath);
+
+    if (stats.isSymbolicLink() || !stats.isDirectory()) {
+      throw new UnsafeAnnotationTargetError(
+        "The source annotation directory is unsafe.",
+      );
+    }
+
+    return directoryPath;
+  } catch (cause: unknown) {
+    if (isErrnoException(cause) && cause.code === "ENOENT") {
+      return undefined;
+    }
+
+    throw cause;
+  }
+};
+
 type FileFingerprint = { digest: string } | undefined;
 
 const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
@@ -295,6 +320,15 @@ export const createFileBackedWorkingMaterialRepository = (
     }
 
     try {
+      const annotationDirectory = await readAnnotationDirectory(canonicalPath);
+
+      if (annotationDirectory === undefined) {
+        return {
+          outcome: "not-found",
+          detail: "The source annotation was not found.",
+        };
+      }
+
       const contents = await readFile(
         annotationFilePath(canonicalPath, annotationId),
         "utf8",
@@ -364,12 +398,17 @@ export const createFileBackedWorkingMaterialRepository = (
         };
       }
 
-      const annotationDirectory = resolve(
-        canonicalPath,
-        annotationDirectoryName,
-      );
-
       try {
+        const annotationDirectory =
+          await readAnnotationDirectory(canonicalPath);
+
+        if (annotationDirectory === undefined) {
+          return {
+            outcome: "not-found",
+            detail: "The source annotation was not found.",
+          };
+        }
+
         const entries = await readdir(annotationDirectory, {
           encoding: "utf8",
           withFileTypes: true,
@@ -399,6 +438,78 @@ export const createFileBackedWorkingMaterialRepository = (
           outcome: "not-found",
           detail: "The source annotation was not found.",
         };
+      } catch (cause: unknown) {
+        if (isErrnoException(cause) && cause.code === "ENOENT") {
+          return {
+            outcome: "not-found",
+            detail: "The source annotation was not found.",
+          };
+        }
+
+        diagnostics?.record(cause);
+        return {
+          outcome: "unavailable",
+          detail: "The source annotation could not be read.",
+        };
+      }
+    },
+    readAnnotationsForSourceRecord: async (
+      sourceRecordId,
+    ): Promise<WorkingMaterialListReadOutcome> => {
+      let canonicalPath: string;
+
+      try {
+        canonicalPath = await canonicalRepositoryPath(repositoryPath);
+      } catch (cause: unknown) {
+        diagnostics?.record(cause);
+        return {
+          outcome: "unavailable",
+          detail: "The Knowledge Repository could not be read.",
+        };
+      }
+
+      try {
+        const annotationDirectory =
+          await readAnnotationDirectory(canonicalPath);
+
+        if (annotationDirectory === undefined) {
+          return {
+            outcome: "not-found",
+            detail: "The source annotation was not found.",
+          };
+        }
+
+        const entries = await readdir(annotationDirectory, {
+          encoding: "utf8",
+          withFileTypes: true,
+        });
+        const annotations: StructuredAnnotation[] = [];
+
+        for (const entry of entries) {
+          if (!entry.isFile() || !entry.name.endsWith(".md")) {
+            continue;
+          }
+
+          const outcome = await readAnnotation(entry.name.slice(0, -3));
+
+          if (outcome.outcome === "unavailable") {
+            return outcome;
+          }
+
+          if (
+            outcome.outcome === "found" &&
+            outcome.annotation.sourceRecord.id === sourceRecordId
+          ) {
+            annotations.push(outcome.annotation);
+          }
+        }
+
+        return annotations.length === 0
+          ? {
+              outcome: "not-found",
+              detail: "The source annotation was not found.",
+            }
+          : { outcome: "found", annotations };
       } catch (cause: unknown) {
         if (isErrnoException(cause) && cause.code === "ENOENT") {
           return {
