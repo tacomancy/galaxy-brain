@@ -67,6 +67,7 @@ docs/_build/
 .pybuilder/
 target/
 /site
+.generated/
 
 # Notebooks and interactive Python
 .ipynb_checkpoints

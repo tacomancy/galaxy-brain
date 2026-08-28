@@ -12,3 +12,25 @@ updates:
         update-types:
           - minor
           - patch
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      documentation-tools:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      pages-actions:
+        patterns:
+          - "actions/configure-pages"
+          - "actions/deploy-pages"
+          - "actions/upload-pages-artifact"

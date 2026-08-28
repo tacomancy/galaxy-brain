@@ -1,0 +1,33 @@
+{
+  "pages": [
+    { "source": "README.md", "destination": "index.md" },
+    { "source": "SECURITY.md", "destination": "security.md" },
+    { "source": "app/README.md", "destination": "application.md" },
+    { "source": "docs/README.md", "destination": "project-documentation.md" },
+    {
+      "source": "docs/architecture/v1-ui/README.md",
+      "destination": "architecture/index.md"
+    },
+    {
+      "source": "docs/architecture/v1-ui/architecture.md",
+      "destination": "architecture/architecture.md"
+    },
+    {
+      "source": "docs/architecture/v1-ui/product-decisions.md",
+      "destination": "architecture/product-decisions.md"
+    },
+    {
+      "source": "docs/architecture/v1-ui/repository-format.md",
+      "destination": "architecture/repository-format.md"
+    },
+    {
+      "source": "docs/architecture/v1-ui/test-strategy.md",
+      "destination": "architecture/test-strategy.md"
+    },
+    {
+      "source": "docs/engineering/glossary.md",
+      "destination": "engineering-glossary.md"
+    },
+    { "source": "CONTEXT.md", "destination": "domain-glossary.md" }
+  ]
+}
