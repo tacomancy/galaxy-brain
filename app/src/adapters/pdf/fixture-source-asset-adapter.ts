@@ -2,6 +2,7 @@ import type {
   CaptureSourceClaimInput,
   PdfAdapter,
   SourceAssetAdapter,
+  SourceAssetIdentity,
   SourceAssetIdentityOutcome,
   SourceAssetRelinkOutcome,
   SourceRecordReference,
@@ -10,8 +11,10 @@ import type {
 /** Configuration for the deterministic linked Source Asset fixture Adapter. */
 export interface FixtureSourceAssetAdapterOptions {
   sourceRecord: SourceRecordReference;
-  initialIdentity: SourceAssetIdentityOutcome;
-  replacementIdentity: SourceAssetIdentityOutcome;
+  initialIdentity: SourceAssetIdentity;
+  currentIdentity?: SourceAssetIdentity;
+  replacementIdentity: SourceAssetIdentity | null;
+  replacementReference: string;
   pdf: PdfAdapter;
 }
 
@@ -25,7 +28,8 @@ export interface FixtureSourceAssetAdapterOptions {
 export const createFixtureSourceAssetAdapter = (
   options: FixtureSourceAssetAdapterOptions,
 ): SourceAssetAdapter => {
-  let currentIdentity = options.initialIdentity;
+  let recordedIdentity = options.initialIdentity;
+  let currentIdentity = options.currentIdentity ?? options.initialIdentity;
 
   const readIdentity = async (
     sourceRecordId: string,
@@ -37,7 +41,11 @@ export const createFixtureSourceAssetAdapter = (
       };
     }
 
-    return currentIdentity;
+    return {
+      outcome: "available",
+      recorded: { ...recordedIdentity },
+      current: { ...currentIdentity },
+    };
   };
 
   const relink = async (
@@ -50,8 +58,18 @@ export const createFixtureSourceAssetAdapter = (
       };
     }
 
-    if (options.replacementIdentity.outcome === "unavailable") {
-      return options.replacementIdentity;
+    if (options.replacementIdentity === null) {
+      return {
+        outcome: "unavailable",
+        detail: "The replacement fixture PDF is unavailable.",
+      };
+    }
+
+    if (input.replacementReference !== options.replacementReference) {
+      return {
+        outcome: "unavailable",
+        detail: "The requested replacement fixture PDF is unavailable.",
+      };
     }
 
     const selectionInput: CaptureSourceClaimInput = {
@@ -82,13 +100,18 @@ export const createFixtureSourceAssetAdapter = (
     ) {
       return {
         outcome: "changed",
-        sourceIdentity: options.replacementIdentity.sourceIdentity,
-        contentIdentity: options.replacementIdentity.contentIdentity,
+        recorded: { ...recordedIdentity },
+        current: { ...options.replacementIdentity },
       };
     }
 
+    recordedIdentity = options.replacementIdentity;
     currentIdentity = options.replacementIdentity;
-    return options.replacementIdentity;
+    return {
+      outcome: "available",
+      recorded: { ...recordedIdentity },
+      current: { ...currentIdentity },
+    };
   };
 
   return { readIdentity, relink };

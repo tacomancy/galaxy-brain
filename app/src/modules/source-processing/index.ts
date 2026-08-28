@@ -104,11 +104,19 @@ export interface SynthesisSourceIdentityAdapter {
 }
 
 /** Current identity outcome for a linked Source Asset; unavailable is explicit. */
+export interface SourceAssetIdentity {
+  sourceIdentity: string;
+  contentIdentity: string;
+}
+
+/** Result of reading the recorded and current identity for a linked asset. */
 export type SourceAssetIdentityOutcome =
   | {
       outcome: "available";
-      sourceIdentity: string;
-      contentIdentity: string;
+      /** Identity recorded for the current machine-local link. */
+      recorded: SourceAssetIdentity;
+      /** Identity read from the bytes currently at that link. */
+      current: SourceAssetIdentity;
     }
   | { outcome: "unavailable"; detail: string };
 
@@ -117,8 +125,8 @@ export type SourceAssetRelinkOutcome =
   | SourceAssetIdentityOutcome
   | {
       outcome: "changed";
-      sourceIdentity: string;
-      contentIdentity: string;
+      recorded: SourceAssetIdentity;
+      current: SourceAssetIdentity;
     };
 
 /**
@@ -332,8 +340,10 @@ export interface CaptureSourceClaimInput {
   start: number;
   end: number;
   /**
-   * Required when a Source Asset Adapter is composed; prevents capture from
-   * bypassing linked-asset identity checks after the asset has changed.
+   * Optional caller-observed identity. When a Source Asset Adapter is
+   * composed, capture still compares the Adapter's recorded and current
+   * identities, so omitting these fields cannot bypass the changed-source
+   * guard.
    */
   expectedSourceIdentity?: string;
   expectedContentIdentity?: string;
@@ -342,8 +352,9 @@ export interface CaptureSourceClaimInput {
 /** Input for checking a linked Source Asset against its recorded identities. */
 export interface CheckSourceAvailabilityInput {
   sourceRecord: SourceRecordReference;
-  expectedSourceIdentity: string;
-  expectedContentIdentity: string;
+  /** Optional expected recorded identity; the Adapter is authoritative when omitted. */
+  expectedSourceIdentity?: string;
+  expectedContentIdentity?: string;
 }
 
 /** Caller-visible result of checking one linked Source Asset. */
@@ -716,24 +727,31 @@ export const createSourceProcessing = (
       return sourceStatusUnavailable(sourceRecord, identity.detail);
     }
 
+    const expectedSourceIdentity =
+      input.expectedSourceIdentity ?? identity.recorded.sourceIdentity;
+    const expectedContentIdentity =
+      input.expectedContentIdentity ?? identity.recorded.contentIdentity;
+
     if (
-      identity.sourceIdentity !== input.expectedSourceIdentity ||
-      identity.contentIdentity !== input.expectedContentIdentity
+      identity.recorded.sourceIdentity !== expectedSourceIdentity ||
+      identity.recorded.contentIdentity !== expectedContentIdentity ||
+      identity.current.sourceIdentity !== expectedSourceIdentity ||
+      identity.current.contentIdentity !== expectedContentIdentity
     ) {
       return sourceChanged(
         sourceRecord,
-        input.expectedSourceIdentity,
-        input.expectedContentIdentity,
-        identity.sourceIdentity,
-        identity.contentIdentity,
+        expectedSourceIdentity,
+        expectedContentIdentity,
+        identity.current.sourceIdentity,
+        identity.current.contentIdentity,
       );
     }
 
     return {
       outcome: "available",
       sourceRecord,
-      sourceIdentity: identity.sourceIdentity,
-      contentIdentity: identity.contentIdentity,
+      sourceIdentity: identity.current.sourceIdentity,
+      contentIdentity: identity.current.contentIdentity,
     };
   };
 
@@ -760,29 +778,35 @@ export const createSourceProcessing = (
         sourceRecord,
         input.expectedReplacementSourceIdentity,
         input.expectedReplacementContentIdentity,
-        identity.sourceIdentity,
-        identity.contentIdentity,
+        identity.current.sourceIdentity,
+        identity.current.contentIdentity,
       );
     }
 
     if (
-      identity.sourceIdentity !== input.expectedReplacementSourceIdentity ||
-      identity.contentIdentity !== input.expectedReplacementContentIdentity
+      identity.recorded.sourceIdentity !==
+        input.expectedReplacementSourceIdentity ||
+      identity.recorded.contentIdentity !==
+        input.expectedReplacementContentIdentity ||
+      identity.current.sourceIdentity !==
+        input.expectedReplacementSourceIdentity ||
+      identity.current.contentIdentity !==
+        input.expectedReplacementContentIdentity
     ) {
       return sourceChanged(
         sourceRecord,
         input.expectedReplacementSourceIdentity,
         input.expectedReplacementContentIdentity,
-        identity.sourceIdentity,
-        identity.contentIdentity,
+        identity.current.sourceIdentity,
+        identity.current.contentIdentity,
       );
     }
 
     return {
       outcome: "relinked",
       sourceRecord,
-      sourceIdentity: identity.sourceIdentity,
-      contentIdentity: identity.contentIdentity,
+      sourceIdentity: identity.current.sourceIdentity,
+      contentIdentity: identity.current.contentIdentity,
     };
   };
 
@@ -797,20 +821,14 @@ export const createSourceProcessing = (
     }
 
     if (dependencies.sourceAsset !== undefined) {
-      if (
-        input.expectedSourceIdentity === undefined ||
-        input.expectedContentIdentity === undefined
-      ) {
-        return {
-          outcome: "source-unavailable",
-          detail: "The linked source asset could not be checked.",
-        };
-      }
-
       const availability = await checkSourceAvailability({
         sourceRecord: input.sourceRecord,
-        expectedSourceIdentity: input.expectedSourceIdentity,
-        expectedContentIdentity: input.expectedContentIdentity,
+        ...(input.expectedSourceIdentity === undefined
+          ? {}
+          : { expectedSourceIdentity: input.expectedSourceIdentity }),
+        ...(input.expectedContentIdentity === undefined
+          ? {}
+          : { expectedContentIdentity: input.expectedContentIdentity }),
       });
 
       if (availability.outcome !== "available") {

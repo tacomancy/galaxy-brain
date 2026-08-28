@@ -27,6 +27,20 @@ const annotation = {
   classification: "source-claim" as const,
 };
 
+const availableAssetIdentity = (
+  sourceIdentity: string,
+  contentIdentity: string,
+  recordedSourceIdentity = sourceIdentity,
+  recordedContentIdentity = contentIdentity,
+) => ({
+  outcome: "available" as const,
+  recorded: {
+    sourceIdentity: recordedSourceIdentity,
+    contentIdentity: recordedContentIdentity,
+  },
+  current: { sourceIdentity, contentIdentity },
+});
+
 describe("TB15 missing PDF behavior", () => {
   it("reports the recorded identities when the linked PDF is available", async () => {
     const sourceProcessing = createSourceProcessing({
@@ -38,16 +52,16 @@ describe("TB15 missing PDF behavior", () => {
       },
       workingMaterial: createInMemoryWorkingMaterialRepository(),
       sourceAsset: {
-        readIdentity: async () => ({
-          outcome: "available" as const,
-          sourceIdentity: "source-identity-bayesian-statistics-v1",
-          contentIdentity: "content-identity-bayesian-statistics-v1",
-        }),
-        relink: async () => ({
-          outcome: "available" as const,
-          sourceIdentity: "source-identity-bayesian-statistics-v1",
-          contentIdentity: "content-identity-bayesian-statistics-v1",
-        }),
+        readIdentity: async () =>
+          availableAssetIdentity(
+            "source-identity-bayesian-statistics-v1",
+            "content-identity-bayesian-statistics-v1",
+          ),
+        relink: async () =>
+          availableAssetIdentity(
+            "source-identity-bayesian-statistics-v1",
+            "content-identity-bayesian-statistics-v1",
+          ),
       },
     });
 
@@ -155,16 +169,20 @@ describe("TB15 missing PDF behavior", () => {
       },
       workingMaterial,
       sourceAsset: {
-        readIdentity: async () => ({
-          outcome: "available" as const,
-          sourceIdentity: "source-identity-bayesian-statistics-v2",
-          contentIdentity: "content-identity-bayesian-statistics-v2",
-        }),
-        relink: async () => ({
-          outcome: "available" as const,
-          sourceIdentity: "source-identity-bayesian-statistics-v2",
-          contentIdentity: "content-identity-bayesian-statistics-v2",
-        }),
+        readIdentity: async () =>
+          availableAssetIdentity(
+            "source-identity-bayesian-statistics-v2",
+            "content-identity-bayesian-statistics-v2",
+            "source-identity-bayesian-statistics-v1",
+            "content-identity-bayesian-statistics-v1",
+          ),
+        relink: async () =>
+          availableAssetIdentity(
+            "source-identity-bayesian-statistics-v2",
+            "content-identity-bayesian-statistics-v2",
+            "source-identity-bayesian-statistics-v1",
+            "content-identity-bayesian-statistics-v1",
+          ),
       },
     });
 
@@ -199,15 +217,18 @@ describe("TB15 missing PDF behavior", () => {
       sourceAsset: createFixtureSourceAssetAdapter({
         sourceRecord,
         initialIdentity: {
-          outcome: "available",
+          sourceIdentity: "source-identity-bayesian-statistics-v1",
+          contentIdentity: "content-identity-bayesian-statistics-v1",
+        },
+        currentIdentity: {
           sourceIdentity: "source-identity-bayesian-statistics-v2",
           contentIdentity: "content-identity-bayesian-statistics-v2",
         },
         replacementIdentity: {
-          outcome: "available",
           sourceIdentity: "source-identity-bayesian-statistics-v2",
           contentIdentity: "content-identity-bayesian-statistics-v2",
         },
+        replacementReference: "/machine-local/known-bayesian-statistics-v2.pdf",
         pdf,
       }),
     });
@@ -218,8 +239,6 @@ describe("TB15 missing PDF behavior", () => {
         page: 2,
         start: 0,
         end: 54,
-        expectedSourceIdentity: "source-identity-bayesian-statistics-v1",
-        expectedContentIdentity: "content-identity-bayesian-statistics-v1",
       }),
       {
         outcome: "source-unavailable",
@@ -245,8 +264,9 @@ describe("TB15 missing PDF behavior", () => {
       workingMaterial,
       sourceAsset: createFixtureSourceAssetAdapter({
         sourceRecord,
-        initialIdentity: { outcome: "available", ...currentIdentity },
-        replacementIdentity: { outcome: "available", ...currentIdentity },
+        initialIdentity: currentIdentity,
+        replacementIdentity: currentIdentity,
+        replacementReference: "/machine-local/known-bayesian-statistics-v2.pdf",
         pdf,
       }),
     });
@@ -258,8 +278,7 @@ describe("TB15 missing PDF behavior", () => {
           "source-identity-bayesian-statistics-v2",
         expectedReplacementContentIdentity:
           "content-identity-bayesian-statistics-v2",
-        replacementReference:
-          "/machine-local/unexpected-bayesian-statistics.pdf",
+        replacementReference: "/machine-local/known-bayesian-statistics-v2.pdf",
         verificationLocator: { page: 2, start: 0, end: 54 },
       }),
       {
@@ -304,12 +323,12 @@ describe("TB15 missing PDF behavior", () => {
       workingMaterial,
       sourceAsset: createFixtureSourceAssetAdapter({
         sourceRecord,
-        initialIdentity: { outcome: "available", ...currentIdentity },
+        initialIdentity: currentIdentity,
         replacementIdentity: {
-          outcome: "available",
           sourceIdentity: "source-identity-bayesian-statistics-v2",
           contentIdentity: "content-identity-bayesian-statistics-v2",
         },
+        replacementReference: "/machine-local/known-bayesian-statistics-v2.pdf",
         pdf,
       }),
     });
@@ -336,8 +355,6 @@ describe("TB15 missing PDF behavior", () => {
         page: 2,
         start: 0,
         end: 54,
-        expectedSourceIdentity: "source-identity-bayesian-statistics-v2",
-        expectedContentIdentity: "content-identity-bayesian-statistics-v2",
       }),
       {
         outcome: "captured",
@@ -376,12 +393,13 @@ describe("TB15 missing PDF behavior", () => {
       workingMaterial,
       sourceAsset: createFixtureSourceAssetAdapter({
         sourceRecord,
-        initialIdentity: { outcome: "available", ...currentIdentity },
+        initialIdentity: currentIdentity,
         replacementIdentity: {
-          outcome: "available",
           sourceIdentity: "source-identity-bayesian-statistics-v2",
           contentIdentity: "content-identity-bayesian-statistics-v2",
         },
+        replacementReference:
+          "/machine-local/wrong-page-bayesian-statistics.pdf",
         pdf,
       }),
     });
@@ -435,11 +453,11 @@ describe("TB15 missing PDF behavior", () => {
       },
       workingMaterial,
       sourceAsset: {
-        readIdentity: async () => ({
-          outcome: "available" as const,
-          sourceIdentity: "source-identity-bayesian-statistics-v1",
-          contentIdentity: "content-identity-bayesian-statistics-v1",
-        }),
+        readIdentity: async () =>
+          availableAssetIdentity(
+            "source-identity-bayesian-statistics-v1",
+            "content-identity-bayesian-statistics-v1",
+          ),
         relink: async () => ({
           outcome: "unavailable" as const,
           detail: "The replacement fixture PDF is unavailable.",

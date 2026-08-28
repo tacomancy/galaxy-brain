@@ -59,11 +59,16 @@ The existing `PdfAdapter.readSelection` seam remains responsible for resolving a
 The proposed shapes are:
 
 ```ts
+export interface SourceAssetIdentity {
+  sourceIdentity: string;
+  contentIdentity: string;
+}
+
 export type SourceAssetIdentityOutcome =
   | {
       outcome: "available";
-      sourceIdentity: string;
-      contentIdentity: string;
+      recorded: SourceAssetIdentity;
+      current: SourceAssetIdentity;
     }
   | { outcome: "unavailable"; detail: string };
 
@@ -71,8 +76,8 @@ export type SourceAssetRelinkOutcome =
   | SourceAssetIdentityOutcome
   | {
       outcome: "changed";
-      sourceIdentity: string;
-      contentIdentity: string;
+      recorded: SourceAssetIdentity;
+      current: SourceAssetIdentity;
     };
 
 export interface SourceAssetAdapter {
@@ -82,8 +87,8 @@ export interface SourceAssetAdapter {
 
 export interface CheckSourceAvailabilityInput {
   sourceRecord: SourceRecordReference;
-  expectedSourceIdentity: string;
-  expectedContentIdentity: string;
+  expectedSourceIdentity?: string;
+  expectedContentIdentity?: string;
 }
 
 export type CheckSourceAvailabilityOutcome =
@@ -132,7 +137,7 @@ export type RelinkSourceOutcome =
 
 The exact TypeScript names may change during implementation if the public behavior and ownership remain identical. The following are not negotiable: identity comparison is explicit, `source status unavailable` and `source status changed` remain distinguishable, relink is caller-authorized, and the module returns the original Source Record and annotations unchanged on every failure path.
 
-When a Source Asset Adapter is composed, `CaptureSourceClaimInput.expectedSourceIdentity` and `expectedContentIdentity` are required by the capture operation. A capture without them returns unavailable rather than bypassing the linked-asset check. Existing provider-free capture callers without a Source Asset Adapter retain the TB5 behavior.
+When a Source Asset Adapter is composed, capture always asks the Adapter for both the identity recorded for the machine-local link and the identity currently read from its bytes. The optional expected identity fields are caller-observed hints; when omitted, Source Processing uses the Adapter's recorded identity. Capture therefore cannot bypass the changed-source guard by supplying the current identity: both Adapter identities must agree with the expected recorded identity before the PDF Adapter is asked to resolve text. Existing provider-free capture callers without a Source Asset Adapter retain the TB5 behavior.
 
 The `replacementReference` is an Adapter-facing machine-local value and must never cross into Repository Format content, renderer state, logs, or caller-visible portable artifacts. The module may pass it to the Adapter, but it must not expose an absolute path to the renderer or persist it in a Markdown annotation.
 
