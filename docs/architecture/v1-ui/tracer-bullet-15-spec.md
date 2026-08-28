@@ -1,6 +1,6 @@
 # Tracer Bullet 15: Survive a missing or changed PDF
 
-Status: specification draft; implementation is blocked pending explicit human confirmation of the behavior, fixture identities, public Interface additions, and deferrals below.
+Status: implementation complete; human acceptance pending as of August 28, 2026.
 
 This brief coordinates the TB15 implementation described in the [delivery plan](delivery-plan.md#15-survive-a-missing-or-changed-pdf). It is an implementation entry point, not a second authority for Product Decisions, Architecture, the Repository Format, testing, or accepted ADR decisions.
 
@@ -25,7 +25,7 @@ Before writing behavior tests or implementation code, explicitly complete these 
 4. Check that machine-local linked-file paths and identities never enter Repository Format content, that no source record or annotation is deleted when an asset cannot be checked, and that no changed bytes are accepted without the explicit relink operation.
 5. Obtain explicit human confirmation of the exact status vocabulary, fixture identities, replacement behavior, public Interface shape, and deferred work below before writing the Red workflow or implementation code.
 
-Implementation must not begin until this documentation review and confirmation task is complete. If the first Red test reveals a new Source Record persistence representation, a new Repository Format field, or a UI seam required to prove the behavior, stop and update this brief and the governing documentation before proceeding.
+The user explicitly confirmed all documented TB15 slices and choices before implementation began. If a future change reveals a new Source Record persistence representation, a new Repository Format field, or a UI seam required to prove the behavior, stop and update this brief and the governing documentation before proceeding.
 
 ## Governing authorities
 
@@ -221,7 +221,7 @@ If an S1 presentation is later added, it requires its own brief and manual revie
 
 ## Required confirmation
 
-Before implementation, confirm:
+The user confirmed the following before implementation:
 
 1. The exact warnings `source status unavailable` and `source status changed` and the corresponding outcomes `source-status-unavailable` and `source-changed`.
 2. Reuse of the existing `source-identity-bayesian-statistics-v1/v2` and `content-identity-bayesian-statistics-v1/v2` fixture literals.
@@ -229,4 +229,4 @@ Before implementation, confirm:
 4. The proposed Source Asset Adapter plus S3 Source Processing seam, with no S1 UI work in this TB unless a later brief is confirmed.
 5. The explicit deferrals and discarded alternatives above, including no automatic locator remapping, no portable absolute paths, no production PDF engine, and no silent acceptance of changed bytes.
 
-Implementation remains blocked until these choices are explicitly confirmed. Any new choice discovered during the Red cycle must be recorded here, with its rationale and deferred alternatives, before implementation continues.
+Any new choice discovered during implementation must be recorded here, with its rationale and deferred alternatives, before implementation continues.

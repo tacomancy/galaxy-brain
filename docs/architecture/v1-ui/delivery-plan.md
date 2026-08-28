@@ -583,6 +583,16 @@ At S3, prove that an unavailable or hash-changed linked PDF preserves the Source
 
 The implementation entry point is the [TB15 specification](tracer-bullet-15-spec.md). Its explicit preparation task is to review the governing documentation, record the guidance-compliant behavior and test seam, document deferred work and discarded alternatives with rationale, and obtain human confirmation before implementation begins.
 
+#### TB15 S3 implementation record — August 28, 2026
+
+- **Public Behavior:** Source Processing reports available, unavailable, or changed linked-source identity; preserves the Source Record and Structured Annotations on every failed check or relink; and accepts a replacement only through explicit verified relinking without changing the logical Source Locator.
+- **Test Seam:** S3 Source Processing Interface with an in-memory Working Material Adapter and deterministic Source Asset Adapter outcomes. No UI or production PDF engine was required for this contract.
+- **Red evidence:** The first focused test failed because `checkSourceAvailability` was absent from the Source Processing Interface. The relink tests then failed because `relinkSource` was absent.
+- **Green evidence:** The focused TB15 suite passes all 6 tests. The complete `npm run check` gate passes formatting, linting, strict type checking, 90 Vitest tests, and documentation validation. `npm run lint:complexity` also passes.
+- **Implementation:** Added Source Asset identity/relink Interfaces and caller-visible availability, changed-source, and relink outcomes to the Source Processing Module, with diagnostics translation and preservation of portable Working Material.
+- **Scope confirmed:** Production PDF engine, production linked-file Adapter, automatic relinking, path search, file watching, portable asset-schema changes, locator remapping, S1 status/relink controls, Synthesis, Proposal, Governance, Git, and network behavior remain explicitly deferred.
+- **Acceptance:** Automated implementation evidence is complete. Human acceptance remains pending; the user must review the S3 outcomes and preservation behavior before TB15 is marked accepted.
+
 ### 16. Complete the desktop quality contract
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).

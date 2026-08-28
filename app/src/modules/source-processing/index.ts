@@ -103,6 +103,25 @@ export interface SynthesisSourceIdentityAdapter {
   readIdentity(sourceRecordId: string): Promise<SynthesisSourceIdentityOutcome>;
 }
 
+/** Current identity outcome for a linked Source Asset. */
+export type SourceAssetIdentityOutcome =
+  | {
+      outcome: "available";
+      sourceIdentity: string;
+      contentIdentity: string;
+    }
+  | { outcome: "unavailable"; detail: string };
+
+/**
+ * External seam for linked Source Asset identity and explicit replacement.
+ * The Adapter owns machine-local path and hash handling; Source Processing
+ * owns caller-visible status and preservation policy.
+ */
+export interface SourceAssetAdapter {
+  readIdentity(sourceRecordId: string): Promise<SourceAssetIdentityOutcome>;
+  relink(input: RelinkSourceInput): Promise<SourceAssetIdentityOutcome>;
+}
+
 /** Agent provenance retained without promoting the result to authority. */
 export interface SynthesisProvenance {
   attribution: "agent-generated";
@@ -300,6 +319,58 @@ export interface CaptureSourceClaimInput {
   end: number;
 }
 
+/** Input for checking the identity of a linked Source Asset. */
+export interface CheckSourceAvailabilityInput {
+  sourceRecord: SourceRecordReference;
+  expectedSourceIdentity: string;
+  expectedContentIdentity: string;
+}
+
+/** Caller-visible result of checking one linked Source Asset. */
+export type CheckSourceAvailabilityOutcome =
+  | {
+      outcome: "available";
+      sourceRecord: SourceRecordReference;
+      sourceIdentity: string;
+      contentIdentity: string;
+    }
+  | {
+      outcome: "source-status-unavailable";
+      sourceRecord: SourceRecordReference;
+      warning: "source status unavailable";
+      detail: string;
+    }
+  | {
+      outcome: "source-changed";
+      sourceRecord: SourceRecordReference;
+      warning: "source status changed";
+      expectedSourceIdentity: string;
+      expectedContentIdentity: string;
+      actualSourceIdentity: string;
+      actualContentIdentity: string;
+    };
+
+/** Input for a caller-authorized replacement of a linked Source Asset. */
+export interface RelinkSourceInput extends CheckSourceAvailabilityInput {
+  /** Machine-local replacement reference; never portable repository content. */
+  replacementReference: string;
+}
+
+/** Caller-visible result of an explicit linked Source Asset replacement. */
+export type RelinkSourceOutcome =
+  | {
+      outcome: "relinked";
+      sourceRecord: SourceRecordReference;
+      sourceIdentity: string;
+      contentIdentity: string;
+    }
+  | {
+      outcome: "source-status-unavailable";
+      sourceRecord: SourceRecordReference;
+      warning: "source status unavailable";
+      detail: string;
+    };
+
 /** Result of resolving a caller-selected range through a PDF Adapter. */
 export type PdfSelectionOutcome =
   | { outcome: "located"; text: string }
@@ -355,6 +426,12 @@ export interface SourceProcessing {
   captureSourceClaim(
     input: CaptureSourceClaimInput,
   ): Promise<CaptureSourceClaimOutcome>;
+  /** Checks linked Source Asset identity without changing portable source data. */
+  checkSourceAvailability(
+    input: CheckSourceAvailabilityInput,
+  ): Promise<CheckSourceAvailabilityOutcome>;
+  /** Explicitly verifies and accepts a replacement linked Source Asset. */
+  relinkSource(input: RelinkSourceInput): Promise<RelinkSourceOutcome>;
   /** Prepares an inspectable Synthesis request without contacting a provider. */
   prepareSynthesis(
     input: PrepareSynthesisInput,
@@ -400,6 +477,7 @@ export interface SourceProcessingDependencies {
   model?: SynthesisModelAdapter;
   results?: SynthesisResultRepository;
   sourceIdentity?: SynthesisSourceIdentityAdapter;
+  sourceAsset?: SourceAssetAdapter;
   diagnostics?: SourceProcessingDiagnostics;
 }
 
@@ -530,6 +608,113 @@ const buildSavedSynthesisResult = (
 export const createSourceProcessing = (
   dependencies: SourceProcessingDependencies,
 ): SourceProcessing => {
+  const checkSourceAvailability = async (
+    input: CheckSourceAvailabilityInput,
+  ): Promise<CheckSourceAvailabilityOutcome> => {
+    const sourceRecord = { ...input.sourceRecord };
+
+    if (dependencies.sourceAsset === undefined) {
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord,
+        warning: "source status unavailable",
+        detail: "The linked source asset could not be checked.",
+      };
+    }
+
+    let identity: SourceAssetIdentityOutcome;
+
+    try {
+      identity = await dependencies.sourceAsset.readIdentity(
+        input.sourceRecord.id,
+      );
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord,
+        warning: "source status unavailable",
+        detail: "The linked source asset could not be checked.",
+      };
+    }
+
+    if (identity.outcome === "unavailable") {
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord,
+        warning: "source status unavailable",
+        detail: identity.detail,
+      };
+    }
+
+    if (
+      identity.sourceIdentity !== input.expectedSourceIdentity ||
+      identity.contentIdentity !== input.expectedContentIdentity
+    ) {
+      return {
+        outcome: "source-changed",
+        sourceRecord,
+        warning: "source status changed",
+        expectedSourceIdentity: input.expectedSourceIdentity,
+        expectedContentIdentity: input.expectedContentIdentity,
+        actualSourceIdentity: identity.sourceIdentity,
+        actualContentIdentity: identity.contentIdentity,
+      };
+    }
+
+    return {
+      outcome: "available",
+      sourceRecord,
+      sourceIdentity: identity.sourceIdentity,
+      contentIdentity: identity.contentIdentity,
+    };
+  };
+
+  const relinkSource = async (
+    input: RelinkSourceInput,
+  ): Promise<RelinkSourceOutcome> => {
+    const sourceRecord = { ...input.sourceRecord };
+
+    if (dependencies.sourceAsset === undefined) {
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord,
+        warning: "source status unavailable",
+        detail: "The linked source asset could not be relinked.",
+      };
+    }
+
+    let identity: SourceAssetIdentityOutcome;
+
+    try {
+      identity = await dependencies.sourceAsset.relink(input);
+    } catch (cause: unknown) {
+      dependencies.diagnostics?.record(cause);
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord,
+        warning: "source status unavailable",
+        detail: "The linked source asset could not be relinked.",
+      };
+    }
+
+    if (identity.outcome === "unavailable") {
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord,
+        warning: "source status unavailable",
+        detail: identity.detail,
+      };
+    }
+
+    return {
+      outcome: "relinked",
+      sourceRecord,
+      sourceIdentity: identity.sourceIdentity,
+      contentIdentity: identity.contentIdentity,
+    };
+  };
+
   const captureSourceClaim = async (
     input: CaptureSourceClaimInput,
   ): Promise<CaptureSourceClaimOutcome> => {
@@ -1069,6 +1254,8 @@ export const createSourceProcessing = (
 
   return {
     captureSourceClaim,
+    checkSourceAvailability,
+    relinkSource,
     prepareSynthesis,
     removeSynthesisContextItem,
     confirmSynthesis,
