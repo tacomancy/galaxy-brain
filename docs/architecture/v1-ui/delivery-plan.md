@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9 stale-Judgment, invalid dependency-subset, and deferred-change slices are implemented and accepted on August 28, 2026, while the independently judged changes slice is implemented with human acceptance pending; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9 stale-Judgment, invalid dependency-subset, and deferred-change slices are implemented and accepted on August 28, 2026, while the independently judged changes slice is implemented with human acceptance pending; TB15 S3 implementation and automated acceptance are complete on August 28, 2026 with human acceptance pending; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 

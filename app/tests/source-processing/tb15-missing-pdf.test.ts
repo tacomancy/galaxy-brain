@@ -43,6 +43,8 @@ const availableAssetIdentity = (
 
 describe("TB15 missing PDF behavior", () => {
   it("reports the recorded identities when the linked PDF is available", async () => {
+    const workingMaterial = createInMemoryWorkingMaterialRepository();
+    await workingMaterial.saveAnnotation(annotation);
     const sourceProcessing = createSourceProcessing({
       pdf: {
         readSelection: async () => ({
@@ -50,7 +52,7 @@ describe("TB15 missing PDF behavior", () => {
           text: annotation.text,
         }),
       },
-      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      workingMaterial,
       sourceAsset: {
         readIdentity: async () =>
           availableAssetIdentity(
@@ -78,6 +80,10 @@ describe("TB15 missing PDF behavior", () => {
         contentIdentity: "content-identity-bayesian-statistics-v1",
       },
     );
+    assert.deepEqual(await workingMaterial.readAnnotation(annotation.id), {
+      outcome: "found",
+      annotation,
+    });
   });
 
   it("preserves the Source Record and annotation when the linked PDF is unavailable", async () => {
@@ -210,7 +216,16 @@ describe("TB15 missing PDF behavior", () => {
   it("does not capture from changed bytes until the source is explicitly relinked", async () => {
     const workingMaterial = createInMemoryWorkingMaterialRepository();
     await workingMaterial.saveAnnotation(annotation);
-    const pdf = createFixturePdfAdapter();
+    const fixturePdf = createFixturePdfAdapter();
+    let pdfReadCount = 0;
+    const pdf = {
+      readSelection: async (
+        input: Parameters<typeof fixturePdf.readSelection>[0],
+      ) => {
+        pdfReadCount += 1;
+        return fixturePdf.readSelection(input);
+      },
+    };
     const sourceProcessing = createSourceProcessing({
       pdf,
       workingMaterial,
@@ -249,6 +264,7 @@ describe("TB15 missing PDF behavior", () => {
       outcome: "found",
       annotation,
     });
+    assert.equal(pdfReadCount, 0);
   });
 
   it("rejects a relink whose verified identity does not match the requested replacement", async () => {
@@ -481,6 +497,19 @@ describe("TB15 missing PDF behavior", () => {
       warning: "source status unavailable",
       detail: "The replacement fixture PDF is unavailable.",
     });
+    assert.deepEqual(
+      await sourceProcessing.checkSourceAvailability({
+        sourceRecord,
+        expectedSourceIdentity: "source-identity-bayesian-statistics-v1",
+        expectedContentIdentity: "content-identity-bayesian-statistics-v1",
+      }),
+      {
+        outcome: "available",
+        sourceRecord,
+        sourceIdentity: "source-identity-bayesian-statistics-v1",
+        contentIdentity: "content-identity-bayesian-statistics-v1",
+      },
+    );
     assert.deepEqual(await workingMaterial.readAnnotation(annotation.id), {
       outcome: "found",
       annotation,

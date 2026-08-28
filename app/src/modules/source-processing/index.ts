@@ -473,7 +473,8 @@ export type CaptureSourceClaimOutcome =
 export interface SourceProcessing {
   /**
    * Captures a located source claim without creating Synthesis or a Proposal.
-   * With a Source Asset Adapter, expected identities are required and a
+   * With a Source Asset Adapter, optional caller-observed identities are
+   * checked against the Adapter's recorded and current identities, and a
    * changed or unavailable source is refused before PDF resolution.
    */
   captureSourceClaim(
