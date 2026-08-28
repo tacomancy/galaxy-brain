@@ -1,4 +1,8 @@
-/** Filesystem and rollback Adapter; comments preserve recoverable Governance writes. */
+/**
+ * Filesystem transaction and rollback Adapter. It journals staged target,
+ * audit, and exact prior bytes, rechecks the target before installation, and
+ * restores those bytes during recovery without overwriting an external edit.
+ */
 import { createHash } from "node:crypto";
 import {
   mkdir,

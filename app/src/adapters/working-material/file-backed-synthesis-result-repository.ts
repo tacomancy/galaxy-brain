@@ -1,4 +1,8 @@
-/** Filesystem persistence Adapter; comments preserve saved-result provenance. */
+/**
+ * Filesystem persistence Adapter. It keeps explicitly saved result versions
+ * and provenance in portable Working Material while validating repository
+ * containment and retaining storage failures for main-process diagnostics.
+ */
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";

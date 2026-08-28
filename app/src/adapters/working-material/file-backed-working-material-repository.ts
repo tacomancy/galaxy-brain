@@ -1,4 +1,8 @@
-/** Filesystem persistence Adapter; comments preserve Working Material safety. */
+/**
+ * Filesystem persistence Adapter. It canonicalizes repository paths, checks
+ * the target fingerprint before replacement, and preserves external edits
+ * while translating storage failures into caller-facing outcomes.
+ */
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";

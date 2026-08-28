@@ -259,6 +259,8 @@ export const createGovernance = (
   const loadCurrentVersion = async (
     targetId: string,
   ): Promise<LoadCurrentVersionOutcome> => {
+    // Recovery rationale: reopening recovers any durable transaction before
+    // the caller can observe the governed version.
     const recovery = await dependencies.store.recoverTransactions();
     const version = await dependencies.store.readCurrentVersion(targetId);
 

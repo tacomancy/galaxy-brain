@@ -11,6 +11,7 @@ interface PaperDeskProps {
  * Paper Desk presents a Source Record, captured claim, and reading position.
  * @param props The current Workbench state and annotation callback.
  * @returns The Paper Desk workspace element.
+ * @throws An error when the renderer receives an invalid workspace context.
  */
 export const PaperDesk = ({
   workbench,

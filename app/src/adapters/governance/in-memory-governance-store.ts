@@ -56,6 +56,8 @@ export const createInMemoryGovernanceStore = ({
     return version === undefined ? undefined : copyVersion(version);
   };
 
+  // Recovery rationale: the deterministic S2 Adapter has no durable journal,
+  // so recovery reports no persisted transaction rather than inventing one.
   const recoverTransactions = async () => ({ outcome: "none" as const });
 
   const applyVersion = async (

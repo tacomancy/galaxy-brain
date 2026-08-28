@@ -1,4 +1,8 @@
-/** Filesystem transaction Adapter; comments preserve safe repository creation. */
+/**
+ * Filesystem transaction Adapter. It copies a starter into a temporary
+ * sibling, validates the complete skeleton, and renames only into a new or
+ * explicitly empty destination, so failed creation cannot overwrite data.
+ */
 import {
   lstat,
   mkdir,

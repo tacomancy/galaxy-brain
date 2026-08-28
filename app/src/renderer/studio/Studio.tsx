@@ -397,6 +397,7 @@ const SavedSynthesisResultsCard = ({
  * Studio's first slice presents the topic carried from Atlas.
  * @param props The topic context and Synthesis action callbacks.
  * @returns The Studio workspace element.
+ * @throws An error when the renderer receives an invalid workspace context.
  */
 export const Studio = ({
   workbench,

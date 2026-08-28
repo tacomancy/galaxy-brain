@@ -68,6 +68,76 @@ test("rejects a filesystem seam without an explanatory comment", () => {
   assert.match(result.stderr, /filesystem.*rationale/i);
 });
 
+test("rejects a parameter tag without substantive text", () => {
+  const result = runChecker("missing-param-description.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /param.*description|malformed.*TSDoc/i);
+});
+
+test("rejects a return tag without substantive text", () => {
+  const result = runChecker("missing-return-description.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /returns?.*description|malformed.*TSDoc/i);
+});
+
+test("rejects a thrown error without an error-mode tag", () => {
+  const result = runChecker("missing-throws-documentation.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /thrown error.*@throws/i);
+});
+
+test("rejects malformed inline TSDoc", () => {
+  const result = runChecker("malformed-tsdoc.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /malformed TSDoc|not closed/i);
+});
+
+test("rejects an unsupported TSDoc tag", () => {
+  const result = runChecker("unknown-tsdoc-tag.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /unsupported or malformed TSDoc/i);
+});
+
+test("rejects transaction code without an invariant rationale", () => {
+  const result = runChecker("missing-transaction-rationale.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /transaction.*rationale/i);
+});
+
+test("rejects preload bridge code without a boundary rationale", () => {
+  const result = runChecker("missing-preload-rationale.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /preload.*rationale/i);
+});
+
+test("rejects an external-system seam without a translation rationale", () => {
+  const result = runChecker("missing-external-system-rationale.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /external-system.*rationale/i);
+});
+
+test("requires an external Adapter interface to explain its boundary", () => {
+  const result = runChecker("missing-external-adapter-documentation.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /external-system seam.*boundary/i);
+});
+
+test("does not accept an unrelated distant rationale", () => {
+  const result = runChecker("stale-rationale.ts");
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /assertion.*rationale/i);
+});
+
 test("rejects an IPC seam without an explanatory comment", () => {
   const result = runChecker("missing-ipc-rationale.ts");
 

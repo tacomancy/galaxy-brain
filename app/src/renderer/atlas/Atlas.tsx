@@ -257,6 +257,7 @@ const AtlasOutcomeNotice = ({
  * repository or inventing demonstration content in the UI Adapter.
  * @param props The current Workbench state and user-action callbacks.
  * @returns The Atlas workspace element.
+ * @throws An error when the renderer receives an invalid workspace state.
  */
 export const Atlas = ({
   workbench,

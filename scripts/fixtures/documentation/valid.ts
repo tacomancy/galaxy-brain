@@ -57,3 +57,29 @@ export const readValidExternalValue = (value: unknown): ValidRecord => {
   // Rationale: the caller validates the unknown value at this external seam.
   return value as ValidRecord;
 };
+
+// Transaction rationale: the journal records the phase before replacement so
+// interrupted writes can be completed or restored deterministically.
+const validTransactionJournal = { state: "prepared" };
+
+// Rollback rationale: exact prior bytes remain available until the applied
+// record is durably installed.
+const validRollbackBytes = "previous contents";
+
+// Recovery rationale: recovery chooses completion or restoration from the
+// persisted journal instead of guessing from an incomplete write.
+const validRecoveryAction = "restored";
+void validTransactionJournal;
+void validRollbackBytes;
+void validRecoveryAction;
+
+/**
+ * Demonstrates an operation with an expected programming error.
+ * @returns Nothing when the operation is allowed to complete.
+ * @throws Error when the caller supplies the forbidden value.
+ */
+export const throwValidError = (): void => {
+  if (validRecoveryAction === "forbidden") {
+    throw new Error("forbidden");
+  }
+};

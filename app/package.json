@@ -20,7 +20,7 @@
     "test:docs": "node ../scripts/test-documentation.mjs",
     "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.per-file.config.ts",
     "test:workflow": "npm run package && wdio run ./wdio.conf.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run test:docs && npm run docs:check",
     "prepackage": "node -e \"if (process.version !== 'v24.19.0') { throw new Error('Galaxy Brain requires Node 24.19.0. Run nvm use before packaging.') }\"",
     "docs:check": "node ../scripts/check-documentation.mjs",
     "package": "electron-forge package"

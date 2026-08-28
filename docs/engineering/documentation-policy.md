@@ -19,7 +19,8 @@ npm run docs:check
 `test:docs` runs positive and negative fixtures for each enforced category.
 `docs:check` scans the production source and prints actionable file-and-line
 diagnostics. The pull-request `Documentation quality` job runs both commands
-for every pull request targeting `main`.
+for every pull request targeting `main`; the broader `npm run check` gate runs
+the same documentation checks after the application tests.
 
 ## Public contracts
 
@@ -32,10 +33,14 @@ Function-like exported declarations must also document:
 - each parameter with an `@param` tag; and
 - the return value or caller-facing outcome with an `@returns` tag.
 
-The description should explain purpose, invariants, expected outcomes, and
-error modes when those details are part of the Interface. Public interface
-members should receive focused comments when their individual behavior is not
-obvious from the surrounding contract.
+The description must contain meaningful prose rather than a placeholder or a
+tag-only comment. It should explain purpose, invariants, expected outcomes,
+and error modes when those details are part of the Interface. Each `@param`,
+`@returns`, and applicable `@throws` tag must contain meaningful prose; a
+function with a direct `throw` statement must include an `@throws` tag. The
+checker also rejects empty recognized tags and unclosed inline TSDoc tags.
+Public interface members should receive focused comments when their
+individual behavior is not obvious from the surrounding contract.
 
 ## Rationale documentation
 
@@ -49,15 +54,21 @@ boundaries:
 - TODO or FIXME decisions that need an owner or follow-up.
 
 The checker treats `as const` and `as unknown` as narrow containment or
-narrowing patterns. Other type assertions require a nearby rationale comment.
-Lint suppressions must carry a rationale, and TODO/FIXME comments must name an
-owner or include a follow-up issue such as `#48`.
+narrowing patterns. Other type assertions require a rationale on the same or
+immediately preceding comment lines; an unrelated older comment does not
+qualify. Lint suppressions must carry a rationale, and TODO/FIXME comments must
+name an owner or include a follow-up issue such as `#48`.
 
 Filesystem and IPC files must contain an explanatory comment identifying the
 relevant filesystem, transaction, rollback, recovery, or IPC constraint. The
 comment may explain the file-level seam when the invariant is shared by its
 operations; comments should be closer to a particular block when different
-operations have different safety rules.
+operations have different safety rules. Transaction, rollback, and recovery
+declarations, preload bridge use, and generic network/external-system calls
+must likewise have a nearby category-specific rationale unless a precise
+file-level seam comment covers the shared invariant. Exported interfaces whose
+names end in `Adapter` must identify the external system, boundary, or
+translation constraint in their contract description.
 
 ## What does not need a comment
 
