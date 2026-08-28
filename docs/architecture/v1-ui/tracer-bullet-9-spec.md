@@ -157,7 +157,7 @@ The next TB9 slice owns invalid dependency subsets. The later TB9 slice owns ind
 
 ## Acceptance evidence and required confirmation
 
-Implementation is complete only when the delivery record contains:
+The user confirmed this proposed outcome and literal stale-review scenario before the Red test on August 28, 2026. The first implementation cycle is complete when the delivery record contains:
 
 - the documentation review and explicit confirmation of this proposed first slice;
 - the focused Red run showing the missing stale-specific outcome;
@@ -166,4 +166,4 @@ Implementation is complete only when the delivery record contains:
 - proof that the stale attempt did not invoke version mutation and did not alter current/history state; and
 - human confirmation that a Judgment accepted for `bayesian-statistics-v1` is visibly rejected after `bayesian-statistics-v2` becomes current, while the newer version remains current and the prior version remains retrievable.
 
-TB9 implementation must not begin until the user confirms the proposed `stale-judgment` outcome, its detail, and the literal two-Proposal scenario above. Confirmation is scoped to this first slice; it does not approve dependency subsets, multi-change decisions, or the TB10 review UI.
+The focused Red run returned the prior generic `not-eligible` outcome as expected. The focused Green run now returns the exact `stale-judgment` result, preserves the current and prior versions, and does not call the storage Adapter's mutation operation. Confirmation is scoped to this first slice; it does not approve dependency subsets, multi-change decisions, or the TB10 review UI.

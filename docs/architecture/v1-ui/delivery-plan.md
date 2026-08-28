@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9's first stale-Judgment slice is implemented on August 28, 2026 with human acceptance pending; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -439,6 +439,17 @@ The required next TB8 cycle is the S5 file-backed persistence path. Its applied-
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 Continue at S2 one behavior per cycle, following the [TB9 implementation brief](tracer-bullet-9-spec.md): first prove stale Judgment is rejected, then prove an invalid dependency subset is rejected, and then prove independently reviewable changes can receive different decisions. Do not prebuild all dependency behavior in the first governance cycle.
+
+#### TB9 stale Judgment cycle — August 28, 2026
+
+- **Public Behavior:** An accepted Judgment bound to `bayesian-statistics-v1` returns the explicit `stale-judgment` outcome after another accepted Proposal advances the current version to `bayesian-statistics-v2`. The stale attempt does not invoke version mutation, replace current knowledge, or discard the prior version.
+- **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter; no new Seam or Repository Format change was introduced.
+- **Red evidence:** `npm run test -- --run tests/governance/reject-stale-judgment.test.ts` first failed because the existing implementation returned `not-eligible` with `The Proposal is not based on the current governed version.` instead of the specified `stale-judgment` outcome.
+- **Green evidence:** The focused stale-Judgment test passed. `npm run check` passed formatting, linting, strict type checking, and 66 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 80.70% statements, 72.89% branches, and 97.15% functions. `npm run lint:complexity` passed.
+- **Scope confirmed:** This cycle adds only stale-Judgment rejection based on the exact reviewed `baseVersionId` and preserves the existing `not-eligible` outcome for other eligibility failures. It does not add dependency-subset validation, multi-change decisions, automatic rebasing, Proposal Review UI, persistence changes, Agent Provider use, Git, or network behavior.
+- **Deferred work:** Invalid dependency-subset rejection is the next TB9 slice. Independently reviewable multi-change decisions and their decision vocabulary remain a later TB9 slice; Proposal Review remains TB10. Each follow-on requires its own documentation review, guidance-compliant spec, Red/Green evidence, and human acceptance.
+- **Acceptance:** Human review is pending. The user must confirm that a Judgment reviewed for `bayesian-statistics-v1` is rejected with `stale-judgment` after `bayesian-statistics-v2` becomes current, while `v2` remains current and `v1` remains retrievable.
+- **Next behavior:** After human acceptance, repeat the documentation prerequisite and specify the invalid dependency-subset slice before writing its behavior test.
 
 ### 10. Review through the desktop interface
 

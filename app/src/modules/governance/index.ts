@@ -155,6 +155,7 @@ export type ApplyProposalOutcome =
     }
   | { outcome: "judgment-required"; detail: string }
   | { outcome: "not-eligible"; detail: string }
+  | { outcome: "stale-judgment"; detail: string }
   | { outcome: "external-change"; detail: string }
   | { outcome: "not-found"; detail: string }
   | { outcome: "operation-failed"; detail: string };
@@ -426,10 +427,15 @@ export const createGovernance = (
       };
     }
 
-    if (
-      currentVersion.id !== proposal.baseVersionId ||
-      !isSameTarget(currentVersion.target, proposal.target)
-    ) {
+    if (currentVersion.id !== proposal.baseVersionId) {
+      return {
+        outcome: "stale-judgment",
+        detail:
+          "The Judgment is stale because the current governed version changed after review.",
+      };
+    }
+
+    if (!isSameTarget(currentVersion.target, proposal.target)) {
       return {
         outcome: "not-eligible",
         detail: "The Proposal is not based on the current governed version.",
