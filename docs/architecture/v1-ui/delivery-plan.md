@@ -529,7 +529,27 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
-At S1, prove that Atlas opens the dedicated review route, displays the fixture change and evidence, records Judgment, and shows the applied version. Use the real Governance module; do not mock it to make the UI test convenient.
+#### TB10 first S1 Proposal Review cycle — documentation prepared August 28, 2026
+
+Before implementation, review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), [Test Strategy](test-strategy.md), applicable ADRs, and the completed TB1–TB9 delivery records. Then complete the [TB10 implementation brief](tracer-bullet-10-spec.md), explicitly confirming the Public Behavior, literal fixture values, confirmed S1 seam, minimum vertical path, boundaries, discarded alternatives, and deferrals before writing the Red test or implementation.
+
+The first S1 cycle is deliberately bounded: Atlas receives one transient test-fixture Proposal at the main-process composition boundary; the review route displays its exact change and fixture evidence; **Accept and apply** records an accepted Judgment and applies through the real Governance Module and file-backed Governance Adapter against an isolated repository; and the route presents `bayesian-statistics-v2` with `bayesian-statistics-v1` retained. Opening a repository must not seed or persist a pending Proposal.
+
+- **Public Behavior:** A user can open the fixture repository, distinguish **Needs your judgment** from continuation, open the contextual Proposal Review route, inspect the exact before/after and evidence, cancel without mutation, explicitly accept and apply, and observe the new and prior governed versions plus local-save status.
+- **Test Seam:** S1 packaged Electron/WebdriverIO workflow with the silent window mode, real Governance Module, production file-backed version store, isolated temporary repository, and a test-only fixture Proposal source. The renderer receives typed operation-specific data through preload and does not inspect storage or Governance internals.
+- **Literal values:** Target `bayesian-statistics`; base `bayesian-statistics-v1`; Proposal `proposal-tb10-bayesian-statistics-evidence`; Judgment `judgment-tb10-bayesian-statistics-evidence`; applied record `applied-proposal-tb10-bayesian-statistics-evidence`; new version `bayesian-statistics-v2`; exact replacement and evidence are recorded in the TB10 brief.
+- **Scope:** One accepted one-change Proposal and the route needed to review and apply it. Pending-Proposal persistence, Proposal authoring, selective decisions, Judgment revision, stale recovery controls, UI rollback/history, richer metadata editing, Agent Provider use, Git, and network behavior remain deferred.
+- **Required confirmation:** The user must confirm the transient fixture source, exact review content, explicit Accept and apply boundary, real Governance/file-backed S1 seam, and listed deferrals before implementation.
+
+#### TB10 first S1 Proposal Review implementation record — August 28, 2026
+
+- **Public Behavior:** Atlas presents one deterministic **Needs your judgment** fixture item; the contextual Proposal Review route shows the exact target, base version, replacement, and evidence; **Accept and apply** records a Judgment and applies the change; the route presents `bayesian-statistics-v2`, retains `bayesian-statistics-v1`, and reports the local-save boundary.
+- **Test Seam:** S1 packaged Electron/WebdriverIO workflow with the silent native window, real Governance Module, file-backed Governance version store, isolated temporary repository, and test-only fixture Proposal source. Renderer access remains limited to typed preload operations.
+- **Red evidence:** The focused workflow first failed because `#atlas-needs-judgment` was absent before the Atlas card, review route, typed operations, and application path were implemented.
+- **Green evidence:** With Node.js `24.19.0`, the focused packaged `review-proposal.e2e.ts` workflow passed, and the complete packaged workflow passed all 23 WebdriverIO specs. `npm run check` passed formatting, linting, strict type checking, and 74 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.71% statements, 72.98% branches, 97.26% functions, and 81.53% lines. `npm run lint:complexity` passed. Public documentation validation passed with the documented Python 3.11 environment.
+- **Implementation:** Added the framework-independent Proposal Review session, deterministic fixture/empty sources, typed main/preload operations, Atlas queue card, contextual review route, exact-diff/evidence presentation, and file-backed Governance application workflow.
+- **Scope confirmed:** Pending-Proposal persistence, Proposal authoring, multiple-item discovery, selective decisions, Judgment revision, stale recovery, UI rollback/history, richer metadata editing, Agent Provider use, Git, and network behavior remain explicitly deferred.
+- **Acceptance:** Automated evidence is complete. Human acceptance remains pending; the user must manually observe the five acceptance checks in the TB10 brief before this slice is marked accepted.
 
 ### 11. Preserve meaning across editing views
 

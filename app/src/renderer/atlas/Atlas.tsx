@@ -6,6 +6,10 @@ import type {
   WorkbenchState,
   WorkspaceTransitionOutcome,
 } from "../../modules/workbench-session";
+import type {
+  ProposalReviewItem,
+  ProposalReviewReadOutcome,
+} from "../../modules/proposal-review";
 import type { JSX } from "react";
 
 /** Props supplied by the Workbench Session through the renderer entry point. */
@@ -22,6 +26,8 @@ interface AtlasProps {
     selection: WorkbenchContextSelection,
   ) => Promise<void>;
   onOpenTopicInStudio: (topicId: string) => Promise<void>;
+  proposalReview: ProposalReviewReadOutcome;
+  onOpenProposalReview: () => Promise<void>;
 }
 
 const AtlasHeader = (): JSX.Element => (
@@ -182,6 +188,40 @@ const ContinueWorkingCard = ({
   </section>
 );
 
+interface NeedsJudgmentCardProps {
+  review: ProposalReviewItem;
+  onOpenProposalReview: () => Promise<void>;
+}
+
+const NeedsJudgmentCard = ({
+  review,
+  onOpenProposalReview,
+}: NeedsJudgmentCardProps): JSX.Element => (
+  <section
+    id="atlas-needs-judgment"
+    className="review-queue-card"
+    aria-labelledby="atlas-needs-judgment-heading"
+  >
+    <span className="card-kicker">Needs your judgment</span>
+    <h2 id="atlas-needs-judgment-heading">Needs your judgment</h2>
+    <p id="atlas-proposal-title" className="topic-display-title">
+      {review.proposal.target.title}
+    </p>
+    <p>
+      An exact governed change is ready to inspect with its supporting Source
+      Record.
+    </p>
+    <button
+      id="atlas-proposal-review"
+      className="button button-light"
+      type="button"
+      onClick={onOpenProposalReview}
+    >
+      Review Proposal
+    </button>
+  </section>
+);
+
 interface ContextSelectionCardProps {
   contexts: WorkbenchContext[];
   onSelectWorkbenchContext: (
@@ -266,6 +306,8 @@ export const Atlas = ({
   onOpenRepository,
   onSelectWorkbenchContext,
   onOpenTopicInStudio,
+  proposalReview,
+  onOpenProposalReview,
 }: AtlasProps): JSX.Element => {
   // This is an invariant of the fresh-session Interface. Failing loudly keeps
   // a mismatched composition from looking like a valid Atlas screen.
@@ -312,6 +354,12 @@ export const Atlas = ({
                 onOpenTopicInStudio={onOpenTopicInStudio}
               />
             )}
+            {proposalReview.outcome === "available" ? (
+              <NeedsJudgmentCard
+                review={proposalReview.review}
+                onOpenProposalReview={onOpenProposalReview}
+              />
+            ) : null}
           </div>
         )}
       </div>

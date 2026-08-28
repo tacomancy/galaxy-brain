@@ -21,12 +21,22 @@ import type {
   SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
 } from "../modules/source-processing";
+import type {
+  ProposalReviewApplyOutcome,
+  ProposalReviewReadOutcome,
+} from "../modules/proposal-review";
 
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
   // serializable state needed to render the current workspace.
   openFreshWorkbench: (): Promise<FreshWorkbench> =>
     ipcRenderer.invoke("workbench:open-fresh"),
+  readProposalReview: (): Promise<ProposalReviewReadOutcome> =>
+    ipcRenderer.invoke("workbench:read-proposal-review"),
+  openProposalReview: (): Promise<ProposalReviewReadOutcome> =>
+    ipcRenderer.invoke("workbench:open-proposal-review"),
+  acceptProposalReview: (): Promise<ProposalReviewApplyOutcome> =>
+    ipcRenderer.invoke("workbench:accept-proposal-review"),
   createRepository: (): Promise<RepositoryOperationOutcome> =>
     ipcRenderer.invoke("workbench:create-repository"),
   openRepository: (): Promise<RepositoryOperationOutcome> =>
