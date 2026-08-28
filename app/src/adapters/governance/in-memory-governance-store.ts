@@ -5,6 +5,7 @@ import type {
   GovernanceVersionStore,
 } from "../../modules/governance";
 
+/** Seed and identity configuration for the deterministic Governance Adapter. */
 export interface InMemoryGovernanceStoreInput {
   currentVersion: GovernedVersion;
   nextVersionId: string;
@@ -15,7 +16,11 @@ const copyVersion = (version: GovernedVersion): GovernedVersion => ({
   target: { ...version.target },
 });
 
-/** Deterministic S2 storage Adapter for one seeded governed version. */
+/**
+ * Creates a deterministic S2 storage Adapter for one seeded governed version.
+ * @param input The initial version and next-version identity.
+ * @returns The in-memory Governance version store.
+ */
 export const createInMemoryGovernanceStore = ({
   currentVersion,
   nextVersionId,
@@ -51,6 +56,8 @@ export const createInMemoryGovernanceStore = ({
     return version === undefined ? undefined : copyVersion(version);
   };
 
+  // Recovery rationale: the deterministic S2 Adapter has no durable journal,
+  // so recovery reports no persisted transaction rather than inventing one.
   const recoverTransactions = async () => ({ outcome: "none" as const });
 
   const applyVersion = async (

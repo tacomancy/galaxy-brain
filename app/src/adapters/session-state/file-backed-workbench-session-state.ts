@@ -1,3 +1,8 @@
+/**
+ * Filesystem persistence Adapter. It atomically stores only machine-local
+ * exact-root resume state and treats malformed or unavailable state as a
+ * recoverable first launch rather than selecting an unvalidated path.
+ */
 import { createHash } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -116,6 +121,9 @@ const fingerprint = async (filePath: string): Promise<string | undefined> => {
  * Stores exact-root resume and active-work convenience state outside the
  * portable Knowledge Repository. Malformed or unavailable state behaves like
  * a first launch; Workbench Session validates a readable path before using it.
+ * @param sessionStatePath The machine-local session-state file path.
+ * @param filesystem The filesystem Adapter used for atomic persistence.
+ * @returns The file-backed Workbench Session State Adapter.
  */
 export const createFileBackedWorkbenchSessionState = (
   sessionStatePath: string,

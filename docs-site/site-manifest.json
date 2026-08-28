@@ -5,6 +5,11 @@
     { "source": "app/README.md", "destination": "application.md" },
     { "source": "docs/README.md", "destination": "project-documentation.md" },
     {
+      "source": "docs-site/current-capabilities.md",
+      "destination": "current-capabilities.md"
+    },
+    { "source": "app/CHANGELOG.md", "destination": "release-notes.md" },
+    {
       "source": "docs/architecture/v1-ui/README.md",
       "destination": "architecture/index.md"
     },
@@ -23,6 +28,10 @@
     {
       "source": "docs/architecture/v1-ui/test-strategy.md",
       "destination": "architecture/test-strategy.md"
+    },
+    {
+      "source": "docs-site/agent-guidance.md",
+      "destination": "agent-guidance.md"
     },
     {
       "source": "docs/engineering/glossary.md",

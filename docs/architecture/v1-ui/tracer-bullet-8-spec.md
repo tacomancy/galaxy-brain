@@ -1,6 +1,6 @@
 # Tracer Bullet 8: Apply one governed change
 
-Status: first S2 implementation cycle complete and merged on August 28, 2026; S5 implementation complete on August 28, 2026, with packaged-runtime verification and human acceptance pending.
+Status: first S2 implementation cycle complete and merged on August 28, 2026; S5 implementation and compatible packaged verification are complete on August 28, 2026, with human acceptance pending.
 
 This brief coordinates the first Governance implementation slice in the [delivery plan](delivery-plan.md#8-apply-one-governed-change). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, testing, or accepted ADR decisions.
 
@@ -18,7 +18,9 @@ Before writing behavior tests or implementation code, and again before each late
 2. Create or update this guidance-compliant `tracer-bullet-8-spec.md` with the Public Behavior, confirmed Test Seam, literal expected values, fixtures and External System Seams, minimum vertical path, boundaries, deferrals, acceptance evidence, and required confirmation recorded below.
 3. Check the proposed behavior against those authorities before the Red test run. If implementation reveals a conflict or an unconfirmed seam, stop, update the owning document and this brief, and obtain the required human confirmation before continuing.
 
-This prerequisite was completed for the first cycle and repeated for the S5 persistence cycle on August 28, 2026. The reviewed authorities are listed below so a future cycle can repeat the check rather than relying on memory. The S2 and S5 Red-to-Green implementation cycles are complete; the resulting behavior remains pending explicit human acceptance and compatible-runtime packaged verification.
+This prerequisite was completed for the first cycle and repeated for the S5 persistence cycle on August 28, 2026. The reviewed authorities are listed below so a future cycle can repeat the check rather than relying on memory. The S2 and S5 Red-to-Green implementation cycles and compatible-runtime packaged verification are complete; the resulting behavior remains pending explicit human acceptance.
+
+Current status boundary: the first TB9 stale-Judgment S2 slice is implemented and tested on a feature branch, with human acceptance pending. It is not part of current `main` or release `0.9.0`; the historical TB8 scope and deferrals below remain unchanged.
 
 ## Authoritative decisions
 

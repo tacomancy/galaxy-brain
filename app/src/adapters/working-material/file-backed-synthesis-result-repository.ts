@@ -1,3 +1,8 @@
+/**
+ * Filesystem persistence Adapter. It keeps explicitly saved result versions
+ * and provenance in portable Working Material while validating repository
+ * containment and retaining storage failures for main-process diagnostics.
+ */
 import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
@@ -291,7 +296,13 @@ const readResultFile = async (
   return parsed;
 };
 
-/** Persists explicitly saved Synthesis results as portable Working Material. */
+/**
+ * Creates storage for explicitly saved Synthesis results as Working Material.
+ * @param repositoryPath The selected Knowledge Repository path.
+ * @param diagnostics Optional sink for non-public storage causes.
+ * @param filesystem The filesystem Adapter used for safe persistence.
+ * @returns The Synthesis result repository Adapter.
+ */
 export const createFileBackedSynthesisResultRepository = (
   repositoryPath: string,
   diagnostics?: SynthesisResultDiagnostics,

@@ -16,7 +16,10 @@ const compareAnnotationIds = (
   right: StructuredAnnotation,
 ): number => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0);
 
-/** In-memory Working Material Adapter used by the S3 behavior test. */
+/**
+ * Creates the in-memory Working Material Adapter used by the S3 behavior test.
+ * @returns The in-memory Working Material repository Adapter.
+ */
 export const createInMemoryWorkingMaterialRepository =
   (): WorkingMaterialRepository => {
     const annotations = new Map<string, StructuredAnnotation>();

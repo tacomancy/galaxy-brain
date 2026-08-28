@@ -10,7 +10,10 @@ Galaxy Brain combines a human-owned knowledge base for personal research and con
 - [Application build and run instructions](app/README.md#build-and-run)
 - [Project documentation](docs/README.md)
 - [Public documentation site](https://tacomancy.github.io/galaxy-brain/)
+- [Current capabilities](https://tacomancy.github.io/galaxy-brain/current-capabilities/)
+- [Release notes](https://tacomancy.github.io/galaxy-brain/release-notes/)
 - [Public tutorials](https://tacomancy.github.io/galaxy-brain/tutorials/)
+- [Public human-agent collaboration guide](https://tacomancy.github.io/galaxy-brain/agent-guidance/)
 - [V1 Knowledge Workbench architecture](docs/architecture/v1-ui/README.md)
 - [Human-agent collaboration](docs/agents/collaboration.md)
 - [Knowledge-base guidance](docs/agents/knowledge-base.md)
@@ -25,11 +28,11 @@ Galaxy Brain combines a human-owned knowledge base for personal research and con
 This public development repository contains application-project material, a synthetic repository fixture, and a starter skeleton. Keep their roles distinct:
 
 - `app/`: the Galaxy Brain application project
-  - `docs/`: application architecture, ADRs, guidance, proposals, and review records
-  - `prototype/`: temporary, disposable GUI explorations
-  - `app/templates/knowledge-repository/`: empty starter skeleton for a new user repository
-  - `app/tests/fixtures/knowledge-repository/`: synthetic fixture for tests and development; it is not user knowledge
+  - `templates/knowledge-repository/`: empty starter skeleton for a new user repository
+  - `tests/fixtures/knowledge-repository/`: synthetic fixture for tests and development; it is not user knowledge
+- `docs/`: project architecture, ADRs, guidance, proposals, and review records
+- `prototype/`: temporary, disposable GUI explorations
 
 The application project, starter skeleton, and synthetic fixture are public. A user's Knowledge Repository lives in an independent sibling or otherwise user-selected directory with its own lifecycle. Galaxy Brain can create the files for a new repository, but does not initialize Git or perform commits. Git, Git LFS, remotes, credentials, and backups are optional external user-managed tooling.
 
-Agent Provider configuration is optional. Galaxy Brain remains usable for local repository, reading, editing, source, and governance workflows without an API key or configured provider; only Agentic Capabilities are unavailable until a provider is configured. V1 focuses on the OpenAI API, configured through `OPENAI_API_KEY` in a machine-local `.env` file; see [`app/.env.example`](app/.env.example). This is OpenAI API access, not ChatGPT consumer-account login. The real `.env` is excluded from version control and must never be committed. Other providers and model ecosystems are deferred.
+Agent Provider configuration is optional. Galaxy Brain remains usable for supported local-repository and reading workflows without an API key or configured provider. An API key alone does not enable live Synthesis: current `main` does not compose a production Model Adapter. V1 focuses on the OpenAI API, configured through `OPENAI_API_KEY` in a machine-local `.env` file; see [`app/.env.example`](app/.env.example). This is OpenAI API access, not ChatGPT consumer-account login. The real `.env` is excluded from version control and must never be committed. Other providers and model ecosystems are deferred.
