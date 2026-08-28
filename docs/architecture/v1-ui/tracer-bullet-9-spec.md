@@ -328,3 +328,151 @@ After confirmation, completion requires the focused Red/Green evidence, full aut
 - **Behavior evidence:** Governance records the accepted dependent-only Judgment, returns the exact `invalid-dependency-subset` result before `applyVersion`, preserves `bayesian-statistics-v1` as current, and keeps that prior version retrievable.
 - **Compatibility evidence:** Existing single-change Governance behavior and file-backed contract tests pass. The file-backed applied-record representation remains the accepted TB8 single-change `exact_change` shape; multi-change application and persisted multi-change provenance remain deferred.
 - **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed that a dependent change cannot be applied without its explicitly accepted prerequisite; the current version and retained history remain unchanged.
+
+## Required third cycle: apply independently judged changes
+
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the accepted first and second TB9 cycles. The concrete mixed-decision shape and caller-visible application behavior below are proposed for confirmation before implementation.
+
+### Scope
+
+The third TB9 cycle proves that a person can make different explicit decisions for independently reviewable changes in one Proposal. The fixture contains two independent exact changes. The Judgment explicitly accepts one change and rejects the other. Governance applies only the accepted change, leaves the rejected change unapplied, preserves the prior version, and continues to enforce dependency closure for the accepted subset.
+
+This cycle uses the existing S2 Governance Interface and deterministic in-memory version-storage Adapter. It does not implement edit or defer decisions, dependent mixed-decision application, the S1 Proposal Review route, or a multi-change Repository Format representation.
+
+### Documentation prerequisite for this cycle
+
+Before writing the Red test or implementation code, explicitly complete these to-do items:
+
+1. Recheck the accepted Product Decisions, Architecture, Test Strategy, applicable ADRs, TB8 persistence decisions, and the accepted first and second TB9 cycles.
+2. Confirm this section's additive `rejectedChangeIds` shape, accepted-only application rule, literal independent two-change fixture, and explicit deferrals.
+3. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
+4. Obtain explicit human confirmation that rejected changes are not silently applied, omitted IDs are not inferred as rejection, and accepted changes still require their complete dependency closure.
+
+Implementation must not begin until this third-cycle documentation review and confirmation task is complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam requires stopping and revising this brief before proceeding.
+
+### Proposed public behavior
+
+Given the current `bayesian-statistics-v1` version and a Proposal containing two independent changes:
+
+1. Governance validates the Proposal and records a Judgment with one explicitly accepted change ID and one explicitly rejected change ID without changing Governed Knowledge.
+2. `applyProposal` derives the accepted subset from `acceptedChangeIds` and verifies its direct/transitive dependency closure.
+3. Because both fixture changes are independent, the accepted subset is closed.
+4. Governance applies only the accepted exact change and returns the existing `applied` outcome.
+5. The new current version contains the accepted source-evidence change, while the rejected claim-update change is absent.
+6. Governance does not reinterpret an omitted ID as rejected, apply the rejected change, or remove the rejected decision from the recorded Judgment. A later Judgment is required to revisit it.
+
+The dependency rule remains the second-cycle rule: every accepted change must include all direct and indirect `dependsOn` IDs. Rejecting a dependent change does not require rejecting its prerequisite; accepting a dependent change without accepting its prerequisite remains `invalid-dependency-subset`. This cycle observes only independent changes so that mixed decisions and dependency closure remain separately observable.
+
+### Proposed Interface shape
+
+Keep the accepted dependency-subset representation confirmed in the second cycle and add the explicit rejected set:
+
+```text
+Judgment {
+  ...existing exact-version binding...
+  decision: "accepted"
+  acceptedChangeIds: string[]
+  rejectedChangeIds: string[]
+}
+```
+
+For this cycle, every Proposal change ID must appear exactly once across `acceptedChangeIds` and `rejectedChangeIds`. The arrays must not contain duplicates or unknown IDs, and neither array may be inferred from omission. The top-level `decision: "accepted"` continues to mean that this Judgment authorizes the explicitly accepted subset; the per-change arrays carry the mixed decision detail.
+
+Governance owns classification validation, accepted-subset dependency closure, and accepted-only composition. The version-storage Adapter continues to own version retrieval and mutation mechanics. This is an additive S2 Interface change; it does not introduce a new Adapter or Test Seam. The TB8 file-backed applied-record representation remains single-change-compatible, so a valid multi-change application remains an in-memory behavior in this cycle and its durable provenance remains deferred.
+
+This two-array shape is intentionally limited. `edit` and `defer` are not represented yet; a later decision-vocabulary cycle must replace or extend the representation with an explicit design rather than treating either state as rejection.
+
+### Literal fixture and expected values
+
+Use the existing TB8 fixture target and `bayesian-statistics-v1` content:
+
+- Target ID: `bayesian-statistics`.
+- Target title: `Bayesian statistics`.
+- Target path: `knowledge/bayesian-statistics.md`.
+- Proposal ID: `proposal-tb9-independent-change-decisions-bayesian-statistics`.
+- Proposal fingerprint: `proposal-fingerprint-tb9-independent-change-decisions-bayesian-statistics`.
+- Working Material ID: `working-material-tb9-independent-change-decisions-bayesian-statistics`.
+- Judgment ID: `judgment-tb9-independent-change-decisions-bayesian-statistics`.
+- Base version: `bayesian-statistics-v1`.
+- Deterministic next version ID in the in-memory Adapter: `bayesian-statistics-v2`.
+
+Change `change-tb9-independent-source-evidence` is explicitly accepted:
+
+- `dependsOn: []`.
+- Exact `before`: `source_record: sources/papers/bayesian-statistics.md`.
+- Exact `after`: `source_record: sources/papers/bayesian-statistics.md\nreviewed_claim: fixture-evidence`.
+
+Change `change-tb9-independent-claim-update` is explicitly rejected:
+
+- `dependsOn: []`.
+- Exact `before`: `This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.`.
+- Exact `after`: `Bayesian statistics uses evidence to update prior belief.`.
+
+The Working Material content contains both exact changes. The Judgment contains:
+
+```text
+{
+  proposalFingerprint: "proposal-fingerprint-tb9-independent-change-decisions-bayesian-statistics",
+  baseVersionId: "bayesian-statistics-v1",
+  decision: "accepted",
+  acceptedChangeIds: ["change-tb9-independent-source-evidence"],
+  rejectedChangeIds: ["change-tb9-independent-claim-update"]
+}
+```
+
+The expected `bayesian-statistics-v2` content is the current fixture content with the `reviewed_claim: fixture-evidence` line inserted after the `source_record` line. The original fixture sentence remains unchanged because its change was explicitly rejected. The current `bayesian-statistics-v1` remains retrievable.
+
+### Test Seam and minimum vertical path
+
+Use the existing S2 public Governance Interface with the deterministic in-memory Governance version-storage Adapter. Add a behavior-named test at `app/tests/governance/apply-independent-change-decisions.test.ts`.
+
+The test must:
+
+- create the two-change Proposal with the literal IDs, exact replacements, and empty dependency lists;
+- record the Judgment with one literal accepted ID and one literal rejected ID;
+- assert that Proposal and Judgment creation do not change the current version;
+- apply through Governance and assert the existing `applied` outcome and exact accepted-only content;
+- assert that the rejected change's content is absent from the new version;
+- assert through `loadCurrentVersion` that `bayesian-statistics-v2` is current; and
+- assert through `getVersion` that `bayesian-statistics-v1` remains retrievable.
+
+The test must use independently written expected content and must not inspect private Governance maps, derive expected content through an implementation helper, read repository files as a side channel, or call a private dependency function. An injected `applyVersion` observer may verify the public storage mutation boundary, but the behavior is primarily observed through Governance's returned versions.
+
+Minimum path:
+
+1. Complete this documentation review and obtain confirmation before the Red test.
+2. Add the one behavior test and observe the expected failure because the current Judgment has no explicit rejected-change representation and Governance applies only its single-change path.
+3. Add the smallest rejected-ID representation and mixed-decision validation needed for this independent fixture.
+4. Compose and apply only the accepted changes while preserving dependency-closure validation.
+5. Run the focused S2 test, `npm run check`, coverage, and complexity checks.
+6. Record Red/Green evidence and human acceptance before selecting the edit/defer decision vocabulary or dependent mixed-decision slice.
+
+### Boundaries, alternatives, and deferrals
+
+This cycle explicitly defers:
+
+- `edit` and `defer` per-change decisions and their persisted representation;
+- applying an accepted dependent change while its prerequisite is rejected or deferred;
+- dependency ordering, rollback, and failure recovery for multiple accepted changes;
+- persistent applied-record/schema changes for mixed multi-change provenance;
+- Proposal Review UI, Atlas/Studio routing, Agent Provider use, Git, remote synchronization, and network behavior.
+
+The following alternatives are discarded or deferred for this cycle:
+
+- **Treat omitted IDs as rejected:** discarded because omission would make an incomplete Judgment look like an explicit human decision.
+- **Replace `acceptedChangeIds` with a generic decision-record list immediately:** deferred because the accepted dependency-closure contract was just confirmed; the additive set keeps this cycle focused while leaving a deliberate follow-on for `edit` and `defer`.
+- **Apply every Proposal change and use rejection only as display metadata:** discarded because it would turn an explicit rejection into an unreviewed Governed Knowledge change.
+- **Reject the entire Proposal when any change is rejected:** discarded because it would prevent independently reviewable changes from receiving different outcomes.
+- **Let the storage Adapter select accepted changes:** discarded because per-change Judgment policy belongs to Governance and must remain Adapter-independent.
+- **Persist multi-change mixed decisions now:** deferred because durable change-level audit and rollback provenance need a separate representation decision.
+
+### Acceptance evidence and required confirmation
+
+This third cycle is not implementation-ready until the user confirms:
+
+- the additive `rejectedChangeIds` Judgment shape and exact classification rule;
+- the accepted-only application behavior;
+- the continued direct/transitive dependency-closure rule; and
+- the literal independent two-change fixture and explicit deferrals above.
+
+After confirmation, completion requires the focused Red/Green evidence, full automated gates, proof that the rejected change was not applied, and human confirmation that the resulting version contains only the explicitly accepted change while the prior version remains retrievable. Acceptance of this cycle will not approve `edit`/`defer`, dependent mixed decisions, or persistent mixed-decision provenance.
