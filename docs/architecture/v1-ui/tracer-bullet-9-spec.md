@@ -820,3 +820,166 @@ Completion requires the focused Red/Green evidence, full automated gates, proof 
 - **Compatibility evidence:** Existing single-change, stale-Judgment, invalid-dependency-subset, independent-decision, deferred-decision, and file-backed contract tests pass. Persistent edited multi-change provenance remains deferred as specified.
 - **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed that the resulting version contains `Bayesian statistics updates prior belief with evidence.` rather than the original Proposal text, while the prior version remains retrievable.
 - **Status:** This implementation cycle is complete and accepted. Edited dependent changes, Proposal revision workflows, and persistent edited-decision provenance remain deferred.
+
+## Required sixth cycle: apply an edited dependent change
+
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the completed first five TB9 cycles. The edited-dependent representation and caller-visible behavior below are proposed for confirmation before implementation.
+
+### Scope
+
+The sixth TB9 cycle proves that an edited change may depend on another Proposal change: a Judgment accepts the prerequisite unchanged and explicitly edits the dependent change. Governance applies both changes because the effective accepted subset is dependency-closed, using the reviewer-supplied exact replacement only for the dependent item.
+
+This cycle reuses the fifth-cycle `editedChanges` Judgment representation and the existing dependency-closure rule. It uses a two-change graph whose prerequisite appears before its dependent in Proposal order, and whose dependent `before` text is present in the reviewed base version. It does not add generic dependency reordering, post-prerequisite exact-change matching, multi-level dependency graphs, durable edited-decision provenance, Judgment revision, the S1 Proposal Review route, or a new Repository Format representation.
+
+### Documentation prerequisite for this cycle
+
+Before writing the Red test or implementation code, explicitly complete these to-do items:
+
+1. Recheck the accepted Product Decisions, Architecture, Test Strategy, applicable ADRs, TB8 persistence decisions, and the completed first five TB9 cycles.
+2. Confirm that the fifth-cycle `editedChanges` shape remains sufficient, that edited IDs participate in direct/transitive dependency closure, and that the literal dependent fixture and failure outcome below are the intended behavior.
+3. Confirm the Proposal-order boundary: this slice applies changes in their authored Proposal order, with the prerequisite before the dependent; it does not silently topologically reorder an out-of-order Proposal.
+4. Confirm the atomic mutation and failure boundary: a missing prerequisite returns `invalid-dependency-subset` before the storage Adapter mutates, while a valid dependency-closed application creates one new version and preserves the prior version.
+5. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
+6. Obtain explicit human confirmation of the dependency-closed edited application, Proposal-order boundary, literal fixture, failure outcome, and explicit deferrals.
+
+Implementation must not begin until this sixth-cycle documentation review and confirmation task is complete. A new decision representation, dependency policy, persistent representation, or Test Seam requires stopping and revising this brief before proceeding.
+
+### Proposed public behavior
+
+Given the current `bayesian-statistics-v1` version and a Proposal containing a prerequisite and a dependent change:
+
+1. The Proposal lists `change-tb9-edited-dependent-source-evidence` first and `change-tb9-edited-dependent-claim-update` second; the dependent declares the prerequisite in `dependsOn`.
+2. Governance records a Judgment that accepts the prerequisite unchanged and explicitly edits the dependent change.
+3. `applyProposal` forms the effective accepted subset from the accepted and edited IDs, verifies its direct/transitive dependency closure, and retains Proposal order for applying the exact changes.
+4. Governance applies the original prerequisite exact change and the reviewer-supplied edited exact change, returning the existing `applied` outcome.
+5. The new current version contains the prerequisite source metadata and edited claim text, not the original Proposal claim text.
+6. If a second Judgment instead edits the dependent while classifying the prerequisite as rejected, Governance returns `invalid-dependency-subset` before storage mutation. The invalid attempt creates no version and leaves the prior version retrievable.
+
+The dependency is a Governance dependency between labeled Proposal changes. This first edited-dependent slice intentionally keeps the dependent `before` text present in `bayesian-statistics-v1`; it does not infer or synthesize a dependent replacement from the content produced by its prerequisite. Proposal order is the application order for this slice, so an out-of-order dependency is outside the confirmed behavior rather than silently reordered.
+
+### Proposed Interface and ownership
+
+No new public type is required. Reuse:
+
+- `ProposalChange.dependsOn` for the prerequisite IDs;
+- `Judgment.acceptedChangeIds`, `rejectedChangeIds`, and `deferredChangeIds` for complete classification; and
+- `Judgment.editedChanges` for the dependent change's reviewer-supplied `ExactChange`.
+
+Governance owns effective accepted-subset composition, direct/transitive closure validation, edited exact-change validation, and application ordering. The version-storage Adapter continues to own one atomic version mutation and retained-version mechanics. The file-backed applied-record representation remains unchanged; persistent edited multi-change provenance remains deferred.
+
+### Literal fixture and expected values
+
+Use the existing TB8 fixture target and `bayesian-statistics-v1` content:
+
+- Target ID: `bayesian-statistics`.
+- Target title: `Bayesian statistics`.
+- Target path: `knowledge/bayesian-statistics.md`.
+- Proposal ID: `proposal-tb9-edited-dependent-change-bayesian-statistics`.
+- Proposal fingerprint: `proposal-fingerprint-tb9-edited-dependent-change-bayesian-statistics`.
+- Working Material ID: `working-material-tb9-edited-dependent-change-bayesian-statistics`.
+- Judgment ID: `judgment-tb9-edited-dependent-change-bayesian-statistics`.
+- Invalid Judgment ID: `judgment-tb9-edited-dependent-missing-prerequisite`.
+- Base version: `bayesian-statistics-v1`.
+- Deterministic next version ID in the in-memory Adapter: `bayesian-statistics-v2`.
+
+Change `change-tb9-edited-dependent-source-evidence` is the prerequisite and is accepted unchanged:
+
+- `dependsOn: []`.
+- Exact `before`: `source_record: sources/papers/bayesian-statistics.md`.
+- Exact `after`: `source_record: sources/papers/bayesian-statistics.md\nreviewed_claim: fixture-evidence`.
+
+Change `change-tb9-edited-dependent-claim-update` is second, depends on the prerequisite, and is edited in the Judgment:
+
+- `dependsOn: ["change-tb9-edited-dependent-source-evidence"]`.
+- Proposal exact `before`: `This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.`.
+- Proposal exact `after`: `Bayesian statistics uses evidence to update prior belief.`.
+- Judgment exact `before`: `This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.`.
+- Judgment exact `after`: `Bayesian statistics updates prior belief from evidence.`.
+
+The Working Material content contains both original Proposal changes. The valid Judgment contains:
+
+```text
+{
+  proposalFingerprint: "proposal-fingerprint-tb9-edited-dependent-change-bayesian-statistics",
+  baseVersionId: "bayesian-statistics-v1",
+  decision: "accepted",
+  acceptedChangeIds: ["change-tb9-edited-dependent-source-evidence"],
+  rejectedChangeIds: [],
+  deferredChangeIds: [],
+  editedChanges: [{
+    changeId: "change-tb9-edited-dependent-claim-update",
+    exactChange: {
+      path: "knowledge/bayesian-statistics.md",
+      before: "This fixture topic gives the S1 workflow a stable item to carry between\\nworkspaces.",
+      after: "Bayesian statistics updates prior belief from evidence."
+    }
+  }]
+}
+```
+
+The expected `bayesian-statistics-v2` content contains `reviewed_claim: fixture-evidence` and `Bayesian statistics updates prior belief from evidence.`. It must not contain the original Proposal after text `Bayesian statistics uses evidence to update prior belief.`. The invalid missing-prerequisite attempt returns:
+
+```text
+{
+  outcome: "invalid-dependency-subset",
+  detail: "The accepted change subset omits a required dependency."
+}
+```
+
+### Test Seam and minimum vertical path
+
+Use the existing S2 public Governance Interface with the deterministic in-memory Governance version-storage Adapter. Add a behavior-named test at `app/tests/governance/apply-edited-dependent-change-decision.test.ts`.
+
+The test must:
+
+- create the literal two-change Proposal in dependency order;
+- record the valid Judgment with one accepted prerequisite and one edited dependent change;
+- apply through Governance and assert the exact effective content and existing `applied` outcome;
+- assert the original Proposal replacement for the edited dependent is absent;
+- record a separate Judgment that edits the dependent while rejecting the prerequisite;
+- assert the exact `invalid-dependency-subset` result, one total storage mutation, and no extra version;
+- assert through `loadCurrentVersion` that `bayesian-statistics-v2` is current; and
+- assert through `getVersion` that `bayesian-statistics-v1` remains retrievable.
+
+The test must use independently written expected content and must not inspect private Governance maps, derive expected content through an implementation helper, read repository files as a side channel, or call a private dependency function. An injected `applyVersion` observer may verify the public storage mutation boundary.
+
+Minimum path:
+
+1. Complete this documentation review and obtain confirmation before the Red test.
+2. Add the valid and invalid dependency behavior test and observe the first failure from the missing edited-dependent coverage or unsupported ordering/closure behavior.
+3. Add only the smallest Governance changes required for the confirmed dependency-closed edited behavior.
+4. Prove the valid path applies one original prerequisite and one edited dependent replacement, while the invalid path returns before mutation.
+5. Run the focused S2 tests, `npm run check`, coverage, complexity, and public documentation checks.
+6. Record Red/Green evidence and human acceptance before selecting out-of-order dependency handling, multi-level graphs, or durable edited provenance.
+
+### Boundaries, alternatives, and deferrals
+
+This cycle explicitly defers:
+
+- topologically sorting or otherwise reordering Proposal changes when a dependency appears later;
+- edited changes whose `before` text is produced only after a prerequisite is applied;
+- more than one dependency level or multiple prerequisites;
+- edited prerequisites combined with edited dependents in one graph;
+- re-editing, withdrawing, or automatically reopening a recorded Judgment;
+- persistent applied-record/schema changes for edited multi-change provenance;
+- Proposal Review UI, Atlas/Studio routing, Agent Provider use, Git, remote synchronization, and network behavior.
+
+The following alternatives are discarded or deferred for this cycle:
+
+- **Silently topologically reorder Proposal changes:** deferred because ordering changes the authored application sequence and needs an explicit policy for conflicts, repeated exact text, and rollback.
+- **Require and validate dependency order now:** deferred beyond the fixture boundary because rejecting or normalizing existing out-of-order Proposals would add a separate Proposal validation outcome not needed to prove this slice.
+- **Match the edited dependent against post-prerequisite content automatically:** deferred because it would change the meaning of the reviewer-supplied exact replacement and requires a distinct composed-change model.
+- **Treat the dependency as documentation only:** discarded because the accepted subset must be dependency-closed before mutation, and the missing-prerequisite case must remain caller-visible.
+- **Expand file-backed audit records now:** deferred because durable provenance must preserve the original and edited exact changes plus dependency context for recovery and rollback.
+
+### Acceptance evidence and required confirmation
+
+This sixth cycle is not implementation-ready until the user confirms:
+
+- reuse of `editedChanges` for a dependent Proposal change;
+- effective accepted-subset closure including edited IDs;
+- authored Proposal order as the boundary for this fixture, without silent topological reordering;
+- the valid and invalid literal outcomes above; and
+- the explicit deferrals and discarded alternatives.
+
+After confirmation, completion requires focused Red/Green evidence, full automated gates, proof that the valid path mutates storage once and the invalid path does not mutate storage, and human confirmation that the edited dependent content is current while the original version remains retrievable. Acceptance will not approve generic dependency ordering, post-prerequisite exact matching, multi-level graphs, or persistent edited-decision provenance.
