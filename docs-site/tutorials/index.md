@@ -25,6 +25,7 @@ matches your situation:
 - [Understand saved Synthesis results](understand-synthesis-results.md)
 - [Repository Format overview](repository-format-overview.md)
 - [Safety and privacy](safety-and-privacy.md)
+- [Troubleshoot common recovery states](troubleshooting.md)
 
 These guides use the canonical terms and boundaries defined in the
 [V1 architecture](../../docs/architecture/v1-ui/README.md), the

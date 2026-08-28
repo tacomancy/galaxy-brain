@@ -98,6 +98,7 @@ Troubleshooting.
                 "tutorials/understand-synthesis-results/index.html",
                 "tutorials/repository-format-overview/index.html",
                 "tutorials/safety-and-privacy/index.html",
+                "tutorials/troubleshooting/index.html",
             }
             actual_pages = {
                 path.relative_to(output).as_posix()

@@ -60,6 +60,7 @@ nav:
       - Understand saved Synthesis results: tutorials/understand-synthesis-results.md
       - Repository Format overview: tutorials/repository-format-overview.md
       - Safety and privacy: tutorials/safety-and-privacy.md
+      - Troubleshoot common recovery states: tutorials/troubleshooting.md
   - Architecture:
       - V1 architecture: architecture/index.md
       - Architecture: architecture/architecture.md

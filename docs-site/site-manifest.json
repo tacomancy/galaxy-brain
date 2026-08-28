@@ -90,6 +90,11 @@
       "source": "docs-site/tutorials/safety-and-privacy.md",
       "destination": "tutorials/safety-and-privacy.md",
       "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/troubleshooting.md",
+      "destination": "tutorials/troubleshooting.md",
+      "kind": "tutorial"
     }
   ]
 }
