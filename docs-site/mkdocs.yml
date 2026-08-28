@@ -47,6 +47,13 @@ nav:
   - Overview: index.md
   - Application: application.md
   - Project documentation: project-documentation.md
+  - Tutorials:
+      - Overview: tutorials/index.md
+      - First launch: tutorials/first-run.md
+      - Create a Knowledge Repository: tutorials/create-knowledge-repository.md
+      - Open a Knowledge Repository: tutorials/open-knowledge-repository.md
+      - Resume a Workbench session: tutorials/resume-workbench-session.md
+      - Navigate among workspaces: tutorials/navigate-workspaces.md
   - Architecture:
       - V1 architecture: architecture/index.md
       - Architecture: architecture/architecture.md

@@ -29,5 +29,37 @@
       "destination": "engineering-glossary.md"
     },
     { "source": "CONTEXT.md", "destination": "domain-glossary.md" }
+  ],
+  "tutorials": [
+    {
+      "source": "docs-site/tutorials/index.md",
+      "destination": "tutorials/index.md",
+      "kind": "index"
+    },
+    {
+      "source": "docs-site/tutorials/first-run.md",
+      "destination": "tutorials/first-run.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/create-knowledge-repository.md",
+      "destination": "tutorials/create-knowledge-repository.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/open-knowledge-repository.md",
+      "destination": "tutorials/open-knowledge-repository.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/resume-workbench-session.md",
+      "destination": "tutorials/resume-workbench-session.md",
+      "kind": "tutorial"
+    },
+    {
+      "source": "docs-site/tutorials/navigate-workspaces.md",
+      "destination": "tutorials/navigate-workspaces.md",
+      "kind": "tutorial"
+    }
   ]
 }
