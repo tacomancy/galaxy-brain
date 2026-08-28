@@ -4,32 +4,38 @@ Status: architectural direction and S1–S5 Test Seams accepted.
 
 This package translates the accepted V1 UI direction into an Electron and strict-TypeScript desktop architecture with a test-driven delivery strategy. The foundation is selected; editor, PDF, index, model, updater, routing, state-management, and native-database choices remain deferred until a behavior slice makes them necessary. Repository files are VCS-neutral; Git and Git LFS are optional external tools managed by the user.
 
-This package follows the project-wide [documentation authority map](../../README.md#documentation-authority): Product Decisions own behavior, Architecture owns structure, Repository Format owns portable files, Test Strategy owns verification, Delivery Plan owns sequencing, ADRs own hard-to-reverse trade-offs, and agent guidance owns execution rules.
+This package follows the project-wide [documentation authority map](../../README.md#documentation-authority): Product Decisions own behavior, Architecture owns structure, Repository Format owns portable files, Test Strategy owns verification, Delivery Plan owns sequencing, Current Capabilities owns public status, Changelog/release notes own published-version behavior, Tutorials own supported task instructions, ADRs own hard-to-reverse trade-offs, and agent guidance owns execution rules.
 
-## Package
+> **Public reading boundary:** Start with [Current capabilities](../../../docs-site/current-capabilities.md) to distinguish the latest published release, the reviewed `main` snapshot, and planned work. This architecture package describes intended V1 structure and accepted design direction; it is not a claim that every described Module or workflow is currently available in the desktop Workbench.
+
+## Public reading path
 
 - [Product decisions](product-decisions.md) records the accepted experience, scope, and deferrals.
 - [Architecture](architecture.md) defines modules, interfaces, state ownership, and system seams.
 - [Repository Format](repository-format.md) defines the portable, versioned Knowledge Repository contract.
-- [Starter inventory](starter-inventory.md) records the independent expected contents of the public V1 skeleton.
-- [Code map](code-map.md) maps architectural responsibilities to live or explicitly planned source locations.
 - [Test strategy](test-strategy.md) defines the confirmed public seams through which behavior is verified.
-- [Delivery plan](delivery-plan.md) orders vertical tracer bullets for red-to-green implementation.
-- [Tracer Bullet 2 implementation brief](tracer-bullet-2-spec.md) coordinates the current Open/Create repository slice and links to its authoritative decisions and delivery gates.
-- [Tracer Bullet 3 implementation brief](tracer-bullet-3-spec.md) records the accepted exact-repository resume slice and its delivery evidence.
-- [Tracer Bullet 4 implementation brief](tracer-bullet-4-spec.md) records the accepted contextual workspace-transfer slice.
-- [Tracer Bullet 5 implementation brief](tracer-bullet-5-spec.md) coordinates the located source-claim capture slice.
-- [Tracer Bullet 6 implementation brief](tracer-bullet-6-spec.md) coordinates reopening the captured source claim with its reading position.
-- [Tracer Bullet 6.1 Atlas UI brief](tracer-bullet-6-1-atlas-ui-spec.md) coordinates promotion of the Atlas view.
-- [Tracer Bullet 6.2 Studio UI brief](tracer-bullet-6-2-studio-ui-spec.md) coordinates promotion of the Studio view.
-- [Tracer Bullet 6.3 Paper Desk UI brief](tracer-bullet-6-3-paper-desk-ui-spec.md) coordinates promotion of the Paper Desk view.
-- [Tracer Bullet 7 brief](tracer-bullet-7-spec.md) coordinates the explicit Synthesis preview and provider-confirmation slice.
-- [Issue 51 explicit-context brief](issue-51-explicit-context-selection-spec.md) coordinates explicit context selection for repositories with multiple complete topics and Source Records.
-- [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
-- [Production complexity policy](complexity-policy.md) records the scoped ESLint limits, measured baseline, and verification evidence for the PR quality gate.
-- [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
-- [Engineering glossary](../../engineering/glossary.md) defines the codebase-design and test-driven-development vocabulary used by this package.
-- [Agent implementation guide](../../agents/workbench.md) defines the required Red-to-Green execution and handoff procedure for Workbench changes.
+
+These pages are linked from the public site. Their ownership is narrower than
+the Current Capabilities page: Product Decisions describe intended behavior,
+Architecture describes structure, Repository Format describes portable files,
+and Test Strategy describes verification boundaries.
+
+## Internal implementation records
+
+The following documents support project development but are not public product
+navigation or release-status authorities:
+
+- `starter-inventory.md` records the independent expected contents of the public V1 skeleton.
+- `code-map.md` maps architectural responsibilities to live or explicitly planned source locations.
+- `delivery-plan.md` orders vertical tracer bullets for red-to-green implementation.
+- `tracer-bullet-*-spec.md` and `issue-51-explicit-context-selection-spec.md` record scoped implementation briefs and delivery evidence.
+- `stack-research.md` records primary-source evidence for the desktop foundation.
+- `complexity-policy.md` records the production complexity limits and verification evidence.
+- `CONTEXT.md`, the engineering glossary, and the agent implementation guide define project language and execution procedure.
+
+These records may preserve historical evidence or implementation detail. They
+must not be read as a mutable substitute for [Current capabilities](../../../docs-site/current-capabilities.md)
+or the published [release notes](../../../app/CHANGELOG.md).
 
 The Product Decisions [V1 scope boundary](product-decisions.md#v1-scope-boundary) separates the provider-free core release gate, optional provider-enabled V1 capabilities, and post-V1 work. The other documents below explain the structure, verification, and sequence needed to deliver that boundary.
 

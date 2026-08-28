@@ -47,6 +47,8 @@ nav:
   - Overview: index.md
   - Application: application.md
   - Project documentation: project-documentation.md
+  - Current capabilities: current-capabilities.md
+  - Release notes: release-notes.md
   - Human-agent collaboration: agent-guidance.md
   - Tutorials:
       - Overview: tutorials/index.md
