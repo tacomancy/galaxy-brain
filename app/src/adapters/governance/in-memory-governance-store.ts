@@ -51,6 +51,8 @@ export const createInMemoryGovernanceStore = ({
     return version === undefined ? undefined : copyVersion(version);
   };
 
+  const recoverTransactions = async () => ({ outcome: "none" as const });
+
   const applyVersion = async (
     input: ApplyVersionInput,
   ): Promise<ApplyVersionResult> => {
@@ -84,5 +86,10 @@ export const createInMemoryGovernanceStore = ({
     };
   };
 
-  return { readCurrentVersion, readVersion, applyVersion };
+  return {
+    recoverTransactions,
+    readCurrentVersion,
+    readVersion,
+    applyVersion,
+  };
 };

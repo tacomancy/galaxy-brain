@@ -29,7 +29,80 @@ Managed Source Assets are verified bytes under `assets/sources/` with repository
 
 Conforming writers preserve unrecognized files, frontmatter fields, and Markdown extensions unless an explicit operation targets them. Derived and machine-local state can be rebuilt without losing knowledge.
 
-The format is intentionally narrow at this stage. It specifies the stable interoperability boundary and safety rules without freezing every note, audit, or rollback schema before the owning behavior exists. Concrete file schemas become part of the contract when the first file-backed Adapter needs them; each must preserve unknown content where practical and be covered by S5 contract tests.
+The format is intentionally narrow at this stage. It specifies the stable interoperability boundary and safety rules without freezing unrelated note, indexing, or repository-wide history schemas. The first file-backed Governance Adapter now establishes the concrete applied-Proposal schema below. It remains within `format_version: 1`, must preserve unknown repository content, and is covered by S5 contract tests.
+
+### Applied-Proposal persistence
+
+One successful governed application creates one immutable UTF-8 JSON object at:
+
+```text
+proposals/applied/<applied-record-id>.json
+```
+
+For the first S5 cycle, the object has this shape and literal meaning:
+
+```json
+{
+  "id": "applied-proposal-tb8-bayesian-statistics-evidence",
+  "proposal": {
+    "id": "proposal-tb8-bayesian-statistics-evidence",
+    "fingerprint": "proposal-fingerprint-tb8-bayesian-statistics-evidence",
+    "target": {
+      "id": "bayesian-statistics",
+      "title": "Bayesian statistics",
+      "path": "knowledge/bayesian-statistics.md"
+    },
+    "base_version_id": "bayesian-statistics-v1",
+    "working_material_id": "working-material-tb8-bayesian-statistics-evidence",
+    "exact_change": {
+      "path": "knowledge/bayesian-statistics.md",
+      "before": "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+      "after": "Bayesian statistics uses evidence to update prior belief."
+    }
+  },
+  "judgment": {
+    "id": "judgment-tb8-bayesian-statistics-evidence",
+    "proposal_id": "proposal-tb8-bayesian-statistics-evidence",
+    "proposal_fingerprint": "proposal-fingerprint-tb8-bayesian-statistics-evidence",
+    "base_version_id": "bayesian-statistics-v1",
+    "decision": "accepted"
+  },
+  "target": {
+    "id": "bayesian-statistics",
+    "title": "Bayesian statistics",
+    "path": "knowledge/bayesian-statistics.md"
+  },
+  "previous_version": {
+    "id": "bayesian-statistics-v1",
+    "fingerprint": "5fb3de504a1d39faaa32c199f9b8209dabb9abb4deb419633b2679de242c41df"
+  },
+  "new_version": {
+    "id": "bayesian-statistics-v2",
+    "fingerprint": "e2f8bbc083c57de5e4c01ad7c92fc965cc54d05061b0b85b06fa8b8e3ec504d1"
+  },
+  "rollback_path": "proposals/applied/applied-proposal-tb8-bayesian-statistics-evidence/rollback/knowledge/bayesian-statistics.md"
+}
+```
+
+The field names are portable snake-case names. `id` is unique within `proposals/applied/`; `proposal` and `judgment` preserve the exact approved identities, target, base version, and replacement; `previous_version` and `new_version` bind the target fingerprints to the Governance-domain version identifiers; and `rollback_path` is a repository-relative path to the exact original target bytes. The `decision` value is `accepted` for this cycle. Records are never overwritten; reusing an identity with different content is an explicit failure.
+
+The current governed file remains at its ordinary canonical path. The rollback file is stored at:
+
+```text
+proposals/applied/<applied-record-id>/rollback/<target-relative-path>
+```
+
+It contains the exact original bytes before application and is immutable after the application succeeds. It is retained history and recovery data, not a second current-content authority. This first cycle preserves only the targeted file; multi-file bundles and repository-wide snapshots are deferred.
+
+An in-progress application is staged at:
+
+```text
+proposals/applied/.transactions/<applied-record-id>/
+```
+
+The directory contains a private journal and staged target, rollback, and audit content. The journal is written before mutation, the live target fingerprint is rechecked immediately before replacement, and the Adapter must resolve an interrupted operation on reopen by either completing a fully staged application or restoring the prior target. Cleanup occurs only after the target, rollback, and audit record are in place. Unknown or orphaned transaction directories are not automatically removed by this first cycle.
+
+Readers must treat malformed or internally inconsistent applied records as an explicit repository/application outcome rather than silently inventing version history. A successful open with no applied record uses the existing target bytes as the deterministic fixture baseline `bayesian-statistics-v1`; after application, the valid applied record establishes `bayesian-statistics-v2` and its prior relationship. General version allocation, branching lineage, migrations, indexing, retention policy, and schema negotiation remain deferred.
 
 ## Compatibility and safe writes
 
