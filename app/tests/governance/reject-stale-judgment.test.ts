@@ -83,12 +83,18 @@ const createProposalInput = (
     baseVersionId: "bayesian-statistics-v1",
     content,
   } satisfies WorkingMaterialDraft,
-  exactChange: {
-    path: target.path,
-    before:
-      "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
-    after,
-  },
+  changes: [
+    {
+      id: `${proposalId}-change`,
+      exactChange: {
+        path: target.path,
+        before:
+          "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+        after,
+      },
+      dependsOn: [],
+    },
+  ],
 });
 
 describe("Governance stale Judgment", () => {
@@ -135,6 +141,7 @@ describe("Governance stale Judgment", () => {
           proposalId: proposalA.proposalId,
           proposalFingerprint: proposalA.proposalFingerprint,
           decision: "accepted",
+          acceptedChangeIds: [`${proposalA.proposalId}-change`],
         })
       ).outcome,
       "judgment-recorded",
@@ -150,6 +157,7 @@ describe("Governance stale Judgment", () => {
           proposalId: proposalB.proposalId,
           proposalFingerprint: proposalB.proposalFingerprint,
           decision: "accepted",
+          acceptedChangeIds: [`${proposalB.proposalId}-change`],
         })
       ).outcome,
       "judgment-recorded",

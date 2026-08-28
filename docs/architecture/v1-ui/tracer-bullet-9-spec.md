@@ -170,7 +170,7 @@ The focused Red run returned the prior generic `not-eligible` outcome as expecte
 
 ## Required second cycle: reject an invalid dependency subset
 
-This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was reviewed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the accepted first TB9 stale-Judgment slice on August 28, 2026. The concrete multi-change shape and caller-visible outcome below are proposed for this cycle and require confirmation before implementation.
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite was reviewed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the accepted first TB9 stale-Judgment slice on August 28, 2026. The concrete multi-change shape and caller-visible outcome below were confirmed for this cycle before implementation.
 
 ### Scope
 
@@ -187,7 +187,7 @@ Before writing the Red test or implementation code, explicitly complete these to
 3. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
 4. Obtain explicit human confirmation that this slice rejects only non-closed accepted subsets and does not silently rebase, drop, or auto-accept dependencies.
 
-Implementation must not begin until this second-cycle documentation review and confirmation task is complete. A new dependency graph policy, persistent multi-change representation, or Test Seam requires stopping and revising this brief before proceeding.
+Implementation began only after this second-cycle documentation review and confirmation task was complete. A new dependency graph policy, persistent multi-change representation, or Test Seam would require stopping and revising this brief before proceeding.
 
 ### Proposed public behavior
 
@@ -311,7 +311,7 @@ The following alternatives are discarded or deferred for this cycle:
 
 ### Acceptance evidence and required confirmation
 
-This second cycle is not implementation-ready until the user confirms:
+The user confirmed this second-cycle design on August 28, 2026. Completion requires:
 
 - the `ProposalChange` and `acceptedChangeIds` shape;
 - the `invalid-dependency-subset` outcome and exact detail;
@@ -319,3 +319,12 @@ This second cycle is not implementation-ready until the user confirms:
 - the literal two-change fixture and the explicit deferrals above.
 
 After confirmation, completion requires the focused Red/Green evidence, full automated gates, proof that no mutation occurred, and human confirmation that a dependent change cannot be applied without its explicitly accepted prerequisite. Acceptance of this cycle will not approve successful multi-change persistence or the later per-change decision vocabulary.
+
+### Second-cycle implementation evidence
+
+- **Confirmation:** The user confirmed the `ProposalChange` and `acceptedChangeIds` shape, the exact `invalid-dependency-subset` outcome, the transitive dependency-closure rule, the literal two-change fixture, and the explicit deferrals before the Red test on August 28, 2026.
+- **Red evidence:** `npm run test -- --run tests/governance/reject-invalid-dependency-subset.test.ts` reached the new behavior and failed because the single-change validator dereferenced the absent `exactChange` field before dependency-subset behavior existed.
+- **Green evidence:** The focused dependency-subset test passed. `npm run check` passed formatting, linting, strict type checking, and 67 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.03% statements, 72.92% branches, and 97.31% functions. `npm run lint:complexity` passed.
+- **Behavior evidence:** Governance records the accepted dependent-only Judgment, returns the exact `invalid-dependency-subset` result before `applyVersion`, preserves `bayesian-statistics-v1` as current, and keeps that prior version retrievable.
+- **Compatibility evidence:** Existing single-change Governance behavior and file-backed contract tests pass. The file-backed applied-record representation remains the accepted TB8 single-change `exact_change` shape; multi-change application and persisted multi-change provenance remain deferred.
+- **Acceptance:** Human acceptance of this dependency-subset behavior remains pending. The user has confirmed the implementation specification, not the completed behavior.

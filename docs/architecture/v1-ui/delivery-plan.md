@@ -451,14 +451,16 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed that a Judgment reviewed for `bayesian-statistics-v1` is rejected with `stale-judgment` after `bayesian-statistics-v2` becomes current, while `v2` remains current and `v1` remains retrievable.
 - **Next behavior:** Repeat the documentation prerequisite and specify the invalid dependency-subset slice before writing its behavior test.
 
-#### TB9 invalid dependency-subset cycle — specification drafted August 28, 2026
+#### TB9 invalid dependency-subset cycle — implementation complete, human acceptance pending August 28, 2026
 
-- **Proposed Public Behavior:** Governance rejects an accepted subset containing a dependent change without its prerequisite, returning `invalid-dependency-subset` before storage mutation.
-- **Proposed Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
-- **Proposed shape:** A Proposal exposes labeled exact changes with `dependsOn` IDs, and a Judgment exposes explicit `acceptedChangeIds`; the accepted subset must contain the direct and transitive dependency closure.
+- **Public Behavior:** Governance rejects an accepted subset containing a dependent change without its prerequisite, returning `invalid-dependency-subset` before storage mutation.
+- **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
+- **Shape confirmed:** A Proposal exposes labeled exact changes with `dependsOn` IDs, and a Judgment exposes explicit `acceptedChangeIds`; the accepted subset must contain the direct and transitive dependency closure.
 - **Scope:** This planned cycle proves rejection only. Valid multi-change application, persistent multi-change provenance, and independently different per-change decisions remain deferred.
-- **Status:** The implementation specification is drafted and requires explicit human confirmation of the Interface shape, outcome, literal fixture, and deferrals before the Red test or implementation begins.
-- **Next behavior:** Confirm this specification, then run the focused Red-to-Green cycle for invalid dependency subsets.
+- **Red evidence:** The focused test first failed because the existing single-change validator dereferenced `exactChange` and had no dependency-subset behavior.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 67 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.03% statements, 72.92% branches, and 97.31% functions. `npm run lint:complexity` passed. The focused test proves no storage mutation and preserves current/history state.
+- **Status:** Implementation is complete and the specification was confirmed before code changes. Human acceptance of the dependency-subset behavior remains pending.
+- **Next behavior:** Complete human acceptance for this rejection behavior, then repeat the documentation prerequisite and specify independently reviewable multi-change decisions before implementation.
 
 ### 10. Review through the desktop interface
 
