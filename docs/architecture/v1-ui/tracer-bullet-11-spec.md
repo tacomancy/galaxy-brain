@@ -1,14 +1,14 @@
 # Tracer Bullet 11: Preserve one rich/source editing meaning
 
-This brief coordinates the first TB11 implementation slice in the [delivery plan](delivery-plan.md#11-preserve-meaning-across-editing-views). It is an implementation entry point, not a second authority for product behavior, architecture, Repository Format, testing, or accepted ADR decisions.
+This brief coordinates the approved TB11 implementation slices in the [delivery plan](delivery-plan.md#11-preserve-meaning-across-editing-views). It is an implementation entry point, not a second authority for product behavior, architecture, Repository Format, testing, or accepted ADR decisions.
 
 ## Scope
 
-The first TB11 slice proves one semantic round trip in Studio: a person opens a Working Material authoring draft containing one supported `==highlight==` construct, edits the highlighted text through the rich view, inspects the exact extended-Markdown source, returns to rich view, closes and reopens the draft in the same Workbench session, and observes the same edited meaning.
+TB11 proves one semantic round trip in Studio for six bounded construct examples: `==highlight==`, `[[link]]`, `![[embed]]`, an evidence callout, inline `$equation$`, and `[@citation]`. A person opens a Working Material authoring draft, edits the current semantic object through the rich view, inspects the exact extended-Markdown source, returns to rich view, and can move to the next example without losing the current session state.
 
-The draft is based on the selected fixture topic `bayesian-statistics` and remains Working Material. The current Governed Knowledge file is never edited by this slice. The authoring session owns the transient draft for the duration of the Workbench process; durable Working Material autosave, relaunch recovery, and a Repository Format representation for authoring drafts are deferred until a later documentation-and-specification cycle.
+The first cycle uses the `==highlight==` draft and also proves close/reopen in the same Workbench session. The five follow-up cycles use independent deterministic drafts from the same `bayesian-statistics` fixture and prove that the same Module Interface preserves each construct's meaning and source literal. The selected Governed Knowledge file is never edited by any cycle.
 
-This slice adds one supported construct and one edit operation only. It does not establish a general Markdown parser, a production editor-engine dependency, rich formatting beyond highlighting, Proposal creation, Governance application, or a new primary workspace.
+The authoring session owns transient drafts for the duration of the Workbench process. Durable Working Material autosave, relaunch recovery, and a Repository Format representation for authoring drafts remain deferred. TB11 does not establish a general Markdown parser, a production editor-engine dependency, arbitrary selection, Proposal creation, Governance application, or a new primary workspace.
 
 ## Documentation prerequisite
 
@@ -19,9 +19,9 @@ Before writing behavior tests or implementation code, explicitly complete these 
 3. Check that rich/source equivalence is owned by the Knowledge Authoring Module, that Studio is only a UI Adapter, and that no renderer-side string replacement becomes a second semantic authority.
 4. Check that the source representation remains ordinary intelligible extended Markdown and that unknown constructs are not rewritten or discarded by this first slice.
 5. Check that the draft source is test-only and transient, that opening a repository does not write a draft, and that the selected Governed Knowledge file remains unchanged until a later explicit authoring persistence decision.
-6. Obtain explicit human confirmation of the exact fixture, rich edit, source text, same-session reopen behavior, and listed deferrals before writing the Red workflow or implementation code.
+6. Obtain explicit human confirmation of the exact fixtures, rich edits, source text, same-session reopen behavior, and listed deferrals before writing the Red workflow or implementation code. This confirmation was received on August 28, 2026; later cycles inherit the approved shared seam and boundaries.
 
-Implementation must not begin until this documentation review and confirmation task is complete. If the first Red test reveals a parser, persistent draft schema, editor-engine dependency, or new Test Seam, stop and update this brief before proceeding.
+This documentation review and confirmation task was complete before implementation began on August 28, 2026. If a later slice reveals a parser, persistent draft schema, editor-engine dependency, or new Test Seam, stop and update this brief before proceeding.
 
 ## Governing authorities
 
@@ -38,14 +38,30 @@ Implementation must not begin until this documentation review and confirmation t
 Given an isolated copy of the checked-in synthetic Knowledge Repository:
 
 1. Open the repository through the existing Atlas flow and enter Studio for the `Bayesian statistics` context.
-2. Studio opens one fixture Working Material authoring draft in rich mode. The draft shows `prior belief` as a highlighted semantic object, not as raw delimiter text.
-3. Edit the highlighted text in rich mode from `prior belief` to `posterior belief` through the accessible authoring control.
-4. Switch to source mode. The source view shows the exact updated Markdown construct `==posterior belief==` in the complete draft text, including the unchanged surrounding content.
-5. Switch back to rich mode. The phrase `posterior belief` is still presented as the same highlighted semantic object.
-6. Close the authoring surface, reopen the same draft in Studio during the same Workbench session, and observe the edited phrase in both rich and source views without loss or reinterpretation.
-7. The selected repository’s governed topic file remains unchanged. The draft remains Working Material and is not a Proposal or Governed Knowledge.
+2. Studio opens one fixture Working Material authoring draft in rich mode. The current construct's value is presented as a semantic object, not as raw delimiter text.
+3. Edit the current semantic value through the accessible authoring control.
+4. Switch to source mode. The source view shows the exact updated Markdown construct in the complete draft text, including unchanged surrounding content.
+5. Switch back to rich mode. The edited value is still presented as the same semantic object.
+6. For the first highlight example, close the authoring surface, reopen the same draft during the same Workbench session, and observe the edited phrase in both rich and source views without loss or reinterpretation.
+7. Select each of the five follow-up examples and repeat the rich edit/source inspection round trip.
+8. The selected repository's governed topic file remains unchanged. Every draft remains Working Material and is not a Proposal or Governed Knowledge.
 
-The user-visible source representation is the source text itself; the renderer must not reconstruct it from a second expected string or hide it behind editor-engine nodes. The user-visible rich representation is the semantic highlight and its edited text. Both are projections owned by the Knowledge Authoring Module.
+The user-visible source representation is the source text itself; the renderer must not reconstruct it from a second expected string or hide it behind editor-engine nodes. The user-visible rich representation is the semantic object and its edited text. Both are projections owned by the Knowledge Authoring Module.
+
+## Approved follow-up construct fixtures
+
+Each follow-up cycle uses one complete source literal and one independently known semantic edit. The fixture source remains transient and is selected only through the silent packaged test composition path.
+
+| Construct | Initial semantic value | Edited semantic value | Initial source body | Edited source body |
+| --- | --- | --- | --- | --- |
+| `==highlight==` | `prior belief` | `posterior belief` | `Bayesian statistics updates a ==prior belief== with evidence.` | `Bayesian statistics updates a ==posterior belief== with evidence.` |
+| `[[link]]` | `bayesian-inference` | `conditional-inference` | `Bayesian statistics compares [[bayesian-inference]] with evidence.` | `Bayesian statistics compares [[conditional-inference]] with evidence.` |
+| `![[embed]]` | `bayesian-updates#overview` | `bayesian-updates#human-readable-anchor` | `Bayesian statistics includes ![[bayesian-updates#overview]].` | `Bayesian statistics includes ![[bayesian-updates#human-readable-anchor]].` |
+| `> [!EVIDENCE]` | `Evidence updates confidence.` | `Evidence changes confidence.` | `> [!EVIDENCE] Evidence updates confidence.` | `> [!EVIDENCE] Evidence changes confidence.` |
+| `$equation$` | `P(H|E)` | `P(E|H)` | `Bayesian updating uses $P(H|E)$ as its likelihood.` | `Bayesian updating uses $P(E|H)$ as its likelihood.` |
+| `[@citation]` | `bayes-1763` | `laplace-1812` | `The prior is documented in [@bayes-1763].` | `The prior is documented in [@laplace-1812].` |
+
+Every source body is wrapped by the exact frontmatter and heading shown in the first fixture. A construct selector is a testable authoring affordance for moving among these bounded examples; it is not a promise of a production fixture catalog or a user repository browser.
 
 ## Literal expected values
 
@@ -109,25 +125,26 @@ The workflow must assert the visible rich representation, the accessible edit ac
 
 ## Proposed application seam
 
-Add the smallest Knowledge Authoring capability needed by the first slice:
+Add the smallest Knowledge Authoring capability needed by the approved TB11 cycles:
 
-- a framework-independent authoring-session Interface that opens one draft, applies the supported semantic highlighted-text edit, returns the rich projection, returns the exact source projection, and reopens the session draft;
+- a framework-independent authoring-session Interface that opens one draft, selects a bounded construct example, applies the supported semantic-text edit, returns the rich projection, returns the exact source projection, and reopens the session draft;
 - a test-only transient authoring-draft source at the main-process composition boundary; and
 - typed preload operations for opening the draft, applying the edit, switching representation, and reopening it.
 
-The authoring Interface should expose domain-level semantic content and explicit outcomes, not HTML, DOM nodes, editor-engine transactions, or filesystem paths. It may use a small internal document model for the `paragraph` and `highlight` constructs required by this slice. The model must serialize to and parse from the literal source text through one Module-owned path.
+The authoring Interface should expose domain-level semantic content and explicit outcomes, not HTML, DOM nodes, editor-engine transactions, or filesystem paths. It may use a small internal document model for the paragraph and six construct forms required by these cycles. The model must serialize to and parse from the literal source text through one Module-owned path.
 
 The draft’s in-session state is authoritative for this slice. Studio may hold only transient mode and focus state. The current Governed Knowledge file, the Governance Module, and the Repository Format remain outside the edit operation. Durable Working Material autosave will require a separately specified Repository Format or repository-independent representation and is therefore not silently introduced here.
 
 ## Minimum vertical path
 
-1. Complete the documentation prerequisite and obtain confirmation of this exact fixture, edit, seam, and persistence boundary.
+1. Complete the documentation prerequisite and obtain confirmation of the approved fixtures, edits, seam, and persistence boundary.
 2. Add `app/tests/workflows/edit-rich-source-equivalence.e2e.ts` and observe the expected Red failure because Studio has no authoring draft or rich/source controls.
-3. Add the narrow Knowledge Authoring Module and transient fixture source; cover its semantic round trip with a focused Module test.
+3. Add the narrow Knowledge Authoring Module and transient fixture source; cover the highlight semantic round trip with a focused Module test.
 4. Expose typed main/preload operations with sender validation and preserve the existing Workbench Session context.
-5. Add the Studio authoring surface with rich mode as the default, an accessible highlighted-text edit, exact source mode, and explicit Working Material labeling.
+5. Add the Studio authoring surface with rich mode as the default, accessible semantic-object editing, exact source mode, construct selection, and explicit Working Material labeling.
 6. Add same-session close/reopen behavior and assert that the governed topic remains unchanged.
-7. Run the focused workflow, `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, changed-lines coverage, and public documentation validation. Record Red/Green evidence and manual acceptance before selecting the next TB11 slice.
+7. Repeat the Red/Green cycle for link, embed, callout, equation, and citation using the approved fixture table and the same Module Interface.
+8. Run the focused workflow, `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, changed-lines coverage, and public documentation validation. Record Red/Green evidence and manual acceptance before closing TB11.
 
 ## External System Seams
 
@@ -141,24 +158,24 @@ The draft’s in-session state is authoritative for this slice. Studio may hold 
 
 ## Boundaries and explicit deferrals
 
-This first TB11 slice does not implement:
+TB11 does not implement:
 
 - durable Working Material autosave, relaunch recovery, or a new portable draft schema;
-- arbitrary Markdown parsing, broad syntax support, or automatic preservation rules beyond the demonstrated `==highlight==` construct;
-- links, embeds, callouts, citations, equations, Mermaid, semantic HTML, macros, or other extended-Markdown constructs;
+- arbitrary Markdown parsing, broad syntax support, or automatic preservation rules beyond the six explicitly listed constructs and their fixture forms;
+- Mermaid, semantic HTML, macros, image links, directives, or other extended-Markdown constructs not listed in the fixture table;
 - arbitrary selection, rich text ranges, multi-paragraph editing, keyboard shortcuts beyond ordinary accessible control operation, or editor-engine-specific behavior;
 - metadata editing, title changes, backlinks, inspector projections, source capture, Synthesis, Proposal authoring, Judgment, or Governance application;
 - concurrent draft editing, conflict recovery, external-edit detection for drafts, or undo/history beyond the browser’s immediate interaction state;
 - Studio metrics, Atlas changes, Paper Desk changes, Agent Provider use, Git, or network behavior.
 
-The next TB11 slice must repeat the documentation prerequisite and decide whether the `==highlight==` round trip warrants a general document model, a persistent Working Material Adapter, or both. It must not infer durable schema or additional syntax from this fixture.
+Future authoring work must repeat the documentation prerequisite and decide whether the six-construct round trip warrants a general document model, a persistent Working Material Adapter, or both. It must not infer durable schema, arbitrary syntax, or a production editor engine from these fixtures.
 
 ## Alternatives considered and discarded
 
 - **Edit the Governed Knowledge file directly:** discarded because direct authoring must remain Working Material and a rich-editor action must not bypass governed evolution.
 - **Render and edit raw `==...==` delimiter text in rich mode:** discarded because rich mode would not demonstrate semantic editing and would expose source representation as the rich representation.
 - **Let React convert HTML or delimiter strings independently:** discarded because it would create a second meaning authority and make rich/source divergence likely; the Knowledge Authoring Module owns conversion.
-- **Add a full Markdown editor/parser dependency now:** deferred because one proven construct does not establish the required engine, syntax coverage, security posture, or lifecycle cost. The seam keeps that choice replaceable.
+- **Add a full Markdown editor/parser dependency now:** deferred because six fixture forms do not establish the required engine, full syntax coverage, security posture, or lifecycle cost. The seam keeps that choice replaceable.
 - **Persist a new draft file on first rich edit:** deferred because Repository Format does not yet define a portable authoring-draft representation; persistence would combine a format decision with a semantic round-trip slice.
 - **Use an editor-engine node or DOM snapshot as the test contract:** discarded because tests must survive editor-engine replacement and observe the user-visible meaning and exact source projection.
 
@@ -171,16 +188,17 @@ Automated acceptance requires the focused packaged workflow, full repository gat
 3. Source mode exposes the exact complete Markdown draft with `==posterior belief==`.
 4. Returning to rich mode preserves the highlight and edited meaning.
 5. Closing and reopening in the same session preserves both representations while the governed topic remains unchanged.
+6. Each link, embed, callout, equation, and citation example presents its semantic value, accepts the listed edit, and exposes the exact edited source body.
 
-Record the human confirmation, Red/Green evidence, changed files, and any newly discovered deferral in the TB11 section of the delivery plan before starting another slice.
+Record the human confirmation, Red/Green evidence, changed files, and any newly discovered deferral in the TB11 section of the delivery plan before closing the tracer bullet.
 
 ## Required confirmation
 
-Implementation is blocked until the user confirms all of the following proposed decisions:
+The user confirmed all of the following decisions on August 28, 2026:
 
-- the first supported construct is `==highlight==` with the exact Bayesian-statistics fixture above;
-- the rich edit changes `prior belief` to `posterior belief` through a semantic authoring control;
-- source mode must show the complete literal extended-Markdown draft and rich mode must restore the same highlight meaning;
+- the first supported construct is `==highlight==` with the exact Bayesian-statistics fixture above, followed by the five construct fixtures in the approved table;
+- each rich edit changes the listed initial semantic value to its listed edited value through a semantic authoring control;
+- source mode must show the complete literal extended-Markdown draft and rich mode must restore the same construct meaning;
 - the Knowledge Authoring Module owns the round trip and the S1 workflow uses a transient test fixture without mutating the governed repository;
-- close/reopen means same-Workbench-session recovery for this slice; durable autosave, relaunch recovery, and draft persistence remain explicitly deferred; and
-- additional Markdown constructs, editor-engine selection, metadata, Proposal/Governance behavior, and concurrent editing remain deferred.
+- close/reopen means same-Workbench-session recovery for the first slice; durable autosave, relaunch recovery, and draft persistence remain explicitly deferred; and
+- additional Markdown constructs beyond the six, editor-engine selection, metadata, Proposal/Governance behavior, and concurrent editing remain deferred.

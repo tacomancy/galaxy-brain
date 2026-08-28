@@ -1,8 +1,22 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9 stale-Judgment, invalid dependency-subset, and deferred-change slices are implemented and accepted on August 28, 2026, while the independently judged changes slice is implemented with human acceptance pending; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
+
+## TB8–TB10 follow-up reconciliation
+
+The implementation and automated evidence for TB8, TB9, and TB10 are present on this branch or in its merged ancestry. The remaining items below are deliberately separated into human acceptance gates and deferred scope; neither may be silently represented as an implementation failure or as acceptance that the user has not provided.
+
+| Tracer bullet | Repository status | Human gate | V1 impact | Next action |
+| --- | --- | --- | --- | --- |
+| TB8 — governed persistence | S2 and S5 implementation, recovery, external-edit, rollback, packaged, and automated evidence complete | Accepted by the user on August 28, 2026 after review of persisted artifacts, reopen/current-history behavior, external-edit rejection, interruption recovery, rollback restoration, and local-save communication | No remaining TB8 release blocker | Keep the documented persistence and recovery deferrals out of scope unless a new slice is selected |
+| TB9 — independently judged changes | All recorded TB9 implementation and automated evidence complete | Accepted by the user on August 28, 2026: only the accepted independent change is applied, the rejected change is absent, and the prior version remains retrievable | No remaining TB9 release blocker for the recorded scope | Keep the documented format, history, revision, and UI deferrals out of scope unless a new slice is selected |
+| TB10 — desktop Proposal Review | S1 implementation, full automated checks, and packaged workflow evidence complete | Accepted by the user on August 28, 2026 after all five checks passed: distinguish the judgment queue, inspect exact diff/evidence, cancel without mutation, accept/apply as the only mutating action, and observe new/prior versions plus local-save status | No remaining TB10 release blocker for the recorded scope | Keep richer review controls and other documented deferrals out of scope unless a new slice is selected |
+
+TB9 record reconciliation: the edited-change, edited-dependent-change, and persistent edited-decision provenance cycles each contain explicit user acceptance records below. The independently judged changes cycle is now also accepted by the user on August 28, 2026. This status records the user’s direct approval of the behavior gate; it is not inferred from a merge or a passing automated suite.
+
+TB8, TB9, and TB10 no longer have open human gates in their recorded scopes. Their remaining limitations are explicitly documented deferrals, not unfinished acceptance work.
 
 ## Operating rule
 
@@ -419,7 +433,7 @@ The required next TB8 cycle is the S5 file-backed persistence path. Its applied-
 - **Green evidence:** The focused S2 test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 55 Vitest tests.
 - **Scope confirmed:** The cycle is S2-only and in-memory. It proves that Working Material and Proposal creation do not mutate the current governed version, accepted Judgment is exact-version bound, application returns the expected new version, the prior version remains retrievable, and the applied identity preserves Proposal/Judgment provenance. No Agent Provider, network, UI, file-backed Repository Format schema, durable draft, or Knowledge Authoring behavior was added.
 - **Deferred work:** The required later S5 cycle still owns persisted version records and ID mapping/allocation/lineage across reopen, applied audit records, targeted rollback data, fingerprint checks, recoverable filesystem transactions, external-edit detection, and Repository Format/code-map updates for those Adapters. Durable Working Material drafts, autosave, reopening/history, rich/source editing, and the Knowledge Authoring UI remain deferred to the authoring tracer bullet.
-- **Acceptance:** Human review is pending. The user must confirm the current version stayed unchanged until explicit application and the prior version remained retrievable afterward before this first cycle is accepted.
+- **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed the current version stayed unchanged until explicit application and the prior version remained retrievable afterward.
 - **Next behavior:** Before adding the next TB8 behavior, repeat the documentation prerequisite. The next planned TB8 cycle is the required file-backed persistence/S5 contract work; TB9 owns stale and incoherent application rejection.
 
 #### TB8 required S5 file-backed persistence cycle — August 28, 2026
@@ -431,8 +445,8 @@ The required next TB8 cycle is the S5 file-backed persistence path. Its applied-
 - **Failure/recovery evidence:** The contract covers external target-edit rejection without overwrite, with the public `external-change` outcome, recovery after target replacement interruption, recovery after audit-install interruption with transaction cleanup, and exact prior-target restoration when interrupted audit content is invalid, with the public `completed` or `restored` recovery outcome. It also asserts exact persisted audit JSON, exact rollback bytes, stable reopen history, and preservation of unrelated repository content.
 - **Scope confirmed:** The cycle adds only the confirmed one-target `v1` → `v2` file-backed persistence path. General version allocation, branching/multi-target lineage, schema migration, broad indexing, unknown-staging cleanup, UI rollback/recovery, stale/incoherent Judgment policy, Proposal Review, authoring, Agent Provider use, Git, and network behavior remain deferred as documented in the TB8 brief.
 - **Packaged evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run test:workflow` packaged the macOS arm64 application and passed all 22 WebdriverIO workflow specs, including packaged renderer layout and the existing repository/workbench flows.
-- **Acceptance:** Human review of the persisted artifacts, reopen behavior, external-edit handling, interruption recovery, and rollback restoration remains pending. TB8 is not accepted until that review is complete.
-- **Next behavior:** Complete human S5 review, then select the next TB8/TB9 behavior only after the documentation prerequisite is repeated.
+- **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed the persisted artifacts, reopen/current-history behavior, external-edit handling, interruption recovery, rollback restoration, and local-save boundary.
+- **Next behavior:** No additional TB8 behavior is selected. Keep broader version allocation, branching lineage, schema migration, rollback UI, and other documented deferrals out of scope until a separately reviewed slice is selected.
 
 ### 9. Reject stale and incoherent applications
 
@@ -462,7 +476,7 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Status:** Implementation is complete, the specification was confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
 - **Next behavior:** Repeat the documentation prerequisite and specify independently reviewable multi-change decisions before implementation.
 
-#### TB9 independently judged changes cycle — implementation complete, human acceptance pending August 28, 2026
+#### TB9 independently judged changes cycle — implementation complete and accepted August 28, 2026
 
 - **Public Behavior:** A Judgment explicitly accepts one independent Proposal change and rejects another; Governance applies only the accepted change and preserves the rejected change as unapplied.
 - **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
@@ -470,8 +484,9 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Scope:** This cycle proves mixed accepted/rejected decisions for independent changes. Edit/defer decisions, dependent mixed decisions, durable mixed-decision provenance, and UI behavior remain deferred.
 - **Red evidence:** The focused test first failed because the existing Judgment had no rejected-change representation and dropped the explicit rejection before application.
 - **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 68 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.12% statements, 73.01% branches, and 97.31% functions. `npm run lint:complexity` passed. The focused test proves only the accepted change is applied and the prior version remains retrievable.
-- **Status:** Implementation is complete, the specification was confirmed before code changes, and human acceptance remains pending.
-- **Next behavior:** Complete human acceptance for this independent-decision behavior, then complete human acceptance for explicit per-change deferral before repeating the documentation prerequisite for edited decisions or dependent mixed-decision behavior.
+- **Status:** Implementation is complete, the specification was confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
+- **Acceptance:** The user confirmed that only the explicitly accepted independent change is applied, the rejected change remains unapplied, and the prior governed version remains retrievable.
+- **Next behavior:** No additional TB9 behavior is selected. Keep the documented edited, dependency, persistence, revision, history, and UI boundaries governed by their recorded slices and deferrals.
 
 #### TB9 deferred change cycle — implementation complete and accepted August 28, 2026
 
@@ -484,7 +499,7 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Status:** Implementation is complete, the specification was confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
 - **Next behavior:** Repeat the documentation prerequisite and specify edited decisions or dependent mixed-decision behavior before implementation.
 
-#### TB9 edited change cycle — implementation complete, human acceptance pending August 28, 2026
+#### TB9 edited change cycle — implementation complete and accepted August 28, 2026
 
 - **Public Behavior:** A Judgment explicitly accepts one independent Proposal change and edits another; Governance applies the accepted change and the reviewer-supplied edited exact change.
 - **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
@@ -497,7 +512,7 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Deferred work:** Edited dependent changes, Judgment revision, dependency-graph mutation, persistent edited multi-change provenance, UI behavior, Agent Provider use, Git, and network behavior remain explicitly deferred. Durable provenance must preserve both original and edited exact changes before the file-backed representation is expanded.
 - **Next behavior:** Repeat the documentation prerequisite and specify the edited dependent-change behavior before implementation.
 
-#### TB9 edited dependent change cycle — implementation complete, human acceptance pending August 28, 2026
+#### TB9 edited dependent change cycle — implementation complete and accepted August 28, 2026
 
 - **Public Behavior:** A Judgment accepts one Proposal prerequisite unchanged and edits a dependent Proposal change. Governance applies both because the effective accepted subset is dependency-closed, using the reviewer-supplied exact replacement for the dependent change.
 - **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
@@ -511,7 +526,7 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Deferred work:** Generic dependency reordering, post-prerequisite exact replacements, multi-level graphs, edited prerequisites combined with edited dependents, Judgment revision, persistent edited multi-change provenance, and UI behavior remain explicitly deferred.
 - **Next behavior:** Repeat the documentation prerequisite and specify the persistent edited-decision provenance behavior before implementation.
 
-#### TB9 persistent edited-decision provenance cycle — implementation complete, human acceptance pending August 28, 2026
+#### TB9 persistent edited-decision provenance cycle — implementation complete and accepted August 28, 2026
 
 - **Public Behavior:** A file-backed governed application with multiple Proposal changes persists the complete Proposal change list and the complete Judgment classification, including the reviewer-supplied edited exact change. Reopening the repository preserves the applied and prior versions, while the immutable applied record exposes the original and edited provenance.
 - **Test Seam:** The existing S5 file-backed Governance version-storage Adapter exercised through the public S2 Governance Interface and its contract test; no new storage seam is proposed.
@@ -523,7 +538,7 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Status:** Implementation is complete, the specification and deferrals were confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
 - **Acceptance:** The user confirmed the plural applied-record provenance, legacy scalar-record compatibility, reopen/current-history behavior, exact rollback bytes, and preservation of unrelated repository content.
 - **Deferred work:** Repository Format migration, schema negotiation, rewriting legacy records, multiple applied records, branching history, persisted non-applied Judgments, Judgment revision, new transaction-failure permutations, and UI behavior remain explicitly deferred.
-- **Next behavior:** Complete the manual acceptance review for the persisted edited-decision provenance and legacy-record compatibility behavior.
+- **Next behavior:** No additional TB9 behavior is selected. Keep Repository Format migration, multi-record history, branching lineage, persisted non-applied Judgments, new transaction-failure permutations, and UI behavior deferred until a separately reviewed and confirmed slice is selected.
 
 ### 10. Review through the desktop interface
 
@@ -549,7 +564,7 @@ The first S1 cycle is deliberately bounded: Atlas receives one transient test-fi
 - **Green evidence:** With Node.js `24.19.0`, the focused packaged `review-proposal.e2e.ts` workflow passed, and the complete packaged workflow passed all 23 WebdriverIO specs. `npm run check` passed formatting, linting, strict type checking, and 74 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.71% statements, 72.98% branches, 97.26% functions, and 81.53% lines. `npm run lint:complexity` passed. Public documentation validation passed with the documented Python 3.11 environment.
 - **Implementation:** Added the framework-independent Proposal Review session, deterministic fixture/empty sources, typed main/preload operations, Atlas queue card, contextual review route, exact-diff/evidence presentation, and file-backed Governance application workflow.
 - **Scope confirmed:** Pending-Proposal persistence, Proposal authoring, multiple-item discovery, selective decisions, Judgment revision, stale recovery, UI rollback/history, richer metadata editing, Agent Provider use, Git, and network behavior remain explicitly deferred.
-- **Acceptance:** Automated evidence is complete. Human acceptance remains pending; the user must manually observe the five acceptance checks in the TB10 brief before this slice is marked accepted.
+- **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed all five checks in the TB10 brief: the judgment queue is distinct from continuation, the exact diff and evidence are inspectable, cancel/back leaves state unchanged, **Accept and apply** is the only mutating action, and the new/prior versions plus local-save status are visible.
 
 ### 11. Preserve meaning across editing views
 
@@ -559,9 +574,19 @@ Before implementation, complete the [documentation prerequisite](#documentation-
 
 Before implementation, review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), [Test Strategy](test-strategy.md), applicable ADRs—especially [ADR 0003](../../adr/0003-keep-rich-and-source-editing-equivalent.md)—and the completed TB1–TB10 delivery records. Then complete the [TB11 implementation brief](tracer-bullet-11-spec.md), explicitly confirming the first supported extended-Markdown construct, literal draft values, Knowledge Authoring owner, confirmed S1 seam, minimum vertical path, persistence boundary, discarded alternatives, deferrals, and acceptance evidence before writing the Red test or implementation.
 
-Implementation must not begin until the user confirms the exact `==highlight==` fixture, rich-edit action, source representation, same-session reopen behavior, and explicit deferrals in the TB11 brief. Durable Working Material persistence, relaunch recovery, and additional constructs remain separate decisions and must not be inferred from this first cycle.
+The user confirmed the exact `==highlight==` fixture, rich-edit action, source representation, same-session reopen behavior, and explicit deferrals on August 28, 2026. The user then authorized implementation plans for all TB11 slices, including the five bounded follow-up construct fixtures recorded in the [TB11 brief](tracer-bullet-11-spec.md). Durable Working Material persistence, relaunch recovery, and constructs outside that approved table remain explicitly deferred.
 
-At S1, prove one worked extended-Markdown construct can be edited in rich view, inspected in source view, reopened, and observed with the same meaning. Expand one construct per later cycle—link, embed, callout, equation, citation—letting each reveal the next necessary editor behavior.
+At S1, prove one worked extended-Markdown construct can be edited in rich view, inspected in source view, reopened, and observed with the same meaning. Expand one construct per cycle—link, embed, callout, equation, citation—using the shared Knowledge Authoring Interface and independently known source literals.
+
+#### TB11 implementation record — August 28, 2026
+
+- **Public Behavior:** Studio opens transient Working Material authoring examples for highlight, link, embed, callout, equation, and citation constructs; a person edits each semantic object in rich view, inspects the exact source projection, and returns to rich view. The highlight cycle additionally closes and reopens the draft in the same Workbench session. The governed fixture topic remains unchanged.
+- **Test Seam:** S1 packaged Electron/WebdriverIO workflow with the silent native window, real Workbench Session, main process, preload bridge, Knowledge Authoring Module, and transient fixture Adapter. Focused S2 Module coverage exercises the same Knowledge Authoring Interface with its fixture source.
+- **Red evidence:** The initial focused packaged workflow first failed after successful packaging because `#studio-authoring-surface` was absent. A test-sequence correction was then required to inspect source mode after same-session reopen returned to the confirmed rich default.
+- **Green evidence:** With Node.js `24.19.0`, the focused packaged workflow passed both TB11 cases, covering all six constructs. The focused Knowledge Authoring Module suite passed 2 tests. Full repository gates passed: 86 Vitest tests, 19 documentation tests, 26 documentation files, coverage at 82.07% statements / 73.32% branches / 96.60% functions / 81.97% lines, and complexity lint. The complete packaged workflow passed all 24 WebdriverIO specs. Post-commit changed-lines coverage passed at 89.47% (85/95 executable lines against an 80% threshold).
+- **Implementation:** Added the framework-independent Knowledge Authoring Module, transient fixture/empty sources, typed main/preload operations, Studio semantic-object authoring surface, construct selector, rich/source projections, and same-session close/reopen behavior. Updated the code map and TB11 brief with the approved six-construct scope and explicit deferrals.
+- **Scope confirmed:** Durable Working Material autosave, relaunch recovery, portable draft schema, arbitrary Markdown parsing, constructs outside the six fixtures, production editor-engine selection, arbitrary selection, metadata, Proposal/Governance behavior, concurrency, and non-S1 workspace behavior remain deferred.
+- **Acceptance:** Automated focused evidence is complete. Human acceptance remains pending; the user must manually observe the six construct round trips, same-session highlight reopen, Working Material labeling, and governed-topic nonmutation.
 
 ### 12. Separate Search, Ask, and Jump
 
