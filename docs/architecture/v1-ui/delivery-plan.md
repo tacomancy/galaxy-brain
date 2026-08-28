@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9 stale-Judgment and invalid dependency-subset slices are implemented and accepted on August 28, 2026, while the independently judged changes and deferred-change slices are implemented with human acceptance pending; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles complete on August 28, 2026 with human acceptance pending; TB9 stale-Judgment, invalid dependency-subset, and deferred-change slices are implemented and accepted on August 28, 2026, while the independently judged changes slice is implemented with human acceptance pending; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -473,16 +473,25 @@ Continue at S2 one behavior per cycle, following the [TB9 implementation brief](
 - **Status:** Implementation is complete, the specification was confirmed before code changes, and human acceptance remains pending.
 - **Next behavior:** Complete human acceptance for this independent-decision behavior, then complete human acceptance for explicit per-change deferral before repeating the documentation prerequisite for edited decisions or dependent mixed-decision behavior.
 
-#### TB9 deferred change cycle — implementation complete, human acceptance pending August 28, 2026
+#### TB9 deferred change cycle — implementation complete and accepted August 28, 2026
 
-- **Proposed Public Behavior:** A Judgment explicitly accepts one independent Proposal change and defers another; Governance applies only the accepted change and preserves the deferred classification without treating it as rejection.
-- **Proposed Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
-- **Proposed shape:** Preserve `acceptedChangeIds` and `rejectedChangeIds`, add explicit `deferredChangeIds`, and require every Proposal change ID to appear exactly once across the three arrays.
-- **Scope:** This planned cycle proves explicit deferral for an independent change. Edited decisions, deferred-change re-review, dependent mixed decisions, durable mixed-decision provenance, and UI behavior remain deferred.
+- **Public Behavior:** A Judgment explicitly accepts one independent Proposal change and defers another; Governance applies only the accepted change and preserves the deferred classification without treating it as rejection.
+- **Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
+- **Shape confirmed:** Preserve `acceptedChangeIds` and `rejectedChangeIds`, add explicit `deferredChangeIds`, and require every Proposal change ID to appear exactly once across the three arrays.
+- **Scope:** This cycle proves explicit deferral for an independent change. Edited decisions, deferred-change re-review, dependent mixed decisions, durable mixed-decision provenance, and UI behavior remain deferred.
 - **Red evidence:** The focused test first failed because the existing Judgment validator rejected the explicit deferred ID as an incomplete classification.
 - **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 69 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.13% statements, 73.06% branches, and 97.31% functions. `npm run lint:complexity` passed. The focused test proves only the accepted change is applied and the prior version remains retrievable.
-- **Status:** Implementation is complete, the specification was confirmed before code changes, and human acceptance remains pending.
-- **Next behavior:** Complete human acceptance for this deferred-change behavior, then repeat the documentation prerequisite and specify edited decisions or dependent mixed-decision behavior before implementation.
+- **Status:** Implementation is complete, the specification was confirmed before code changes, and the behavior was accepted by the user on August 28, 2026.
+- **Next behavior:** Repeat the documentation prerequisite and specify edited decisions or dependent mixed-decision behavior before implementation.
+
+#### TB9 edited change cycle — specification drafted August 28, 2026
+
+- **Proposed Public Behavior:** A Judgment explicitly accepts one independent Proposal change and edits another; Governance applies the accepted change and the reviewer-supplied edited exact change.
+- **Proposed Test Seam:** The existing S2 Governance public Interface with the deterministic in-memory Governance version-storage Adapter.
+- **Proposed shape:** Add `editedChanges` records containing a Proposal `changeId` and a complete reviewer-supplied `ExactChange`; every Proposal change ID must be classified exactly once across accepted, rejected, deferred, or edited decisions.
+- **Scope:** This planned cycle proves edited independent changes. Edited dependent changes, Judgment revision, durable edited-decision provenance, and UI behavior remain deferred.
+- **Status:** The implementation specification is drafted and requires explicit human confirmation of the edited-change shape, effective replacement behavior, literal fixture, and deferrals before the Red test or implementation begins.
+- **Next behavior:** Confirm this specification, then run the focused Red-to-Green cycle for edited independent changes.
 
 ### 10. Review through the desktop interface
 

@@ -645,4 +645,168 @@ After confirmation, completion requires the focused Red/Green evidence, full aut
 - **Green evidence:** The focused deferred-decision test passed. `npm run check` passed formatting, linting, strict type checking, and 69 Vitest tests. `npm run test:coverage` passed both configured coverage runs with 81.13% statements, 73.06% branches, and 97.31% functions. `npm run lint:complexity` passed.
 - **Behavior evidence:** Governance applied only `change-tb9-deferred-source-evidence`; the explicitly deferred claim update was absent from `bayesian-statistics-v2`, the storage mutation occurred once, and `bayesian-statistics-v1` remained retrievable.
 - **Compatibility evidence:** Existing single-change, stale-Judgment, invalid-dependency-subset, and independently judged-change tests pass. Multi-change applied-record persistence remains deferred.
-- **Acceptance:** Human acceptance of this deferred-change behavior remains pending. The user has confirmed the implementation specification, not the completed behavior.
+- **Acceptance:** Accepted by the user on August 28, 2026. The user confirmed that an explicitly deferred change is neither rejected nor applied, while the accepted change is applied and the prior version remains retrievable.
+
+## Required fifth cycle: apply an edited independently reviewable change
+
+This is the next TB9 implementation cycle identified in the [delivery plan](delivery-plan.md#9-reject-stale-and-incoherent-applications). Its documentation prerequisite must be completed against the accepted Product Decisions, Architecture, Test Strategy S2 guidance, ADRs 0002, 0005, 0006, and 0009, the accepted TB8 persistence representation, and the completed first four TB9 cycles. The edited-change representation and caller-visible application behavior below are proposed for confirmation before implementation.
+
+### Scope
+
+The fifth TB9 cycle proves that a person can explicitly edit one independently reviewable Proposal change during Judgment while accepting another unchanged change. Governance applies the accepted change and the reviewer-supplied edited exact change, preserves the original Proposal and Judgment bindings, and does not apply the original exact replacement for the edited item.
+
+This cycle uses the existing S2 Governance Interface and deterministic in-memory version-storage Adapter. It does not implement edited dependent changes, re-editing or changing a recorded Judgment, durable mixed-decision provenance, the S1 Proposal Review route, or a multi-change Repository Format representation.
+
+### Documentation prerequisite for this cycle
+
+Before writing the Red test or implementation code, explicitly complete these to-do items:
+
+1. Recheck the accepted Product Decisions, Architecture, Test Strategy, applicable ADRs, TB8 persistence decisions, and the completed first four TB9 cycles.
+2. Confirm this section's `editedChanges` Judgment shape, edited-only application rule, literal independent two-change fixture, and explicit deferrals.
+3. Record any changed public Interface, dependency ownership, or durable representation in this brief and the owning documentation before code changes.
+4. Obtain explicit human confirmation that an edited change replaces only the reviewed Proposal change, remains bound to the same exact base version, and is not silently treated as the Proposal's original replacement.
+
+Implementation must not begin until this fifth-cycle documentation review and confirmation task is complete. A new decision representation, dependency policy, persistent multi-change representation, or Test Seam requires stopping and revising this brief before proceeding.
+
+### Proposed public behavior
+
+Given the current `bayesian-statistics-v1` version and a Proposal containing two independent changes:
+
+1. Governance validates the Proposal and records a Judgment that accepts the source-evidence change and explicitly edits the claim-update change.
+2. The edited Judgment supplies a complete replacement `ExactChange` for the edited change, with the same target path and original `before` text but a reviewer-selected `after` text.
+3. `applyProposal` derives the effective accepted subset from `acceptedChangeIds` plus the edited change IDs and verifies its direct/transitive dependency closure.
+4. Governance applies the accepted original change and the edited exact change, returning the existing `applied` outcome.
+5. The new current version contains the edited claim text, not the original Proposal's claim text.
+6. The original Proposal remains the reviewed source of the change identity and the Judgment remains bound to its exact fingerprint and base version. No automatic Proposal mutation, Judgment rewrite, or second review is performed.
+
+An edited change is an explicit accepted decision for the reviewer-supplied exact replacement. Its `before` text must still match the reviewed base content, its path must remain the Proposal target path, and its `after` text must be non-empty and different from `before`. Dependencies continue to refer to Proposal change IDs; an edited dependent change still requires a dependency-closed effective accepted subset.
+
+### Proposed Interface shape
+
+Keep the accepted, rejected, and deferred classification sets and add an explicit edited-change record to `Judgment`:
+
+```text
+EditedChange {
+  changeId: string
+  exactChange: ExactChange
+}
+
+Judgment {
+  ...existing exact-version binding...
+  decision: "accepted"
+  acceptedChangeIds: string[]
+  rejectedChangeIds: string[]
+  deferredChangeIds: string[]
+  editedChanges: EditedChange[]
+}
+```
+
+Every Proposal change ID must appear exactly once across `acceptedChangeIds`, `rejectedChangeIds`, `deferredChangeIds`, and the `editedChanges.changeId` values. The arrays and edited records must not contain duplicates or unknown IDs, and no classification may be inferred from omission. `editedChanges` IDs are part of the effective accepted subset for dependency closure and application, but their supplied `exactChange` replaces the corresponding Proposal change only for this Judgment.
+
+Governance owns classification validation, edited exact-change validation, accepted-subset dependency closure, and effective-change composition. The version-storage Adapter continues to own version retrieval and mutation mechanics. This is an additive S2 Interface change; it does not introduce a new Adapter or Test Seam. The TB8 file-backed applied-record representation remains single-change-compatible, so durable edited multi-change provenance remains deferred.
+
+### Literal fixture and expected values
+
+Use the existing TB8 fixture target and `bayesian-statistics-v1` content:
+
+- Target ID: `bayesian-statistics`.
+- Target title: `Bayesian statistics`.
+- Target path: `knowledge/bayesian-statistics.md`.
+- Proposal ID: `proposal-tb9-edited-change-bayesian-statistics`.
+- Proposal fingerprint: `proposal-fingerprint-tb9-edited-change-bayesian-statistics`.
+- Working Material ID: `working-material-tb9-edited-change-bayesian-statistics`.
+- Judgment ID: `judgment-tb9-edited-change-bayesian-statistics`.
+- Base version: `bayesian-statistics-v1`.
+- Deterministic next version ID in the in-memory Adapter: `bayesian-statistics-v2`.
+
+Change `change-tb9-edited-source-evidence` is accepted unchanged:
+
+- `dependsOn: []`.
+- Exact `before`: `source_record: sources/papers/bayesian-statistics.md`.
+- Exact `after`: `source_record: sources/papers/bayesian-statistics.md\nreviewed_claim: fixture-evidence`.
+
+Change `change-tb9-edited-claim-update` is explicitly edited in the Judgment:
+
+- Proposal `dependsOn: []`.
+- Proposal exact `before`: `This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.`.
+- Proposal exact `after`: `Bayesian statistics uses evidence to update prior belief.`.
+- Judgment exact `before`: `This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.`.
+- Judgment exact `after`: `Bayesian statistics updates prior belief with evidence.`.
+
+The Working Material content contains both original Proposal changes. The Judgment contains:
+
+```text
+{
+  proposalFingerprint: "proposal-fingerprint-tb9-edited-change-bayesian-statistics",
+  baseVersionId: "bayesian-statistics-v1",
+  decision: "accepted",
+  acceptedChangeIds: ["change-tb9-edited-source-evidence"],
+  rejectedChangeIds: [],
+  deferredChangeIds: [],
+  editedChanges: [{
+    changeId: "change-tb9-edited-claim-update",
+    exactChange: {
+      path: "knowledge/bayesian-statistics.md",
+      before: "This fixture topic gives the S1 workflow a stable item to carry between\\nworkspaces.",
+      after: "Bayesian statistics updates prior belief with evidence."
+    }
+  }]
+}
+```
+
+The expected `bayesian-statistics-v2` content contains the `reviewed_claim: fixture-evidence` line and `Bayesian statistics updates prior belief with evidence.`. It must not contain the original Proposal after text `Bayesian statistics uses evidence to update prior belief.`. The current `bayesian-statistics-v1` remains retrievable.
+
+### Test Seam and minimum vertical path
+
+Use the existing S2 public Governance Interface with the deterministic in-memory Governance version-storage Adapter. Add a behavior-named test at `app/tests/governance/apply-edited-change-decision.test.ts`.
+
+The test must:
+
+- create the two-change Proposal with the literal original changes and empty dependency lists;
+- record a Judgment with one accepted ID, one edited change record, and empty rejected/deferred sets;
+- assert that Proposal and Judgment creation do not change the current version;
+- apply through Governance and assert the existing `applied` outcome and exact effective content;
+- assert that the original Proposal after text for the edited change is absent from the new version;
+- assert through `loadCurrentVersion` that `bayesian-statistics-v2` is current; and
+- assert through `getVersion` that `bayesian-statistics-v1` remains retrievable.
+
+The test must use independently written expected content and must not inspect private Governance maps, derive expected content through an implementation helper, read repository files as a side channel, or call a private dependency function. An injected `applyVersion` observer may verify the public storage mutation boundary, but the behavior is primarily observed through Governance's returned versions.
+
+Minimum path:
+
+1. Complete this documentation review and obtain confirmation before the Red test.
+2. Add the one behavior test and observe the expected failure because the current Judgment has no edited-change representation.
+3. Add the smallest edited-change record and exactly-once classification validation needed for this independent fixture.
+4. Validate and compose the reviewer-supplied exact replacement while preserving dependency-closure validation.
+5. Run the focused S2 test, `npm run check`, coverage, and complexity checks.
+6. Record Red/Green evidence and human acceptance before selecting edited dependent changes or durable edited-decision provenance.
+
+### Boundaries, alternatives, and deferrals
+
+This cycle explicitly defers:
+
+- edited dependent changes and their ordering/rollback behavior;
+- re-editing, withdrawing, or automatically reopening a recorded Judgment;
+- using an edited change to alter its Proposal dependency graph;
+- persistent applied-record/schema changes for edited multi-change provenance;
+- Proposal Review UI, Atlas/Studio routing, Agent Provider use, Git, remote synchronization, and network behavior.
+
+The following alternatives are discarded or deferred for this cycle:
+
+- **Mutate the Proposal's original `after` text:** discarded because the original Proposal must remain inspectable and the Judgment must show what the person changed during review.
+- **Treat an edited change as ordinary acceptance:** discarded because it would lose the reviewer-supplied replacement and could apply text the person did not approve.
+- **Create a new Proposal for every edit:** deferred because this cycle proves one Judgment can retain the relationship between the original Proposal change and its explicit reviewed replacement; broader Proposal revision workflows need their own slice.
+- **Infer the edited `before` or path from the Proposal:** discarded because the Judgment must carry a complete exact replacement and Governance must validate its target binding.
+- **Let the storage Adapter apply the edited replacement:** discarded because decision semantics and effective-change selection belong to Governance.
+- **Persist edited multi-change provenance now:** deferred because the durable audit and rollback representation must preserve both original and edited exact changes.
+
+### Acceptance evidence and required confirmation
+
+This fifth cycle is not implementation-ready until the user confirms:
+
+- the `editedChanges` Judgment shape and exactly-once classification rule;
+- the effective accepted-subset and edited-only replacement behavior;
+- the continued direct/transitive dependency-closure rule; and
+- the literal independent two-change fixture and explicit deferrals above.
+
+After confirmation, completion requires the focused Red/Green evidence, full automated gates, proof that the original Proposal replacement was not applied for the edited item, and human confirmation that the resulting version contains the explicitly edited change while the prior version remains retrievable. Acceptance of this cycle will not approve edited dependent changes, Proposal revision workflows, or persistent edited-decision provenance.
