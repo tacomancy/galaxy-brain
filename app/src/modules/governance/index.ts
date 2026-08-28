@@ -101,8 +101,20 @@ export interface ApplyVersionResult {
   currentVersion: GovernedVersion;
 }
 
+/** A caller-visible result for one persisted transaction recovery. */
+export type GovernanceRecoveryOutcome =
+  | { outcome: "none" }
+  | {
+      outcome: "recovered";
+      action: "completed" | "restored" | "discarded";
+    };
+
+/** Signals that a governed target changed outside the expected application. */
+export class GovernanceExternalChangeError extends Error {}
+
 /** Storage seam for current and retained governed versions. */
 export interface GovernanceVersionStore {
+  recoverTransactions(): Promise<GovernanceRecoveryOutcome>;
   readCurrentVersion(targetId: string): Promise<GovernedVersion | undefined>;
   readVersion(
     targetId: string,
@@ -114,6 +126,11 @@ export interface GovernanceVersionStore {
 /** S2 result for loading the current governed version. */
 export type LoadCurrentVersionOutcome =
   | { outcome: "found"; version: GovernedVersion }
+  | {
+      outcome: "found";
+      version: GovernedVersion;
+      recovery: Exclude<GovernanceRecoveryOutcome, { outcome: "none" }>;
+    }
   | { outcome: "not-found"; detail: string };
 
 /** S2 result for creating a Proposal. */
@@ -138,6 +155,7 @@ export type ApplyProposalOutcome =
     }
   | { outcome: "judgment-required"; detail: string }
   | { outcome: "not-eligible"; detail: string }
+  | { outcome: "external-change"; detail: string }
   | { outcome: "not-found"; detail: string }
   | { outcome: "operation-failed"; detail: string };
 
@@ -148,7 +166,7 @@ export type GetVersionOutcome =
 
 /** Public Governance Interface for Proposal, Judgment, and application policy. */
 export interface Governance {
-  /** Loads the current version without changing repository state. */
+  /** Loads the current version and reports any transaction recovery performed. */
   loadCurrentVersion(targetId: string): Promise<LoadCurrentVersionOutcome>;
   /** Validates and stores a manually authored Proposal without applying it. */
   createProposal(input: CreateProposalInput): Promise<CreateProposalOutcome>;
@@ -236,14 +254,23 @@ export const createGovernance = (
   const loadCurrentVersion = async (
     targetId: string,
   ): Promise<LoadCurrentVersionOutcome> => {
+    const recovery = await dependencies.store.recoverTransactions();
     const version = await dependencies.store.readCurrentVersion(targetId);
 
-    return version === undefined
-      ? {
-          outcome: "not-found",
-          detail: "The governed target was not found.",
-        }
-      : { outcome: "found", version: copyVersion(version) };
+    if (version === undefined) {
+      return {
+        outcome: "not-found",
+        detail: "The governed target was not found.",
+      };
+    }
+
+    return recovery.outcome === "none"
+      ? { outcome: "found", version: copyVersion(version) }
+      : {
+          outcome: "found",
+          version: copyVersion(version),
+          recovery,
+        };
   };
 
   const createProposal = async (
@@ -448,7 +475,11 @@ export const createGovernance = (
         previousVersion: copyVersion(applied.previousVersion),
         appliedRecord,
       };
-    } catch {
+    } catch (error: unknown) {
+      if (error instanceof GovernanceExternalChangeError) {
+        return { outcome: "external-change", detail: error.message };
+      }
+
       return {
         outcome: "operation-failed",
         detail: "The governed change could not be applied.",

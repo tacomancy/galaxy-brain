@@ -1,7 +1,7 @@
 # Currently supported user stories
 
-Date: 2026-08-28  
-Reviewed revision: `e8c0bc38c83286a333092c2848bd2a5b39c7e0dd` (`app` version `0.7.0`)  
+Date: 2026-08-28
+Reviewed revision: `e8c0bc38c83286a333092c2848bd2a5b39c7e0dd` (`app` version `0.7.0`)
 Scope: the committed desktop application, its public module interfaces and adapters, its automated tests, and version-matched project documentation.
 
 ## Research question and support threshold

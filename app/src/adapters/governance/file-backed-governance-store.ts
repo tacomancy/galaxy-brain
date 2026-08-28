@@ -10,14 +10,16 @@ import {
 } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 
-import type {
-  ApplyVersionInput,
-  ApplyVersionResult,
-  GovernedTarget,
-  GovernedVersion,
-  GovernanceVersionStore,
-  Judgment,
-  Proposal,
+import {
+  GovernanceExternalChangeError,
+  type ApplyVersionInput,
+  type ApplyVersionResult,
+  type GovernedTarget,
+  type GovernedVersion,
+  type GovernanceRecoveryOutcome,
+  type GovernanceVersionStore,
+  type Judgment,
+  type Proposal,
 } from "../../modules/governance";
 
 /** Filesystem operations required by the file-backed Governance Adapter. */
@@ -96,7 +98,7 @@ interface TransactionJournal {
 
 class GovernanceStorageError extends Error {}
 
-class ExternalGovernedFileChangeError extends GovernanceStorageError {}
+class ExternalGovernedFileChangeError extends GovernanceExternalChangeError {}
 
 const isErrnoException = (error: unknown): error is NodeJS.ErrnoException =>
   error instanceof Error && "code" in error;
@@ -545,7 +547,7 @@ export const createFileBackedGovernanceStore = ({
     stagedRollbackPath: string,
     finalRollbackPath: string,
     journal: TransactionJournal,
-  ): Promise<void> => {
+  ): Promise<"restored" | "discarded"> => {
     const stagedRollback = await readFileIfPresent(
       filesystem,
       stagedRollbackPath,
@@ -570,7 +572,7 @@ export const createFileBackedGovernanceStore = ({
         recursive: true,
         force: true,
       });
-      return;
+      return "discarded";
     }
 
     if (latestTarget?.fingerprint !== journal.new_fingerprint) {
@@ -587,6 +589,7 @@ export const createFileBackedGovernanceStore = ({
       { recursive: true, force: true },
     );
     await filesystem.rm(transactionDirectory, { recursive: true, force: true });
+    return "restored";
   };
 
   const reconcileTransactionTarget = async (
@@ -636,7 +639,7 @@ export const createFileBackedGovernanceStore = ({
 
   const recoverTransaction = async (
     transactionDirectory: string,
-  ): Promise<void> => {
+  ): Promise<"completed" | "restored" | "discarded"> => {
     const journal = await journalFor(transactionDirectory);
 
     if (journal.target_path !== target.path) {
@@ -663,7 +666,7 @@ export const createFileBackedGovernanceStore = ({
 
     if (!auditIsValid) {
       if (currentTarget?.fingerprint === journal.new_fingerprint) {
-        await restorePreviousTarget(
+        return restorePreviousTarget(
           transactionDirectory,
           targetPath,
           stagedRollbackPath,
@@ -677,7 +680,7 @@ export const createFileBackedGovernanceStore = ({
         });
       }
 
-      return;
+      return "discarded";
     }
 
     await reconcileTransactionTarget(
@@ -690,9 +693,10 @@ export const createFileBackedGovernanceStore = ({
     await installImmutable(stagedRollbackPath, finalRollbackPath);
     await installImmutable(stagedAuditPath, finalAuditPath);
     await filesystem.rm(transactionDirectory, { recursive: true, force: true });
+    return "completed";
   };
 
-  const recoverTransactions = async (): Promise<void> => {
+  const recoverTransactions = async (): Promise<GovernanceRecoveryOutcome> => {
     const directoryPath = transactionsDirectoryPath(root);
     let entries;
 
@@ -703,19 +707,31 @@ export const createFileBackedGovernanceStore = ({
       });
     } catch (error: unknown) {
       if (isErrnoException(error) && error.code === "ENOENT") {
-        return;
+        return { outcome: "none" };
       }
 
       throw error;
     }
 
+    let recoveryAction: "completed" | "restored" | "discarded" | undefined;
+
     for (const entry of entries.sort((left, right) =>
       left.name.localeCompare(right.name),
     )) {
       if (entry.isDirectory() && entry.name !== "." && entry.name !== "..") {
-        await recoverTransaction(join(directoryPath, entry.name));
+        const action = await recoverTransaction(
+          join(directoryPath, entry.name),
+        );
+        recoveryAction =
+          recoveryAction === "restored" || action === "restored"
+            ? "restored"
+            : action;
       }
     }
+
+    return recoveryAction === undefined
+      ? { outcome: "none" }
+      : { outcome: "recovered", action: recoveryAction };
   };
 
   const readCurrentVersion = async (
@@ -926,5 +942,10 @@ export const createFileBackedGovernanceStore = ({
     };
   };
 
-  return { readCurrentVersion, readVersion, applyVersion };
+  return {
+    recoverTransactions,
+    readCurrentVersion,
+    readVersion,
+    applyVersion,
+  };
 };

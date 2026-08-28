@@ -341,8 +341,8 @@ describe("file-backed Governance version storage", () => {
         judgmentId: "judgment-tb8-bayesian-statistics-evidence",
       }),
       {
-        outcome: "operation-failed",
-        detail: "The governed change could not be applied.",
+        outcome: "external-change",
+        detail: "The governed target changed before application.",
       },
     );
     assert.equal(
@@ -408,6 +408,7 @@ describe("file-backed Governance version storage", () => {
         content: proposedContent,
         parentVersionId: "bayesian-statistics-v1",
       },
+      recovery: { outcome: "recovered", action: "completed" },
     });
     assert.deepEqual(
       await readdir(
@@ -481,6 +482,7 @@ describe("file-backed Governance version storage", () => {
         content: proposedContent,
         parentVersionId: "bayesian-statistics-v1",
       },
+      recovery: { outcome: "recovered", action: "completed" },
     });
     assert.deepEqual(
       await readdir(
@@ -551,6 +553,7 @@ describe("file-backed Governance version storage", () => {
     assert.deepEqual(await reopenedGovernance.loadCurrentVersion(target.id), {
       outcome: "found",
       version: currentVersion,
+      recovery: { outcome: "recovered", action: "restored" },
     });
     await assert.rejects(
       readFile(
