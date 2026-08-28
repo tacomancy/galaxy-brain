@@ -17,11 +17,46 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 from scripts.build_public_docs import (  # noqa: E402
     validate_tutorial_content,
     validate_tutorial_index,
+    validate_current_capabilities,
     validate_release_alignment,
 )
 
 
 class PublicDocumentationBuildTest(unittest.TestCase):
+    def test_current_capabilities_requires_version_markers_and_support_classes(self) -> None:
+        content = """---
+title: Current capabilities
+summary: Versioned capability status.
+applies_to_release: "0.9.0"
+tracks_main: true
+verified_commit: "5aeb14980b1ea407bc6fbb6fa19db27143cdfd38"
+reviewed_on: "2026-08-28"
+---
+
+## Latest published release: 0.9.0
+
+Desktop-supported
+Module-only
+Planned
+
+## Current `main` snapshot
+
+## Planned capabilities and known limits
+"""
+
+        validate_current_capabilities(content, "0.9.0")
+
+        with self.assertRaisesRegex(ValueError, "applies_to_release"):
+            validate_current_capabilities(
+                content.replace('applies_to_release: "0.9.0"', 'applies_to_release: "0.8.0"'),
+                "0.9.0",
+            )
+
+        with self.assertRaisesRegex(ValueError, "support classes"):
+            validate_current_capabilities(
+                content.replace("\nDesktop-supported\n", "\nDeferred\n"), "0.9.0"
+            )
+
     def test_security_policy_matches_current_release_sources(self) -> None:
         package_content = '{"version": "0.8.0"}'
         changelog_content = (
@@ -113,6 +148,8 @@ Troubleshooting.
                 "security/index.html",
                 "application/index.html",
                 "project-documentation/index.html",
+                "current-capabilities/index.html",
+                "release-notes/index.html",
                 "architecture/index.html",
                 "architecture/architecture/index.html",
                 "architecture/product-decisions/index.html",

@@ -62,13 +62,19 @@ SECURITY_VERSION_PATTERN = re.compile(
     rf"^\|\s*Latest published release\s+\(`(?P<version>{RELEASE_VERSION_PATTERN})`\)\s*\|\s*Yes\s*\|\s*$",
     re.MULTILINE,
 )
+CURRENT_CAPABILITIES_SOURCE = "docs-site/current-capabilities.md"
+CURRENT_CAPABILITIES_SUPPORT_CLASSES = (
+    "Desktop-supported",
+    "Module-only",
+    "Planned",
+)
 
 
 def validate_release_alignment(
     package_content: str,
     changelog_content: str,
     security_content: str,
-) -> None:
+) -> str:
     try:
         package_document = json.loads(package_content)
     except json.JSONDecodeError as error:
@@ -100,6 +106,98 @@ def validate_release_alignment(
         raise ValueError(
             "Release version mismatch: SECURITY.md reports "
             f"{security_version}, but app/CHANGELOG.md reports {changelog_version}"
+        )
+
+    return changelog_version
+
+
+def validate_current_capabilities(content: str, latest_release: str) -> None:
+    frontmatter = re.match(r"\A---\n(.*?)\n---\n", content, re.DOTALL)
+    if frontmatter is None:
+        raise ValueError(
+            "Current capabilities page is missing YAML frontmatter: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    metadata = yaml.safe_load(frontmatter.group(1))
+    if not isinstance(metadata, dict):
+        raise ValueError(
+            "Current capabilities frontmatter must be a mapping: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    required = (
+        "title",
+        "summary",
+        "applies_to_release",
+        "tracks_main",
+        "verified_commit",
+        "reviewed_on",
+    )
+    missing = [field for field in required if field not in metadata]
+    if missing:
+        raise ValueError(
+            "Current capabilities metadata is missing "
+            f"{', '.join(missing)}: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    for field in ("title", "summary"):
+        if not isinstance(metadata[field], str) or not metadata[field].strip():
+            raise ValueError(
+                "Current capabilities metadata field "
+                f"{field} must be non-empty: {CURRENT_CAPABILITIES_SOURCE}"
+            )
+
+    if metadata["applies_to_release"] != latest_release:
+        raise ValueError(
+            "Current capabilities applies_to_release must match the latest "
+            f"published release {latest_release}: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+    if metadata["tracks_main"] is not True:
+        raise ValueError(
+            "Current capabilities tracks_main must be true: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    verified_commit = metadata["verified_commit"]
+    if not isinstance(verified_commit, str) or not re.fullmatch(
+        r"[0-9a-f]{7,40}", verified_commit
+    ):
+        raise ValueError(
+            "Current capabilities verified_commit must be a hexadecimal Git "
+            f"commit: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    reviewed_on = metadata["reviewed_on"]
+    if not isinstance(reviewed_on, str) or not re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}", reviewed_on
+    ):
+        raise ValueError(
+            "Current capabilities reviewed_on must be an ISO date: "
+            f"{CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    required_headings = (
+        f"## Latest published release: {latest_release}",
+        "## Current `main` snapshot",
+        "## Planned capabilities and known limits",
+    )
+    missing_headings = [heading for heading in required_headings if heading not in content]
+    if missing_headings:
+        raise ValueError(
+            "Current capabilities page is missing required sections "
+            f"{', '.join(missing_headings)}: {CURRENT_CAPABILITIES_SOURCE}"
+        )
+
+    missing_classes = [
+        support_class
+        for support_class in CURRENT_CAPABILITIES_SUPPORT_CLASSES
+        if not re.search(rf"\b{re.escape(support_class)}\b", content)
+    ]
+    if missing_classes:
+        raise ValueError(
+            "Current capabilities page must name all support classes "
+            f"{', '.join(missing_classes)}: {CURRENT_CAPABILITIES_SOURCE}"
         )
 
 
@@ -206,7 +304,7 @@ def validate_manifest_entries(
 
 
 def load_manifest() -> list[dict[str, object]]:
-    validate_release_alignment(
+    latest_release = validate_release_alignment(
         (REPOSITORY_ROOT / "app/package.json").read_text(encoding="utf-8"),
         (REPOSITORY_ROOT / "app/CHANGELOG.md").read_text(encoding="utf-8"),
         (REPOSITORY_ROOT / "SECURITY.md").read_text(encoding="utf-8"),
@@ -214,6 +312,18 @@ def load_manifest() -> list[dict[str, object]]:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     pages = validate_manifest_entries(manifest.get("pages"), "page")
     tutorials = validate_manifest_entries(manifest.get("tutorials"), "tutorial")
+    current_capabilities_pages = [
+        page for page in pages if page["source"] == CURRENT_CAPABILITIES_SOURCE
+    ]
+    if len(current_capabilities_pages) != 1:
+        raise ValueError(
+            "The public documentation manifest must contain exactly one "
+            f"{CURRENT_CAPABILITIES_SOURCE} page."
+        )
+    current_capabilities_content = (
+        REPOSITORY_ROOT / CURRENT_CAPABILITIES_SOURCE
+    ).read_text(encoding="utf-8")
+    validate_current_capabilities(current_capabilities_content, latest_release)
     destinations: set[str] = set()
     for page in [*pages, *tutorials]:
         destination = str(page["destination"])

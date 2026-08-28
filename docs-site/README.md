@@ -11,12 +11,19 @@ The allowlist in [site-manifest.json](site-manifest.json) is the mechanical
 source of truth. The current navigation publishes:
 
 - the project overview, application README, project documentation overview,
-  and security policy;
+  Current Capabilities page, release notes, and security policy;
 - the V1 architecture overview, architecture, product decisions, repository
   format, and test strategy;
 - the human-agent collaboration guide;
 - the engineering and domain glossaries; and
 - the first-release Tutorials section.
+
+The [Current Capabilities](current-capabilities.md) page is the public status
+authority. It records the reviewed release and `main` revision, labels each
+capability as desktop-supported, module-only, or planned, and links to the
+[release notes](../app/CHANGELOG.md) and intended architecture. The public
+architecture landing page is a curated reading path for intended structure; it
+is not a second current-status authority.
 
 The `tutorials` section of the manifest separately lists user-facing tutorial
 pages. Tutorial sources use YAML frontmatter with `title`, `summary`,
