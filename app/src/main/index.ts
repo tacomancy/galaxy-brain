@@ -4,7 +4,8 @@
  * This process owns privileged operations and wires the renderer-facing
  * bridge to application Modules. Tracer Bullets 2 through 6 compose the
  * production file-backed repository and machine-local session-state Adapters
- * while remaining independent of Git, network, and provider state.
+ * while remaining independent of Git, network, and provider state. Filesystem
+ * and IPC handling remains behind narrow, validated seams.
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import { readFile } from "node:fs/promises";

@@ -11,7 +11,10 @@ const fixtureSourceRecord = {
 const fixturePassage = "Bayesian inference updates prior belief with evidence.";
 const fixturePassageEnd = 54;
 
-/** Deterministic PDF Adapter for the independently specified TB5 fixture. */
+/**
+ * Creates the deterministic PDF Adapter for the independently specified TB5 fixture.
+ * @returns The fixture PDF Adapter.
+ */
 export const createFixturePdfAdapter = (): PdfAdapter => ({
   readSelection: async (
     input: CaptureSourceClaimInput,

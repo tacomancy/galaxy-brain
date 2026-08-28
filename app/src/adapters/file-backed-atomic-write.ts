@@ -1,3 +1,4 @@
+/** Filesystem transaction Adapter; comments preserve atomic-write safety. */
 import { randomUUID } from "node:crypto";
 import { readdir, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
@@ -13,6 +14,7 @@ export interface AtomicFileSystem {
   writeFile: typeof writeFile;
 }
 
+/** Default filesystem Adapter used by atomic repository writes. */
 export const defaultAtomicFileSystem: AtomicFileSystem = {
   readdir,
   rename,
@@ -27,6 +29,13 @@ const isErrnoException = (error: unknown): error is NodeJS.ErrnoException =>
 
 const temporaryFilePrefix = ".galaxy-brain-atomic-";
 
+/**
+ * Removes abandoned atomic-write temporary files for one target.
+ * @param directoryPath The directory containing the target.
+ * @param targetFilePath The target whose temporary files should be removed.
+ * @param filesystem The filesystem Adapter used for discovery and cleanup.
+ * @returns The completed cleanup operation.
+ */
 export const discardAbandonedTemporaryFiles = async (
   directoryPath: string,
   targetFilePath: string,
@@ -80,6 +89,8 @@ export interface AtomicFileWriteOptions {
  * destination after the caller's final external-change check. A failed write
  * or replacement leaves the previous destination untouched; a recognized
  * temporary file can be discarded on the next read.
+ * @param input The content, target, expected fingerprint, and filesystem Adapter.
+ * @returns The completed atomic replacement.
  */
 export const writeFileAtomically = async ({
   contents,

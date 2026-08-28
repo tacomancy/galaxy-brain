@@ -17,5 +17,6 @@ Keep each statement in the narrowest document that owns it. Other documents shou
 - **Delivery Plan** owns implementation order and tracer-bullet sequencing.
 - **ADRs** own hard-to-reverse architectural trade-offs and their consequences.
 - **Agent guidance** owns collaboration and execution rules, and points back to the applicable authority above.
+- **Code documentation policy** owns the minimum public-contract and rationale documentation expected before a PR.
 
 The [grilling ledger](reviews/v1-document-grilling-review-ledger.md) indexes concerns and records their disposition; it does not override the document that owns a decision.

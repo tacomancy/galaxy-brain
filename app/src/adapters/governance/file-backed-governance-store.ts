@@ -1,3 +1,4 @@
+/** Filesystem and rollback Adapter; comments preserve recoverable Governance writes. */
 import { createHash } from "node:crypto";
 import {
   mkdir,
@@ -33,6 +34,7 @@ export interface GovernanceFileSystem {
   writeFile: typeof writeFile;
 }
 
+/** Default filesystem Adapter used by file-backed Governance. */
 export const defaultGovernanceFileSystem: GovernanceFileSystem = {
   lstat,
   mkdir,
@@ -43,6 +45,7 @@ export const defaultGovernanceFileSystem: GovernanceFileSystem = {
   writeFile,
 };
 
+/** Configuration for the file-backed Governance storage Adapter. */
 export interface FileBackedGovernanceStoreInput {
   repositoryPath: string;
   target: GovernedTarget;
@@ -274,6 +277,8 @@ const parseAppliedRecord = (
     throw new GovernanceStorageError("The applied Proposal record is invalid.");
   }
 
+  // Rationale: the preceding type guard validates every persisted field before
+  // this narrow conversion to the internal snake_case representation.
   return value as unknown as PersistedAppliedRecord;
 };
 
@@ -331,6 +336,11 @@ const ensureDirectory = async (
   await filesystem.mkdir(directoryPath, { recursive: true });
 };
 
+/**
+ * Creates a file-backed Governance storage Adapter for one target.
+ * @param input Repository, target, version, and filesystem configuration.
+ * @returns The configured Governance version store.
+ */
 export const createFileBackedGovernanceStore = ({
   repositoryPath,
   target,
@@ -485,6 +495,8 @@ export const createFileBackedGovernanceStore = ({
       throw new GovernanceStorageError("The transaction journal is invalid.");
     }
 
+    // Rationale: the preceding validation establishes the journal invariant
+    // before this conversion to the internal persisted representation.
     return value as unknown as TransactionJournal;
   };
 

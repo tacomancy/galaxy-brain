@@ -255,6 +255,8 @@ const AtlasOutcomeNotice = ({
  *
  * It renders the empty state from domain state rather than querying a
  * repository or inventing demonstration content in the UI Adapter.
+ * @param props The current Workbench state and user-action callbacks.
+ * @returns The Atlas workspace element.
  */
 export const Atlas = ({
   workbench,

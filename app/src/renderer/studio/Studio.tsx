@@ -393,7 +393,11 @@ const SavedSynthesisResultsCard = ({
   );
 };
 
-/** Studio's first slice presents the topic carried from Atlas. */
+/**
+ * Studio's first slice presents the topic carried from Atlas.
+ * @param props The topic context and Synthesis action callbacks.
+ * @returns The Studio workspace element.
+ */
 export const Studio = ({
   workbench,
   onOpenSourceRecordInPaperDesk,

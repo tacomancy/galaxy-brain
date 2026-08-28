@@ -1,3 +1,4 @@
+/** Filesystem transaction Adapter; comments preserve safe repository creation. */
 import {
   lstat,
   mkdir,
@@ -709,6 +710,9 @@ const resolveOpenTarget = async (
  * Creates Knowledge Repositories from the bundled empty starter skeleton.
  * Creation is staged in a temporary sibling and selects the destination only
  * after validation and the final rename succeed.
+ * @param starterRoot The empty starter skeleton to copy.
+ * @param filesystem The filesystem Adapter used for recoverable creation.
+ * @returns The file-backed Knowledge Repository Adapter.
  */
 export const createFileBackedKnowledgeRepository = (
   starterRoot: string,
