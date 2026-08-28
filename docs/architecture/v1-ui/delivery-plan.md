@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -229,7 +229,163 @@ These are presentation slices over existing Workbench Modules and Adapters. Do n
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
+The [Tracer Bullet 7 brief](tracer-bullet-7-spec.md) coordinates this slice against the accepted Product Decisions, Architecture, Test Strategy, and applicable Agent Provider ADRs.
+
 At S3, prove that **Synthesize into topic** shows a concise summary and inspectable exact payload for the selected annotations and target context, allows removal of whole context items with regenerated previews, requires explicit confirmation before sending that final payload to OpenAI, and returns the literal draft Proposal fixture when the confirmed request succeeds. Add separate cycles proving that capture or source completion alone produces no Proposal, that declining makes no request and preserves the annotations, that arbitrary inline redaction is unavailable, that the Model Adapter cannot add context after confirmation, that request and response payloads are not retained unless explicitly saved, that the default save retains the result plus agent provenance but not the prompt/context, that an explicit save-with-prompt/context choice retains the human-facing prompt, selected source references or locators, and concise context summaries as a point-in-time snapshot but not full source excerpts or the hidden full payload, that a mismatch in saved versus current source identity or content identity does not rewrite the saved snapshot and produces a non-blocking stale-context warning, that the saved result remains Working Material, and that agent-assisted Synthesis returns `agent-provider-unavailable` without one while preserving the annotations.
+
+#### TB7 first preview cycle — August 27, 2026
+
+- **Public Behavior:** The S3 Source Processing Interface prepares an exact, inspectable Synthesis preview for the selected Bayesian statistics source claim and target topic without contacting an Agent Provider or changing Working Material.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with the deterministic fixture PDF and in-memory Working Material Adapters.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `prepareSynthesis` was not implemented.
+- **Green evidence:** The focused preview test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 23 Vitest tests.
+- **Scope confirmed:** This cycle only establishes the provider-independent preview contract. It does not contact a Model Adapter, confirm or decline a request, remove context items, persist payloads or results, or create a Proposal.
+- **Next behavior:** Add whole-context-item removal and regenerated preview coverage before adding the confirmation boundary.
+
+#### TB7 second preview cycle — August 27, 2026
+
+- **Public Behavior:** The S3 Source Processing Interface removes one complete selected context item and regenerates the concise summary and exact payload from the remaining evidence.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with fixed selected annotations and no provider call.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `removeSynthesisContextItem` was not implemented.
+- **Green evidence:** The focused preview/removal test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 24 Vitest tests.
+- **Scope confirmed:** The cycle supports whole-item removal only and does not add arbitrary inline redaction, provider transmission, confirmation, persistence, or Proposal creation.
+- **Next behavior:** Add explicit decline/cancel coverage and prove that no Model Adapter request occurs without confirmation.
+
+#### TB7 confirmed handoff cycle — August 27, 2026
+
+- **Public Behavior:** The S3 Source Processing Interface sends the final exact Synthesis payload to the operation-specific Model Adapter only after explicit confirmation and returns its fixed draft result.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow Model Adapter at the external system seam.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `confirmSynthesis` was not implemented.
+- **Green evidence:** The focused preview, removal, and confirmed-handoff tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 25 Vitest tests.
+- **Scope confirmed:** The cycle adds only the explicit confirmed handoff and fixed draft-result contract. It does not add a real network provider, S1 confirmation UI, automatic retention, explicit save, or Governance application.
+- **Next behavior:** Add explicit decline/cancel coverage and prove that no Model Adapter request occurs without confirmation.
+
+#### TB7 decline/cancel cycle — August 27, 2026
+
+- **Public Behavior:** Declining or canceling a pending Synthesis operation makes no Model Adapter request and preserves the exact preview and selected Working Material.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow request-observation Model Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first exposed that cancellation was incorrectly returned as `declined`.
+- **Green evidence:** The focused preview, removal, confirmed-handoff, and decline/cancel tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 26 Vitest tests.
+- **Scope confirmed:** The cycle adds no network request, provider configuration, payload persistence, result save, Proposal application, or S1 confirmation presentation.
+- **Next behavior:** Prove the shared `agent-provider-unavailable` outcome when no Model Adapter is configured, while preserving selected Working Material.
+
+#### TB7 provider-unavailable cycle — August 27, 2026
+
+- **Public Behavior:** Confirmed Synthesis without a configured Model Adapter returns the shared `agent-provider-unavailable` outcome and preserves the selected evidence and prepared payload.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with no Model Adapter configured.
+- **Green evidence:** The focused preview, removal, confirmed-handoff, decline/cancel, and provider-unavailable tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 27 Vitest tests.
+- **Scope confirmed:** This cycle proves graceful unavailability only. It does not add provider configuration loading, a real network Adapter, automatic payload/result retention, explicit save, Proposal application, or S1 presentation.
+- **Next behavior:** Prove that confirmed result and request bodies are not retained automatically, while explicit save remains a separate user action.
+
+#### TB7 transient result cycle — August 27, 2026
+
+- **Public Behavior:** A confirmed draft result is returned to the S3 caller transiently, without invoking Working Material persistence; explicit save remains a separate operation.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface with a persistence-observing Working Material Adapter and an operation-specific Model Adapter.
+- **Red evidence:** No separate red run was captured for this boundary; the existing confirmed-handoff behavior already returned the result without persistence, and this cycle added a focused regression test to make that privacy rule explicit.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 28 Vitest tests.
+- **Scope confirmed:** The cycle does not add automatic history, caches, logs, audit retention, explicit result save, prompt/context save, provenance metadata, or Proposal application.
+- **Next behavior:** Add an explicit save operation that preserves agent provenance while keeping the result Working Material.
+
+#### TB7 default explicit-save cycle — August 27, 2026
+
+- **Public Behavior:** An explicit save stores the confirmed draft as Working Material with agent-generated attribution, provider/model/timestamp/operation metadata, and Source Record/Source Locator references, while omitting the prompt, full context excerpts, and hidden request/response payload.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow result Repository Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first failed because `saveSynthesisResult` was not implemented.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 29 Vitest tests.
+- **Scope confirmed:** The cycle adds only the default explicit-save contract and preserves Working Material status. It does not add file-backed result serialization, prompt/context retention, result versioning, source-change warnings, S1 save UI, or Governance application.
+- **Next behavior:** Add the separately explicit save-with-prompt/context option with concise context snapshots and no full source excerpts or hidden payload retention.
+
+#### TB7 opt-in prompt/context snapshot cycle — August 27, 2026
+
+- **Public Behavior:** A separate explicit save choice retains the human-facing prompt, selected Source Record/Source Locator references, and concise context summaries as a point-in-time snapshot, without retaining full source excerpts or the hidden payload.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow result Repository Adapter.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts` first showed that the opt-in prompt and context snapshot were omitted from the saved result.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 30 Vitest tests.
+- **Scope confirmed:** The cycle adds only the explicit opt-in snapshot fields. It does not add full source excerpts, hidden payload retention, file-backed serialization, source-change warnings, result versioning, or S1 save UI.
+- **Next behavior:** Preserve the saved context snapshot and show a non-blocking warning when the current Source Record identity or content identity differs.
+
+#### TB7 stale-context warning cycle — August 27, 2026
+
+- **Public Behavior:** When a saved opt-in Synthesis context snapshot's Source Record identity or content identity differs from the current source, the S3 Interface returns a non-blocking stale-context warning and the unchanged saved result remains available.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a Source Identity Adapter at the external source-status seam.
+- **Red evidence:** No separate red command output was captured for this cycle; the stale-context behavior test was written against the missing `checkSynthesisContext` capability before its implementation.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 31 Vitest tests.
+- **Scope confirmed:** The cycle does not rewrite the saved snapshot, block access, refresh the snapshot, regenerate the result, or implement source-status-unavailable handling.
+- **Next behavior:** Preserve access and report `source status unavailable` when the current Source Record identity cannot be checked or lacks a comparable identity.
+
+#### TB7 unavailable-source-status cycle — August 27, 2026
+
+- **Public Behavior:** When a saved context snapshot cannot be checked or lacks a comparable current identity, the S3 Interface preserves the saved result and reports `source status unavailable` without claiming that the snapshot is current.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a Source Identity Adapter returning an unavailable outcome.
+- **Red evidence:** No separate red command output was captured; the test was written against the required unavailable-source-status outcome after the stale-context path was implemented.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 32 Vitest tests.
+- **Scope confirmed:** The cycle does not refresh or replace the historical snapshot, regenerate the result, or add source relinking or file-backed result persistence.
+- **Next behavior:** Add explicit snapshot refresh as a new version while preserving the original context snapshot.
+
+#### TB7 explicit snapshot refresh cycle — August 27, 2026
+
+- **Public Behavior:** An explicit refresh reads the current Source Record and content identities, saves the refreshed context as a new version, preserves the prior snapshot in version history, and leaves the generated result text, provenance, and prompt unchanged without contacting the Model Adapter.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface, a Source Identity Adapter at the external source-status seam, and a narrow result Repository Adapter.
+- **Red evidence:** No separate red command output was captured; the test was written against the required refresh/version outcome before the refresh capability was implemented.
+- **Green evidence:** The focused Synthesis tests passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 33 Vitest tests.
+- **Scope confirmed:** The cycle adds explicit context refresh and prior-snapshot retention only. It does not regenerate the result, contact the Model Adapter, mutate source files, auto-refresh, add file-backed result serialization, or implement S1 refresh UI.
+- **Next behavior:** Add result regeneration as a separate new result version that preserves the prior generated result and requires fresh confirmation before a new provider request.
+
+#### TB7 confirmed result-regeneration cycle — August 27, 2026
+
+- **Public Behavior:** A regeneration request requires a fresh explicit confirmation. Declining or canceling makes no Model Adapter request and does not save anything; confirmation sends the exact prepared payload, then saves the returned draft as a new result version while preserving the prior generated result and keeping the result as Working Material.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface, a narrow request-observation Model Adapter, and a result Repository Adapter.
+- **Red evidence:** No separate red command output was captured; the focused regeneration tests were added against the required public outcome and then run through the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 35 Vitest tests.
+- **Scope confirmed:** The cycle adds fresh confirmation, one confirmed regeneration request, new result-version metadata, and prior-result preservation. It does not implement restore, automatic regeneration, S1 controls, file-backed result serialization, or result cleanup.
+- **Next behavior:** Add explicit restore of an older result as a new current version without making a Model Adapter request.
+
+#### TB7 result-restore cycle — August 27, 2026
+
+- **Public Behavior:** An explicit restore selects a retained older result, saves it as a new current version, preserves the current and all intervening versions, and makes no Model Adapter request.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a result Repository Adapter; the Model Adapter is present only as a request-observation guard.
+- **Red evidence:** No separate red command output was captured; the restore test was added against the required public outcome before running the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 36 Vitest tests.
+- **Scope confirmed:** The cycle adds explicit restore and version-history preservation only. It does not add automatic restore, result cleanup, file-backed serialization, or S1 history controls.
+- **Next behavior:** Preserve `agent-generated` provenance when a saved result receives a later human edit while remaining Working Material.
+
+#### TB7 human-authorship preservation cycle — August 27, 2026
+
+- **Public Behavior:** An explicit human edit saves updated Working Material with `human-authored` metadata and an edit record while preserving the original `agent-generated` provider, model, operation, timestamp, and source-context provenance.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow result Repository Adapter; no Model Adapter is involved.
+- **Red evidence:** No separate red command output was captured; the human-edit test was added against the required provenance outcome before running the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 37 Vitest tests.
+- **Scope confirmed:** The cycle records human authorship without promoting the result to Governed Knowledge, contacting a provider, changing result versions, or adding file-backed serialization or S1 editing controls.
+- **Next behavior:** Add durable file-backed persistence for saved Synthesis results and their provenance/version history.
+
+#### TB7 file-backed result-persistence cycle — August 27, 2026
+
+- **Public Behavior:** The S5 Synthesis result Repository Adapter saves and reopens explicitly saved Working Material as portable JSON, including agent provenance, human-authorship records, context snapshots, result versions, and retained prior results; missing results remain an explicit `not-found` outcome.
+- **Test Seam:** S5 file-backed result Repository Adapter contract in an isolated temporary Knowledge Repository.
+- **Red evidence:** No separate red command output was captured; the S5 contract was added against the required round-trip and missing-result outcomes before running the implementation.
+- **Green evidence:** `npm run check` passed formatting, linting, strict type checking, and 38 Vitest tests.
+- **Scope confirmed:** The Adapter stores only explicitly saved result metadata and history. It does not store hidden request/response payloads, initialize Git, contact a provider, or add S1 presentation.
+- **Next behavior:** Expose the saved-result confirmation, provenance, version, and restore controls through the packaged S1 Workbench surface.
+
+#### TB7 user-only no-context confirmation cycle — August 27, 2026
+
+- **Public Behavior:** A Synthesis request with no repository-derived context is valid only with a non-empty user prompt, produces an inspectable zero-context payload, and retains the same explicit confirmation boundary; declining makes no provider request.
+- **Test Seam:** S3 Source Processing behavior through the public Module Interface and a narrow request-observation Model Adapter.
+- **Red evidence:** No separate red command output was captured; the user-only test was added against the required no-context confirmation outcome before running the implementation.
+- **Green evidence:** The focused Synthesis tests passed. `npm run check` passed formatting, linting, strict type checking, and 39 Vitest tests.
+- **Scope confirmed:** The cycle does not add repository-wide context, automatic requests, hidden payload retention, provider configuration, or a new user consent mechanism.
+- **Next behavior:** Expose the completed confirmation and saved-result history behaviors through the packaged S1 Workbench surface.
+
+#### TB7 packaged S1 review surface cycle — August 27, 2026
+
+- **Public Behavior:** Studio presents an explicit Synthesis review action, concise summary, destination/model, selected context with whole-item removal and regenerated preview, exact payload disclosure, confirm/decline/cancel controls, provider-unavailable feedback, and saved-result provenance/version/restore controls through the real Electron main process and preload bridge. Confirmation sends the exact preview retained by the main process, and saved-result reads preserve explicit availability outcomes.
+- **Test Seam:** S1 packaged Electron workflow through the real main process, preload bridge, Studio UI Adapter, file-backed Knowledge Repository, file-backed Working Material Adapters, and the S3 Source Processing Module.
+- **Red evidence:** The first packaged run exposed that the exact payload disclosure was collapsed when asserted; the workflow was corrected to expand the disclosure before checking its contents.
+- **Green evidence:** The focused packaged workflow passed. The local full packaged workflow suite passed all 21 WebdriverIO specs, including renderer styling, whole-context-item removal, and regenerated preview assertions. `npm run check` passed formatting, linting, strict type checking, and 42 Vitest tests.
+- **Scope confirmed:** The surface does not call a production provider, fabricate a successful draft, apply Governed Knowledge changes, or add a fourth primary workspace. Provider-unavailable behavior remains visible and local workflows remain usable.
+- **Human acceptance:** On August 28, 2026, the user completed and accepted all five manual checks: packaged layout; initial Synthesis preview and exact payload; whole-context-item removal and regenerated preview; decline/cancel/provider-unavailable outcomes; and saved-result provenance/version/restore behavior. The review confirmed the states were legible and operable in the packaged app.
+- **CI follow-up:** PR #24 still has a required desktop-workflow failure at `review-synthesis-confirmation.e2e.ts:83`, where the test asserts the Cancel outcome before the asynchronous UI update is visible. This remains a merge blocker and is separate from the accepted manual UI behavior.
+- **Next behavior:** Production provider integration and later Proposal/Governance work remain outside TB7.
 
 ### 8. Apply one governed change
 

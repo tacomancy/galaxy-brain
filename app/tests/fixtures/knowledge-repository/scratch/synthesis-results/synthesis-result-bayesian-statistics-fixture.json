@@ -1,0 +1,62 @@
+{
+  "id": "synthesis-result-bayesian-statistics-fixture",
+  "state": "working-material",
+  "title": "Bayesian statistics synthesis",
+  "text": "Bayesian inference updates prior belief with evidence.",
+  "targetTopic": {
+    "id": "bayesian-statistics",
+    "title": "Bayesian statistics"
+  },
+  "provenance": {
+    "attribution": "agent-generated",
+    "provider": "OpenAI API",
+    "model": "fixture-pinned-model",
+    "generatedAt": "2026-08-27T20:30:00.000Z",
+    "operation": "synthesize-into-topic",
+    "sourceContext": [
+      {
+        "annotationId": "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+        "sourceRecord": {
+          "id": "bayesian-statistics-fixture-source",
+          "title": "Bayesian statistics fixture source"
+        },
+        "sourceLocator": "page:2#chars=0-54",
+        "attribution": "source-claim",
+        "classification": "source-claim"
+      }
+    ]
+  },
+  "resultVersion": 2,
+  "priorResults": [
+    {
+      "id": "synthesis-result-bayesian-statistics-fixture",
+      "state": "working-material",
+      "title": "Bayesian statistics synthesis — first draft",
+      "text": "Bayesian inference updates prior belief.",
+      "targetTopic": {
+        "id": "bayesian-statistics",
+        "title": "Bayesian statistics"
+      },
+      "provenance": {
+        "attribution": "agent-generated",
+        "provider": "OpenAI API",
+        "model": "fixture-pinned-model",
+        "generatedAt": "2026-08-27T20:00:00.000Z",
+        "operation": "synthesize-into-topic",
+        "sourceContext": [
+          {
+            "annotationId": "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+            "sourceRecord": {
+              "id": "bayesian-statistics-fixture-source",
+              "title": "Bayesian statistics fixture source"
+            },
+            "sourceLocator": "page:2#chars=0-54",
+            "attribution": "source-claim",
+            "classification": "source-claim"
+          }
+        ]
+      },
+      "resultVersion": 1
+    }
+  ]
+}

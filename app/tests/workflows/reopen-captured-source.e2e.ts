@@ -53,9 +53,14 @@ describe("Reopen a captured source claim", () => {
     );
 
     await $("#paper-desk-open-saved-annotation").click();
-    assert.equal(
-      await $("#paper-desk-reading-position").getText(),
-      "Page 2, character 0",
+    await browser.waitUntil(
+      async () =>
+        (await $("#paper-desk-reading-position").getText()) ===
+        "Page 2, character 0",
+      {
+        timeout: 5_000,
+        timeoutMsg: "The saved reading position did not become visible.",
+      },
     );
 
     await browser.reloadSession();
@@ -85,9 +90,14 @@ describe("Reopen a captured source claim", () => {
       await $("#paper-desk-annotation-state").getText(),
       "State: working-material",
     );
-    assert.equal(
-      await $("#paper-desk-reading-position").getText(),
-      "Page 2, character 0",
+    await browser.waitUntil(
+      async () =>
+        (await $("#paper-desk-reading-position").getText()) ===
+        "Page 2, character 0",
+      {
+        timeout: 5_000,
+        timeoutMsg: "The saved reading position did not return after relaunch.",
+      },
     );
   });
 });

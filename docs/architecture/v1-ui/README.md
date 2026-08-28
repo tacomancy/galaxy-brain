@@ -23,6 +23,7 @@ This package follows the project-wide [documentation authority map](../../README
 - [Tracer Bullet 6.1 Atlas UI brief](tracer-bullet-6-1-atlas-ui-spec.md) coordinates promotion of the Atlas view.
 - [Tracer Bullet 6.2 Studio UI brief](tracer-bullet-6-2-studio-ui-spec.md) coordinates promotion of the Studio view.
 - [Tracer Bullet 6.3 Paper Desk UI brief](tracer-bullet-6-3-paper-desk-ui-spec.md) coordinates promotion of the Paper Desk view.
+- [Tracer Bullet 7 brief](tracer-bullet-7-spec.md) coordinates the explicit Synthesis preview and provider-confirmation slice.
 - [Stack decision brief](stack-research.md) records current primary-source evidence for the desktop foundation.
 - [Project language](../../../CONTEXT.md) defines the domain terms used by product, code, and tests.
 - [Engineering glossary](../../engineering/glossary.md) defines the codebase-design and test-driven-development vocabulary used by this package.
