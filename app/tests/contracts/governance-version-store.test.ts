@@ -120,12 +120,18 @@ const prepareAcceptedProposal = async (
     target,
     baseVersionId: "bayesian-statistics-v1",
     workingMaterial,
-    exactChange: {
-      path: target.path,
-      before:
-        "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
-      after: "Bayesian statistics uses evidence to update prior belief.",
-    },
+    changes: [
+      {
+        id: "change-tb8-bayesian-statistics-evidence",
+        exactChange: {
+          path: target.path,
+          before:
+            "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+          after: "Bayesian statistics uses evidence to update prior belief.",
+        },
+        dependsOn: [],
+      },
+    ],
   });
   await governance.recordJudgment({
     judgmentId: "judgment-tb8-bayesian-statistics-evidence",
@@ -133,6 +139,10 @@ const prepareAcceptedProposal = async (
     proposalFingerprint:
       "proposal-fingerprint-tb8-bayesian-statistics-evidence",
     decision: "accepted",
+    acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+    rejectedChangeIds: [],
+    deferredChangeIds: [],
+    editedChanges: [],
   });
 };
 
@@ -153,12 +163,19 @@ describe("file-backed Governance version storage", () => {
         target,
         baseVersionId: "bayesian-statistics-v1",
         workingMaterial,
-        exactChange: {
-          path: target.path,
-          before:
-            "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
-          after: "Bayesian statistics uses evidence to update prior belief.",
-        },
+        changes: [
+          {
+            id: "change-tb8-bayesian-statistics-evidence",
+            exactChange: {
+              path: target.path,
+              before:
+                "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+              after:
+                "Bayesian statistics uses evidence to update prior belief.",
+            },
+            dependsOn: [],
+          },
+        ],
       }),
       {
         outcome: "proposal-created",
@@ -170,12 +187,19 @@ describe("file-backed Governance version storage", () => {
           baseVersionId: "bayesian-statistics-v1",
           workingMaterialId:
             "working-material-tb8-bayesian-statistics-evidence",
-          exactChange: {
-            path: target.path,
-            before:
-              "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
-            after: "Bayesian statistics uses evidence to update prior belief.",
-          },
+          changes: [
+            {
+              id: "change-tb8-bayesian-statistics-evidence",
+              exactChange: {
+                path: target.path,
+                before:
+                  "This fixture topic gives the S1 workflow a stable item to carry between\nworkspaces.",
+                after:
+                  "Bayesian statistics uses evidence to update prior belief.",
+              },
+              dependsOn: [],
+            },
+          ],
         },
       },
     );
@@ -187,6 +211,10 @@ describe("file-backed Governance version storage", () => {
         proposalFingerprint:
           "proposal-fingerprint-tb8-bayesian-statistics-evidence",
         decision: "accepted",
+        acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+        rejectedChangeIds: [],
+        deferredChangeIds: [],
+        editedChanges: [],
       }),
       {
         outcome: "judgment-recorded",
@@ -197,6 +225,10 @@ describe("file-backed Governance version storage", () => {
             "proposal-fingerprint-tb8-bayesian-statistics-evidence",
           baseVersionId: "bayesian-statistics-v1",
           decision: "accepted",
+          acceptedChangeIds: ["change-tb8-bayesian-statistics-evidence"],
+          rejectedChangeIds: [],
+          deferredChangeIds: [],
+          editedChanges: [],
         },
       },
     );

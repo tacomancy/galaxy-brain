@@ -158,6 +158,16 @@ const replaceExactOnce = (
   return `${content.slice(0, firstIndex)}${after}${content.slice(firstIndex + before.length)}`;
 };
 
+const onlyProposalChange = (proposal: Proposal) => {
+  if (proposal.changes.length !== 1 || proposal.changes[0] === undefined) {
+    throw new GovernanceStorageError(
+      "Multi-change Proposal persistence is deferred.",
+    );
+  }
+
+  return proposal.changes[0];
+};
+
 const relativePath = (root: string, absolutePath: string): string => {
   const value = relative(root, absolutePath);
 
@@ -286,18 +296,22 @@ const parseAppliedRecord = (
   return value as unknown as PersistedAppliedRecord;
 };
 
-const persistedProposal = (proposal: Proposal): PersistedProposal => ({
-  id: proposal.id,
-  fingerprint: proposal.fingerprint,
-  target: copyTarget(proposal.target),
-  base_version_id: proposal.baseVersionId,
-  working_material_id: proposal.workingMaterialId,
-  exact_change: {
-    path: proposal.exactChange.path,
-    before: proposal.exactChange.before,
-    after: proposal.exactChange.after,
-  },
-});
+const persistedProposal = (proposal: Proposal): PersistedProposal => {
+  const change = onlyProposalChange(proposal);
+
+  return {
+    id: proposal.id,
+    fingerprint: proposal.fingerprint,
+    target: copyTarget(proposal.target),
+    base_version_id: proposal.baseVersionId,
+    working_material_id: proposal.workingMaterialId,
+    exact_change: {
+      path: change.exactChange.path,
+      before: change.exactChange.before,
+      after: change.exactChange.after,
+    },
+  };
+};
 
 const persistedJudgment = (judgment: Judgment): PersistedJudgment => ({
   id: judgment.id,
@@ -837,10 +851,12 @@ export const createFileBackedGovernanceStore = ({
       );
     }
 
+    const change = onlyProposalChange(input.proposal);
+
     const expectedContent = replaceExactOnce(
       input.expectedBaseContent,
-      input.proposal.exactChange.before,
-      input.proposal.exactChange.after,
+      change.exactChange.before,
+      change.exactChange.after,
     );
 
     if (expectedContent === undefined || expectedContent !== input.content) {

@@ -85,8 +85,8 @@ The expected result is that the current version remains `bayesian-statistics-v1`
 The first S2 cycle exposes the following minimal public lifecycle. The eventual concrete TypeScript names may follow the repository's established naming conventions, but the operations and authority boundaries are fixed here:
 
 - `loadCurrentVersion(targetId)` returns the current `GovernedVersion` or an explicit `not-found` outcome.
-- `createProposal({ proposalId, proposalFingerprint, target, baseVersionId, workingMaterial, exactChange })` returns the manually authored `Proposal` or an explicit validation outcome. It does not change the current governed version.
-- `recordJudgment({ judgmentId, proposalId, proposalFingerprint, decision })` returns the exact-version-bound `Judgment` or an explicit validation outcome. The first cycle accepts the literal decision `accepted`; other decision types remain later-cycle behavior.
+- `createProposal({ proposalId, proposalFingerprint, target, baseVersionId, workingMaterial, changes })` returns the manually authored `Proposal` or an explicit validation outcome. A single-change TB8 Proposal is represented by one `ProposalChange` with an empty `dependsOn` list. It does not change the current governed version.
+- `recordJudgment({ judgmentId, proposalId, proposalFingerprint, decision, acceptedChangeIds })` returns the exact-version-bound `Judgment` or an explicit validation outcome. A single-change TB8 Judgment explicitly accepts that change ID. The first cycle accepts the literal decision `accepted`; other decision types remain later-cycle behavior.
 - `applyProposal({ proposalId, judgmentId })` returns `applied` with the new current version, preserved prior version, and immutable applied-record identity, or an explicit ineligible/validation outcome. It cannot apply without the matching accepted Judgment.
 - `getVersion(targetId, versionId)` returns the requested retained `GovernedVersion` or an explicit `not-found` outcome.
 
