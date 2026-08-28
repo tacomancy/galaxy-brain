@@ -391,7 +391,13 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
+The [Tracer Bullet 8 brief](tracer-bullet-8-spec.md) records the reviewed authorities, first literal behavior, confirmed S2 seam, expected values, vertical path, boundaries, deferrals, and acceptance evidence for this slice.
+
 At S2, start with a literal existing governed version and a manually authored Proposal from an edited Working Material draft. Prove that explicit acceptance and application create the expected new version while the current version remains unchanged until application and the previous version remains retrievable, all without an Agent Provider. Agent-assisted Proposal drafting can be added at the model seam without changing Governance authority.
+
+The first S2 cycle uses opaque test-store version identifiers only. A required later S5 persistence cycle must define persisted version records, stable ID mapping across reopen, current-version selection, ID allocation and lineage, retained-version retrieval, and compatibility before TB8 is considered complete.
+
+The first S2 cycle also supplies a literal in-memory Working Material draft to Governance. Durable draft serialization, draft reopening/history, autosave, rich/source editing, and the Knowledge Authoring UI remain deferred to the authoring tracer bullet.
 
 ### 9. Reject stale and incoherent applications
 
