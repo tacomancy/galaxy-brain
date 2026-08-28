@@ -9,7 +9,7 @@ This brief coordinates the TB15 implementation described in the [delivery plan](
 TB15 extends the accepted Source Processing path so that a linked PDF can become unavailable or fail an identity check without destroying portable source provenance. It has two bounded S3 slices:
 
 1. **Detect unavailable or changed bytes.** A Source Processing caller checks the linked asset. If the file is missing, unreadable, or cannot provide a comparable identity, the caller receives `source status unavailable`. If the file is readable but its identity or content identity differs from the identity recorded for the link, the caller receives `source status changed`. In either case the Source Record reference and every existing Structured Annotation remain unchanged and readable.
-2. **Explicitly relink.** The caller supplies a replacement linked file through an explicit relink operation. The replacement must pass the adapter's identity/content check before the Source Processing module records it as the current linked asset. A successful relink makes the known fixture page available again while preserving the Source Record ID, annotation ID, source text, and logical Source Locator. A mismatch remains a changed/unavailable result; it is never silently accepted.
+2. **Explicitly relink.** The caller supplies a replacement linked file through an explicit relink operation. The Source Asset Adapter must verify the replacement's identity/content and known page/range before committing its machine-local link. A successful relink makes the known fixture page available again while preserving the Source Record ID, annotation ID, source text, and logical Source Locator. A mismatch remains a changed/unavailable result; it is never silently accepted.
 
 The first slice proves the domain behavior through the S3 Source Processing Interface. The second slice uses the same Interface and a deterministic file-identity Adapter. No new repository-format schema is required for this brief: linked-local paths and their SHA-256 identities remain machine-local, while Source Records, annotations, citations, and logical locators remain portable repository content.
 
@@ -21,7 +21,7 @@ Before writing behavior tests or implementation code, explicitly complete these 
 
 1. Review the accepted [Product Decisions](product-decisions.md#paper-desk), [Architecture](architecture.md#paper-desk), [Repository Format](repository-format.md#portable-content), [Test Strategy](test-strategy.md#s3--source-processing-seam), applicable ADRs, the completed TB1–TB11 delivery records, and the current TB12–TB14 delivery/specification records if present.
 2. Create or update this guidance-compliant `tracer-bullet-15-spec.md` with the Public Behavior, confirmed Test Seam, literal expected values, fixture and External System Seams, minimum vertical path, boundaries, discarded alternatives, deferrals, acceptance evidence, and required confirmation recorded below.
-3. Check that source availability and relinking remain Source Processing behavior behind an external PDF/file Adapter; Paper Desk and any future UI are callers and projections, not owners of source identity, annotation preservation, or relink policy.
+3. Check that source availability and relinking remain Source Processing behavior behind external PDF and Source Asset Adapters; the Source Asset Adapter owns machine-local replacement verification and commit, while Paper Desk and any future UI are callers and projections, not owners of source identity, annotation preservation, or relink policy.
 4. Check that machine-local linked-file paths and identities never enter Repository Format content, that no source record or annotation is deleted when an asset cannot be checked, and that no changed bytes are accepted without the explicit relink operation.
 5. Obtain explicit human confirmation of the exact status vocabulary, fixture identities, replacement behavior, public Interface shape, and deferred work below before writing the Red workflow or implementation code.
 
@@ -44,8 +44,8 @@ Given the checked-in Bayesian fixture Source Record and one captured source-clai
 1. A baseline availability check returns `available` and the recorded source and content identities. Reading the existing annotation still returns the exact source reference, text, attribution, classification, and locator.
 2. When the linked PDF is missing or unreadable, the availability check returns `source-status-unavailable` with the literal warning `source status unavailable`. The Source Record remains present, and reading annotations for that Source Record returns the same annotation rather than an empty or deleted result.
 3. When the linked PDF is readable but either recorded identity differs from the current identity, the availability check returns `source-changed` with the literal warning `source status changed`. The result identifies that the saved linked asset and current bytes differ without replacing the saved link, changing the Source Record ID, changing annotation text, or changing the logical locator.
-4. An explicit relink request supplies a replacement linked asset and its machine-local identity evidence. The Source Processing module asks the Adapter to verify the replacement. It records the replacement only after verification succeeds. The successful outcome is `relinked` and includes the now-available current identities; the existing annotation remains byte-for-byte equivalent at the domain level.
-5. A relink request whose replacement identity cannot be read, is unavailable, or does not satisfy the requested expected identity returns `source-status-unavailable` or `source-changed` as appropriate. It does not mutate the stored link, Source Record reference, annotations, citations, or logical locators.
+4. An explicit relink request supplies a replacement linked asset, expected replacement identities, and a known page/range to verify. The Source Processing module asks the Source Asset Adapter to verify the replacement. The Adapter commits the machine-local replacement only after all checks succeed. The successful outcome is `relinked` and includes the now-available current identities; the existing annotation remains byte-for-byte equivalent at the domain level.
+5. A relink request whose replacement identity cannot be read, is unavailable, does not satisfy the requested expected identity, or cannot resolve the requested page/range returns `source-status-unavailable` or `source-changed` as appropriate. The Adapter does not mutate the stored link, and Source Processing does not mutate the Source Record reference, annotations, citations, or logical locators.
 6. Relinking does not remap an annotation to a different page or character range. If a replacement does not contain the known page/range, the source remains unavailable for that capture; the module does not guess a new range or silently rewrite the annotation.
 7. No availability check, failed relink, or successful relink creates a Proposal, invokes Synthesis, changes Governed Knowledge, or requires Git, a remote, credentials, or an Agent Provider.
 
@@ -66,11 +66,17 @@ export type SourceAssetIdentityOutcome =
     }
   | { outcome: "unavailable"; detail: string };
 
+export type SourceAssetRelinkOutcome =
+  | SourceAssetIdentityOutcome
+  | {
+      outcome: "changed";
+      sourceIdentity: string;
+      contentIdentity: string;
+    };
+
 export interface SourceAssetAdapter {
   readIdentity(sourceRecordId: string): Promise<SourceAssetIdentityOutcome>;
-  verifyRelink(
-    input: RelinkSourceInput,
-  ): Promise<SourceAssetIdentityOutcome>;
+  relink(input: RelinkSourceInput): Promise<SourceAssetRelinkOutcome>;
 }
 
 export interface CheckSourceAvailabilityInput {
@@ -102,8 +108,12 @@ export type CheckSourceAvailabilityOutcome =
       actualContentIdentity: string;
     };
 
-export interface RelinkSourceInput extends CheckSourceAvailabilityInput {
+export interface RelinkSourceInput {
+  sourceRecord: SourceRecordReference;
   replacementReference: string;
+  expectedReplacementSourceIdentity: string;
+  expectedReplacementContentIdentity: string;
+  verificationLocator: Pick<CaptureSourceClaimInput, "page" | "start" | "end">;
 }
 
 export type RelinkSourceOutcome =
@@ -154,9 +164,9 @@ Use the existing S3 Source Processing seam through the public Source Processing 
 - a deterministic `SourceAssetAdapter` whose state can represent available, unavailable, changed, and verified-replacement outcomes; and
 - the existing fixture PDF Adapter for the final known-page read.
 
-The tests must assert caller-visible outcomes and reread the annotation through the public Working Material contract after each failure and after relinking. They must not inspect private module state, mutate an implementation map directly, derive expected identities from the Adapter under test, or use repository files as a side channel.
+The tests must assert caller-visible outcomes and reread the annotation through the public Working Material contract after each failure and after relinking. The relink Adapter must assert the independently known verification locator and must not commit its replacement on an unavailable, mismatched, or locator-invalid result. Tests must not inspect private module state, mutate an implementation map directly, derive expected identities from the Adapter under test, or use repository files as a side channel.
 
-Add an S5 Adapter contract only if the production machine-local linked-file Adapter is introduced in this TB. That contract must verify real SHA-256 identity comparison against a temporary fixture file, never write its absolute path into repository content, and report an unavailable result when the path is missing. S5 is supporting evidence; it does not replace the S3 proof that annotations survive the state transition.
+Add an S5 Adapter contract only if the production machine-local linked-file Adapter is introduced in this TB. That contract must verify real SHA-256 identity comparison and the requested known page/range against a temporary fixture file, commit the machine-local link only after verification, never write its absolute path into repository content, and report an unavailable result when the path is missing. S5 is supporting evidence; it does not replace the S3 proof that annotations survive the state transition.
 
 No S1 UI work is required to make the S3 contract true. A later Paper Desk presentation may expose the status and relink control, but adding a UI route here would be a scope expansion and requires a separate confirmed S1 brief.
 
@@ -167,14 +177,14 @@ No S1 UI work is required to make the S3 contract true. A later Paper Desk prese
 3. Add the availability outcome and Adapter seam, then implement only the unavailable path. Assert the unchanged Source Record and annotation through public reads.
 4. Add one focused S3 test for a readable identity/content mismatch. Assert `source-changed`, the exact warning, and no mutation of the saved link or annotation.
 5. Add one focused S3 test for explicit relink to the known replacement. Assert `relinked`, the `v2` identities, the known page/range, and exact preservation of `page:2#chars=0-54`.
-6. Add the failed-relink test for an unavailable or mismatched replacement. Assert that the prior link and annotation remain unchanged.
+6. Add failed-relink tests for an unavailable, mismatched, or locator-invalid replacement. Assert that the Adapter does not commit the prior link and the annotation remains unchanged.
 7. If a production linked-file Adapter is added, add its narrow S5 contract for SHA-256 comparison, missing paths, and machine-local path isolation.
 8. Run the focused S3/S5 tests, `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, and public documentation validation. Record Red/Green evidence and defer any UI/manual acceptance to a confirmed S1 slice.
 
 ## External System Seams
 
 - **Source Processing Module:** owns outcome vocabulary, identity comparison policy, explicit relink authorization, and preservation of Source Records and annotations.
-- **Source Asset Adapter:** reads the machine-local linked asset identity and verifies an explicitly supplied replacement. It owns path resolution and SHA-256 calculation; it does not own annotation or Proposal policy.
+- **Source Asset Adapter:** reads the machine-local linked asset identity and verifies the replacement's identity, content, and known page/range before committing the machine-local link. It owns path resolution and SHA-256 calculation; it does not own annotation or Proposal policy.
 - **PDF Adapter:** resolves the known page/range after the source is available. It does not decide whether changed bytes are accepted and cannot delete or rewrite annotations.
 - **Working Material Adapter:** preserves and rereads Structured Annotations. It is not a source-availability oracle and must not be bypassed by a UI test.
 - **Repository Format:** stores portable Source Records, citations, annotations, and logical locators. Machine-local linked paths and identities remain outside it.

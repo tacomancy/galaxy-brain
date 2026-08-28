@@ -112,14 +112,24 @@ export type SourceAssetIdentityOutcome =
     }
   | { outcome: "unavailable"; detail: string };
 
+/** Outcome of verifying a replacement Source Asset before committing it. */
+export type SourceAssetRelinkOutcome =
+  | SourceAssetIdentityOutcome
+  | {
+      outcome: "changed";
+      sourceIdentity: string;
+      contentIdentity: string;
+    };
+
 /**
  * External seam for linked Source Asset identity and explicit replacement.
- * The Adapter owns machine-local path and hash handling; Source Processing
- * owns caller-visible status and preservation policy.
+ * The Adapter owns machine-local path, hash, and locator verification; Source
+ * Processing owns caller-visible status and preservation policy.
  */
 export interface SourceAssetAdapter {
   readIdentity(sourceRecordId: string): Promise<SourceAssetIdentityOutcome>;
-  relink(input: RelinkSourceInput): Promise<SourceAssetIdentityOutcome>;
+  /** Commits a replacement only after all requested verification succeeds. */
+  relink(input: RelinkSourceInput): Promise<SourceAssetRelinkOutcome>;
 }
 
 /** Agent provenance retained without promoting the result to authority. */
@@ -351,9 +361,15 @@ export type CheckSourceAvailabilityOutcome =
     };
 
 /** Input for a caller-authorized replacement of a linked Source Asset. */
-export interface RelinkSourceInput extends CheckSourceAvailabilityInput {
+export interface RelinkSourceInput {
+  sourceRecord: SourceRecordReference;
   /** Machine-local replacement reference; never portable repository content. */
   replacementReference: string;
+  /** Identity values the replacement must produce before it is committed. */
+  expectedReplacementSourceIdentity: string;
+  expectedReplacementContentIdentity: string;
+  /** Known page/range that the replacement must resolve. */
+  verificationLocator: Pick<CaptureSourceClaimInput, "page" | "start" | "end">;
 }
 
 /** Caller-visible result of an explicit linked Source Asset replacement. */
@@ -363,6 +379,15 @@ export type RelinkSourceOutcome =
       sourceRecord: SourceRecordReference;
       sourceIdentity: string;
       contentIdentity: string;
+    }
+  | {
+      outcome: "source-changed";
+      sourceRecord: SourceRecordReference;
+      warning: "source status changed";
+      expectedSourceIdentity: string;
+      expectedContentIdentity: string;
+      actualSourceIdentity: string;
+      actualContentIdentity: string;
     }
   | {
       outcome: "source-status-unavailable";
@@ -486,6 +511,21 @@ export interface SourceProcessingDiagnostics {
   record(cause: unknown): void;
 }
 
+type SourceStatusUnavailableOutcome = Extract<
+  CheckSourceAvailabilityOutcome,
+  { outcome: "source-status-unavailable" }
+>;
+
+const sourceStatusUnavailable = (
+  sourceRecord: SourceRecordReference,
+  detail: string,
+): SourceStatusUnavailableOutcome => ({
+  outcome: "source-status-unavailable",
+  sourceRecord: { ...sourceRecord },
+  warning: "source status unavailable",
+  detail,
+});
+
 const isValidLocator = (input: CaptureSourceClaimInput): boolean =>
   Number.isInteger(input.page) &&
   input.page > 0 &&
@@ -601,8 +641,10 @@ const buildSavedSynthesisResult = (
 /**
  * Composes capture policy behind the Source Processing Interface. The PDF
  * Adapter resolves source material; this Module owns attribution, locator
- * representation, and the Working Material state.
- * @param dependencies The PDF, Working Material, and model Adapters.
+ * representation, and the Working Material state. The Source Asset Adapter
+ * verifies machine-local linked assets and commits explicit relinks only
+ * after its requested identity and locator checks succeed.
+ * @param dependencies The PDF, Source Asset, Working Material, and model Adapters.
  * @returns The Source Processing Module Interface.
  */
 export const createSourceProcessing = (
@@ -614,12 +656,10 @@ export const createSourceProcessing = (
     const sourceRecord = { ...input.sourceRecord };
 
     if (dependencies.sourceAsset === undefined) {
-      return {
-        outcome: "source-status-unavailable",
+      return sourceStatusUnavailable(
         sourceRecord,
-        warning: "source status unavailable",
-        detail: "The linked source asset could not be checked.",
-      };
+        "The linked source asset could not be checked.",
+      );
     }
 
     let identity: SourceAssetIdentityOutcome;
@@ -630,21 +670,14 @@ export const createSourceProcessing = (
       );
     } catch (cause: unknown) {
       dependencies.diagnostics?.record(cause);
-      return {
-        outcome: "source-status-unavailable",
+      return sourceStatusUnavailable(
         sourceRecord,
-        warning: "source status unavailable",
-        detail: "The linked source asset could not be checked.",
-      };
+        "The linked source asset could not be checked.",
+      );
     }
 
     if (identity.outcome === "unavailable") {
-      return {
-        outcome: "source-status-unavailable",
-        sourceRecord,
-        warning: "source status unavailable",
-        detail: identity.detail,
-      };
+      return sourceStatusUnavailable(sourceRecord, identity.detail);
     }
 
     if (
@@ -676,34 +709,52 @@ export const createSourceProcessing = (
     const sourceRecord = { ...input.sourceRecord };
 
     if (dependencies.sourceAsset === undefined) {
-      return {
-        outcome: "source-status-unavailable",
+      return sourceStatusUnavailable(
         sourceRecord,
-        warning: "source status unavailable",
-        detail: "The linked source asset could not be relinked.",
-      };
+        "The linked source asset could not be relinked.",
+      );
     }
 
-    let identity: SourceAssetIdentityOutcome;
+    let identity: SourceAssetRelinkOutcome;
 
     try {
       identity = await dependencies.sourceAsset.relink(input);
     } catch (cause: unknown) {
       dependencies.diagnostics?.record(cause);
-      return {
-        outcome: "source-status-unavailable",
+      return sourceStatusUnavailable(
         sourceRecord,
-        warning: "source status unavailable",
-        detail: "The linked source asset could not be relinked.",
-      };
+        "The linked source asset could not be relinked.",
+      );
     }
 
     if (identity.outcome === "unavailable") {
+      return sourceStatusUnavailable(sourceRecord, identity.detail);
+    }
+
+    if (identity.outcome === "changed") {
       return {
-        outcome: "source-status-unavailable",
+        outcome: "source-changed",
         sourceRecord,
-        warning: "source status unavailable",
-        detail: identity.detail,
+        warning: "source status changed",
+        expectedSourceIdentity: input.expectedReplacementSourceIdentity,
+        expectedContentIdentity: input.expectedReplacementContentIdentity,
+        actualSourceIdentity: identity.sourceIdentity,
+        actualContentIdentity: identity.contentIdentity,
+      };
+    }
+
+    if (
+      identity.sourceIdentity !== input.expectedReplacementSourceIdentity ||
+      identity.contentIdentity !== input.expectedReplacementContentIdentity
+    ) {
+      return {
+        outcome: "source-changed",
+        sourceRecord,
+        warning: "source status changed",
+        expectedSourceIdentity: input.expectedReplacementSourceIdentity,
+        expectedContentIdentity: input.expectedReplacementContentIdentity,
+        actualSourceIdentity: identity.sourceIdentity,
+        actualContentIdentity: identity.contentIdentity,
       };
     }
 

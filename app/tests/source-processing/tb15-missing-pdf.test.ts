@@ -186,6 +186,74 @@ describe("TB15 missing PDF behavior", () => {
     });
   });
 
+  it("rejects a relink whose verified identity does not match the requested replacement", async () => {
+    const workingMaterial = createInMemoryWorkingMaterialRepository();
+    await workingMaterial.saveAnnotation(annotation);
+    const currentIdentity = {
+      sourceIdentity: "source-identity-bayesian-statistics-v1",
+      contentIdentity: "content-identity-bayesian-statistics-v1",
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: {
+        readSelection: async () => ({
+          outcome: "located" as const,
+          text: annotation.text,
+        }),
+      },
+      workingMaterial,
+      sourceAsset: {
+        readIdentity: async () => ({
+          outcome: "available" as const,
+          ...currentIdentity,
+        }),
+        relink: async () => ({
+          outcome: "available" as const,
+          sourceIdentity: currentIdentity.sourceIdentity,
+          contentIdentity: currentIdentity.contentIdentity,
+        }),
+      },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.relinkSource({
+        sourceRecord,
+        expectedReplacementSourceIdentity:
+          "source-identity-bayesian-statistics-v2",
+        expectedReplacementContentIdentity:
+          "content-identity-bayesian-statistics-v2",
+        replacementReference:
+          "/machine-local/unexpected-bayesian-statistics.pdf",
+        verificationLocator: { page: 2, start: 0, end: 54 },
+      }),
+      {
+        outcome: "source-changed",
+        sourceRecord,
+        warning: "source status changed",
+        expectedSourceIdentity: "source-identity-bayesian-statistics-v2",
+        expectedContentIdentity: "content-identity-bayesian-statistics-v2",
+        actualSourceIdentity: "source-identity-bayesian-statistics-v1",
+        actualContentIdentity: "content-identity-bayesian-statistics-v1",
+      },
+    );
+    assert.deepEqual(
+      await sourceProcessing.checkSourceAvailability({
+        sourceRecord,
+        expectedSourceIdentity: "source-identity-bayesian-statistics-v1",
+        expectedContentIdentity: "content-identity-bayesian-statistics-v1",
+      }),
+      {
+        outcome: "available",
+        sourceRecord,
+        sourceIdentity: "source-identity-bayesian-statistics-v1",
+        contentIdentity: "content-identity-bayesian-statistics-v1",
+      },
+    );
+    assert.deepEqual(await workingMaterial.readAnnotation(annotation.id), {
+      outcome: "found",
+      annotation,
+    });
+  });
+
   it("accepts only an explicit verified relink and preserves the logical locator", async () => {
     const workingMaterial = createInMemoryWorkingMaterialRepository();
     await workingMaterial.saveAnnotation(annotation);
@@ -206,7 +274,12 @@ describe("TB15 missing PDF behavior", () => {
           outcome: "available" as const,
           ...currentIdentity,
         }),
-        relink: async () => {
+        relink: async (input) => {
+          assert.deepEqual(input.verificationLocator, {
+            page: 2,
+            start: 0,
+            end: 54,
+          });
           currentIdentity = {
             sourceIdentity: "source-identity-bayesian-statistics-v2",
             contentIdentity: "content-identity-bayesian-statistics-v2",
@@ -218,9 +291,12 @@ describe("TB15 missing PDF behavior", () => {
 
     const outcome = await sourceProcessing.relinkSource({
       sourceRecord,
-      expectedSourceIdentity: "source-identity-bayesian-statistics-v1",
-      expectedContentIdentity: "content-identity-bayesian-statistics-v1",
+      expectedReplacementSourceIdentity:
+        "source-identity-bayesian-statistics-v2",
+      expectedReplacementContentIdentity:
+        "content-identity-bayesian-statistics-v2",
       replacementReference: "/machine-local/known-bayesian-statistics-v2.pdf",
+      verificationLocator: { page: 2, start: 0, end: 54 },
     });
 
     assert.deepEqual(outcome, {
@@ -246,6 +322,73 @@ describe("TB15 missing PDF behavior", () => {
       outcome: "found",
       annotation,
     });
+  });
+
+  it("does not commit a replacement that cannot resolve the known page and range", async () => {
+    const workingMaterial = createInMemoryWorkingMaterialRepository();
+    await workingMaterial.saveAnnotation(annotation);
+    const currentIdentity = {
+      sourceIdentity: "source-identity-bayesian-statistics-v1",
+      contentIdentity: "content-identity-bayesian-statistics-v1",
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: {
+        readSelection: async () => ({
+          outcome: "located" as const,
+          text: annotation.text,
+        }),
+      },
+      workingMaterial,
+      sourceAsset: {
+        readIdentity: async () => ({
+          outcome: "available" as const,
+          ...currentIdentity,
+        }),
+        relink: async (input) => {
+          assert.deepEqual(input.verificationLocator, {
+            page: 3,
+            start: 0,
+            end: 54,
+          });
+          return {
+            outcome: "unavailable" as const,
+            detail: "The replacement fixture page is unavailable.",
+          };
+        },
+      },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.relinkSource({
+        sourceRecord,
+        expectedReplacementSourceIdentity:
+          "source-identity-bayesian-statistics-v2",
+        expectedReplacementContentIdentity:
+          "content-identity-bayesian-statistics-v2",
+        replacementReference:
+          "/machine-local/wrong-page-bayesian-statistics.pdf",
+        verificationLocator: { page: 3, start: 0, end: 54 },
+      }),
+      {
+        outcome: "source-status-unavailable",
+        sourceRecord,
+        warning: "source status unavailable",
+        detail: "The replacement fixture page is unavailable.",
+      },
+    );
+    assert.deepEqual(
+      await sourceProcessing.checkSourceAvailability({
+        sourceRecord,
+        expectedSourceIdentity: "source-identity-bayesian-statistics-v1",
+        expectedContentIdentity: "content-identity-bayesian-statistics-v1",
+      }),
+      {
+        outcome: "available",
+        sourceRecord,
+        sourceIdentity: "source-identity-bayesian-statistics-v1",
+        contentIdentity: "content-identity-bayesian-statistics-v1",
+      },
+    );
   });
 
   it("does not mutate the link or annotation when relinking is unavailable", async () => {
@@ -274,9 +417,12 @@ describe("TB15 missing PDF behavior", () => {
 
     const outcome = await sourceProcessing.relinkSource({
       sourceRecord,
-      expectedSourceIdentity: "source-identity-bayesian-statistics-v1",
-      expectedContentIdentity: "content-identity-bayesian-statistics-v1",
+      expectedReplacementSourceIdentity:
+        "source-identity-bayesian-statistics-v2",
+      expectedReplacementContentIdentity:
+        "content-identity-bayesian-statistics-v2",
       replacementReference: "/machine-local/missing-bayesian-statistics.pdf",
+      verificationLocator: { page: 2, start: 0, end: 54 },
     });
 
     assert.deepEqual(outcome, {
