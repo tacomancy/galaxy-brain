@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/tacomancy/galaxy-brain/compare/v0.7.0...v0.8.0) (2026-08-28)
+
+
+### Features
+
+* apply accepted governed changes in memory ([#68](https://github.com/tacomancy/galaxy-brain/issues/68)) ([8ecd3f4](https://github.com/tacomancy/galaxy-brain/commit/8ecd3f408bec63f58a9e84265db26976e321f335))
+
 ## [0.7.0](https://github.com/tacomancy/galaxy-brain/compare/v0.6.1...v0.7.0) (2026-08-28)
 
 
