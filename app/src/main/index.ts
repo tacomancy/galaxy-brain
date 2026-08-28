@@ -12,12 +12,25 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createFileBackedKnowledgeRepository } from "../adapters/knowledge-repository/file-backed-knowledge-repository";
+import {
+  createEmptyProposalReviewSource,
+  createFixtureProposalReviewSource,
+  fixtureGovernedTarget,
+} from "../adapters/proposal-review/fixture-proposal-review";
+import { createFileBackedGovernanceStore } from "../adapters/governance/file-backed-governance-store";
 import { createFileBackedWorkbenchSessionState } from "../adapters/session-state/file-backed-workbench-session-state";
 import { createFixturePdfAdapter } from "../adapters/pdf/fixture-pdf-adapter";
 import { createFileBackedSynthesisResultRepository } from "../adapters/working-material/file-backed-synthesis-result-repository";
 import { createFileBackedWorkingMaterialRepository } from "../adapters/working-material/file-backed-working-material-repository";
+import { createGovernance } from "../modules/governance";
 import { contentTypeFor } from "./renderer-asset-content-type";
 import { createSourceProcessing } from "../modules/source-processing";
+import {
+  createProposalReview,
+  type ProposalReview,
+  type ProposalReviewApplyOutcome,
+  type ProposalReviewReadOutcome,
+} from "../modules/proposal-review";
 import type {
   ConfirmSynthesisOutcome,
   PrepareSynthesisOutcome,
@@ -123,6 +136,48 @@ const createWindow = async (): Promise<void> => {
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
   );
+  let proposalReviewRepositoryPath: string | undefined;
+  let proposalReview: ProposalReview | undefined;
+  const getProposalReview = async (): Promise<ProposalReview | undefined> => {
+    const workbench = await workbenchSession.openFreshWorkbench();
+
+    if (
+      workbench.repositoryPath === undefined ||
+      workbench.repositoryAccess !== "read-write"
+    ) {
+      return undefined;
+    }
+
+    if (
+      proposalReview !== undefined &&
+      proposalReviewRepositoryPath === workbench.repositoryPath
+    ) {
+      return proposalReview;
+    }
+
+    proposalReviewRepositoryPath = workbench.repositoryPath;
+    proposalReview = createProposalReview({
+      governance: createGovernance({
+        store: createFileBackedGovernanceStore({
+          repositoryPath: workbench.repositoryPath,
+          target: fixtureGovernedTarget,
+          initialVersionId: "bayesian-statistics-v1",
+          nextVersionId: "bayesian-statistics-v2",
+        }),
+      }),
+      source: isSilentTestMode
+        ? createFixtureProposalReviewSource()
+        : createEmptyProposalReviewSource(),
+    });
+    return proposalReview;
+  };
+  const readProposalReview = async (): Promise<ProposalReviewReadOutcome> =>
+    (await getProposalReview())?.read() ?? { outcome: "not-available" };
+  const acceptProposalReview = async (): Promise<ProposalReviewApplyOutcome> =>
+    (await getProposalReview())?.acceptAndApply() ?? {
+      outcome: "operation-failed",
+      detail: "A read-write Knowledge Repository is required for review.",
+    };
   let pendingSynthesis:
     { repositoryPath: string; preview: SynthesisPreview } | undefined;
   const prepareSynthesisPreview = async (
@@ -224,6 +279,33 @@ const createWindow = async (): Promise<void> => {
 
     return workbenchSession.openFreshWorkbench();
   });
+
+  ipcMain.handle("workbench:read-proposal-review", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return readProposalReview();
+  });
+
+  ipcMain.handle("workbench:open-proposal-review", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return readProposalReview();
+  });
+
+  ipcMain.handle(
+    "workbench:accept-proposal-review",
+    (event): Promise<ProposalReviewApplyOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      return acceptProposalReview();
+    },
+  );
 
   ipcMain.handle("workbench:create-repository", async (event) => {
     if (event.sender !== mainWindow.webContents) {
@@ -517,6 +599,9 @@ const createWindow = async (): Promise<void> => {
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
+    ipcMain.removeHandler("workbench:read-proposal-review");
+    ipcMain.removeHandler("workbench:open-proposal-review");
+    ipcMain.removeHandler("workbench:accept-proposal-review");
     ipcMain.removeHandler("workbench:create-repository");
     ipcMain.removeHandler("workbench:open-repository");
     ipcMain.removeHandler("workbench:select-context");
