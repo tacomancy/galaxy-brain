@@ -25,6 +25,10 @@
       "destination": "architecture/test-strategy.md"
     },
     {
+      "source": "docs-site/agent-guidance.md",
+      "destination": "agent-guidance.md"
+    },
+    {
       "source": "docs/engineering/glossary.md",
       "destination": "engineering-glossary.md"
     },
