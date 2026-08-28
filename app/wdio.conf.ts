@@ -19,6 +19,7 @@ const packagedBinary = join(
 // exercises persistence while parallel specs remain independent.
 const testSessionStateRoot = mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-"));
 const sessionStateArgumentPrefix = "--galaxy-brain-session-state=";
+const silentTestModeArgument = "--galaxy-brain-test-mode=silent";
 
 // S1 launches the unsigned macOS package produced by Electron Forge so the
 // test covers packaging, preload loading, and the real desktop composition.
@@ -39,6 +40,7 @@ export const config: Options.Testrunner &
       {
         appBinaryPath: packagedBinary,
         appArgs: [
+          silentTestModeArgument,
           `${sessionStateArgumentPrefix}${join(
             testSessionStateRoot,
             "workbench-session.json",

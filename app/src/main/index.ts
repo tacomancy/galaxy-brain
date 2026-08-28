@@ -107,6 +107,9 @@ const installRendererProtocol = (rendererEntry: string): void => {
 
 /** Creates the single BrowserWindow used by the current desktop shell. */
 const createWindow = async (): Promise<void> => {
+  const isSilentTestMode = process.argv.includes(
+    "--galaxy-brain-test-mode=silent",
+  );
   const starterRoot = app.isPackaged
     ? join(process.resourcesPath, "knowledge-repository")
     : join(app.getAppPath(), "templates", "knowledge-repository");
@@ -200,6 +203,9 @@ const createWindow = async (): Promise<void> => {
   const mainWindow = new BrowserWindow({
     width: 1_200,
     height: 800,
+    // The packaged S1 harness keeps the native window hidden while leaving
+    // the renderer active for WebdriverIO's desktop-level assertions.
+    show: !isSilentTestMode,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

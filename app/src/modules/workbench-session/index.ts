@@ -202,6 +202,7 @@ export const createWorkbenchSession = (
   let repositoryResumeFailure: RepositoryResumeFailure | undefined;
   let activeWorkspace: WorkbenchWorkspace = "atlas";
   let readingPosition: ReadingPosition | undefined;
+  type SelectedRepository = NonNullable<typeof selectedRepository>;
 
   const readWorkbenchContext = async (
     repositoryPath: string,
@@ -214,6 +215,108 @@ export const createWorkbenchSession = (
         detail: "The selected repository context could not be read.",
         cause,
       };
+    }
+  };
+
+  const setSelectedRepository = (
+    outcome: Extract<
+      RepositoryOperationOutcome,
+      { outcome: "created" | "opened" | "read-only-compatible" }
+    >,
+    contextReadOutcome: WorkbenchContextReadOutcome,
+  ): void => {
+    selectedRepository = {
+      path: outcome.repositoryPath,
+      access:
+        outcome.outcome === "read-only-compatible" ? "read-only" : "read-write",
+      selection: outcome.outcome,
+      ...(contextReadOutcome.outcome === "available"
+        ? { context: contextReadOutcome.context }
+        : {}),
+      ...(contextReadOutcome.outcome === "unavailable"
+        ? { contextReadFailure: contextReadOutcome }
+        : {}),
+    };
+  };
+
+  const restoreRememberedWorkspace = (
+    workspace: WorkbenchWorkspace | undefined,
+    contextReadOutcome: WorkbenchContextReadOutcome,
+  ): void => {
+    if (workspace === "atlas") {
+      activeWorkspace = workspace;
+      return;
+    }
+
+    if (
+      (workspace === "studio" || workspace === "paper-desk") &&
+      contextReadOutcome.outcome === "available"
+    ) {
+      activeWorkspace = workspace;
+    }
+  };
+
+  const restoreRememberedPosition = (
+    position: ReadingPosition | undefined,
+    contextReadOutcome: WorkbenchContextReadOutcome,
+  ): void => {
+    if (
+      position !== undefined &&
+      contextReadOutcome.outcome === "available" &&
+      position.sourceRecordId === contextReadOutcome.context.sourceRecord.id
+    ) {
+      readingPosition = position;
+    }
+  };
+
+  const restoreRememberedAnnotation = async (
+    repositoryPath: string,
+    contextReadOutcome: WorkbenchContextReadOutcome,
+  ): Promise<void> => {
+    if (
+      (activeWorkspace !== "studio" && activeWorkspace !== "paper-desk") ||
+      contextReadOutcome.outcome !== "available" ||
+      selectedRepository === undefined
+    ) {
+      return;
+    }
+
+    const annotationOutcome = await knowledgeRepository.readWorkbenchAnnotation(
+      repositoryPath,
+      contextReadOutcome.context.sourceRecord.id,
+    );
+
+    if (annotationOutcome.outcome === "found") {
+      selectedRepository.sourceAnnotation = annotationOutcome.annotation;
+      return;
+    }
+
+    activeWorkspace = "atlas";
+    readingPosition = undefined;
+  };
+
+  const isContextualWorkspace = (workspace: WorkbenchWorkspace): boolean =>
+    workspace === "studio" || workspace === "paper-desk";
+
+  const ensureSourceAnnotation = async (
+    repository: SelectedRepository,
+    workspace: WorkbenchWorkspace,
+  ): Promise<void> => {
+    if (
+      !isContextualWorkspace(workspace) ||
+      repository.context === undefined ||
+      repository.sourceAnnotation !== undefined
+    ) {
+      return;
+    }
+
+    const annotationOutcome = await knowledgeRepository.readWorkbenchAnnotation(
+      repository.path,
+      repository.context.sourceRecord.id,
+    );
+
+    if (annotationOutcome.outcome === "found") {
+      repository.sourceAnnotation = annotationOutcome.annotation;
     }
   };
 
@@ -239,57 +342,19 @@ export const createWorkbenchSession = (
       const contextReadOutcome = await readWorkbenchContext(
         outcome.repositoryPath,
       );
-      selectedRepository = {
-        path: outcome.repositoryPath,
-        access: outcome.outcome === "opened" ? "read-write" : "read-only",
-        selection: outcome.outcome,
-        ...(contextReadOutcome.outcome === "available"
-          ? { context: contextReadOutcome.context }
-          : {}),
-        ...(contextReadOutcome.outcome === "unavailable"
-          ? { contextReadFailure: contextReadOutcome }
-          : {}),
-      };
-
-      const rememberedWorkspace = rememberedSession?.activeWorkspace;
-      const rememberedPosition = rememberedSession?.readingPosition;
-
-      if (
-        rememberedWorkspace === "atlas" ||
-        (rememberedWorkspace === "studio" &&
-          contextReadOutcome.outcome === "available") ||
-        (rememberedWorkspace === "paper-desk" &&
-          contextReadOutcome.outcome === "available")
-      ) {
-        activeWorkspace = rememberedWorkspace;
-      }
-
-      if (
-        rememberedPosition !== undefined &&
-        contextReadOutcome.outcome === "available" &&
-        rememberedPosition.sourceRecordId ===
-          contextReadOutcome.context.sourceRecord.id
-      ) {
-        readingPosition = rememberedPosition;
-      }
-
-      if (
-        (activeWorkspace === "studio" || activeWorkspace === "paper-desk") &&
-        contextReadOutcome.outcome === "available"
-      ) {
-        const annotationOutcome =
-          await knowledgeRepository.readWorkbenchAnnotation(
-            outcome.repositoryPath,
-            contextReadOutcome.context.sourceRecord.id,
-          );
-
-        if (annotationOutcome.outcome === "found") {
-          selectedRepository.sourceAnnotation = annotationOutcome.annotation;
-        } else {
-          activeWorkspace = "atlas";
-          readingPosition = undefined;
-        }
-      }
+      setSelectedRepository(outcome, contextReadOutcome);
+      restoreRememberedWorkspace(
+        rememberedSession?.activeWorkspace,
+        contextReadOutcome,
+      );
+      restoreRememberedPosition(
+        rememberedSession?.readingPosition,
+        contextReadOutcome,
+      );
+      await restoreRememberedAnnotation(
+        outcome.repositoryPath,
+        contextReadOutcome,
+      );
       return;
     }
 
@@ -325,18 +390,7 @@ export const createWorkbenchSession = (
     const contextReadOutcome = await readWorkbenchContext(
       outcome.repositoryPath,
     );
-    selectedRepository = {
-      path: outcome.repositoryPath,
-      access:
-        outcome.outcome === "read-only-compatible" ? "read-only" : "read-write",
-      selection: outcome.outcome,
-      ...(contextReadOutcome.outcome === "available"
-        ? { context: contextReadOutcome.context }
-        : {}),
-      ...(contextReadOutcome.outcome === "unavailable"
-        ? { contextReadFailure: contextReadOutcome }
-        : {}),
-    };
+    setSelectedRepository(outcome, contextReadOutcome);
     activeWorkspace = "atlas";
     readingPosition = undefined;
     repositoryResumeFailure = undefined;
@@ -368,25 +422,13 @@ export const createWorkbenchSession = (
       workbench.context = repository.context;
     }
 
+    await ensureSourceAnnotation(repository, workspace);
+
     if (
-      (workspace === "studio" || workspace === "paper-desk") &&
-      repository.context !== undefined
+      isContextualWorkspace(workspace) &&
+      repository.sourceAnnotation !== undefined
     ) {
-      if (repository.sourceAnnotation === undefined) {
-        const annotationOutcome =
-          await knowledgeRepository.readWorkbenchAnnotation(
-            repository.path,
-            repository.context.sourceRecord.id,
-          );
-
-        if (annotationOutcome.outcome === "found") {
-          repository.sourceAnnotation = annotationOutcome.annotation;
-        }
-      }
-
-      if (repository.sourceAnnotation !== undefined) {
-        workbench.sourceAnnotation = repository.sourceAnnotation;
-      }
+      workbench.sourceAnnotation = repository.sourceAnnotation;
     }
 
     if (

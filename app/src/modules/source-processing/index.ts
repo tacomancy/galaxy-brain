@@ -470,6 +470,53 @@ const buildSynthesisPreview = (
   };
 };
 
+type SynthesisContextIdentities = Map<
+  string,
+  { sourceIdentity: string; contentIdentity: string }
+>;
+
+const buildSavedSynthesisResult = (
+  input: SaveSynthesisResultInput,
+  contextIdentities: SynthesisContextIdentities,
+): SynthesisSavedResult => ({
+  id: input.resultId,
+  state: "working-material",
+  title: input.draft.title,
+  text: input.draft.text,
+  targetTopic: { ...input.preview.payload.targetTopic },
+  provenance: {
+    attribution: "agent-generated",
+    provider: input.preview.provider.destination,
+    model: input.preview.provider.model,
+    generatedAt: input.generatedAt,
+    operation: input.preview.payload.operation,
+    sourceContext: input.preview.payload.context.map((item) => ({
+      annotationId: item.annotationId,
+      sourceRecord: { ...item.sourceRecord },
+      sourceLocator: item.sourceLocator,
+      attribution: item.attribution,
+      classification: item.classification,
+    })),
+  },
+  ...(input.includePromptAndContext
+    ? {
+        ...(input.preview.prompt === undefined
+          ? {}
+          : { prompt: input.preview.prompt }),
+        contextSnapshot: input.preview.payload.context.map((item) => ({
+          // Every context item was checked and inserted by the caller.
+          ...contextIdentities.get(item.annotationId)!,
+          annotationId: item.annotationId,
+          sourceRecord: { ...item.sourceRecord },
+          sourceLocator: item.sourceLocator,
+          summary: `Selected ${item.classification === "source-claim" ? "source claim" : item.classification} from the ${item.sourceRecord.title}.`,
+        })),
+        contextSnapshotVersion: 1,
+        contextSnapshotRefreshedAt: input.generatedAt,
+      }
+    : {}),
+});
+
 /**
  * Composes capture policy behind the Source Processing Interface. The PDF
  * Adapter resolves source material; this Module owns attribution, locator
@@ -610,6 +657,53 @@ export const createSourceProcessing = (
     }
   };
 
+  const readSynthesisContextIdentities = async (
+    input: SaveSynthesisResultInput,
+  ): Promise<SynthesisContextIdentities | SaveSynthesisResultOutcome> => {
+    const contextIdentities: SynthesisContextIdentities = new Map();
+
+    if (!input.includePromptAndContext) {
+      return contextIdentities;
+    }
+
+    if (dependencies.sourceIdentity === undefined) {
+      return {
+        outcome: "operation-failed",
+        detail: "The Synthesis source context could not be checked.",
+      };
+    }
+
+    for (const item of input.preview.payload.context) {
+      let identity: SynthesisSourceIdentityOutcome;
+
+      try {
+        identity = await dependencies.sourceIdentity.readIdentity(
+          item.sourceRecord.id,
+        );
+      } catch (cause: unknown) {
+        dependencies.diagnostics?.record(cause);
+        return {
+          outcome: "operation-failed",
+          detail: "The Synthesis source context could not be checked.",
+        };
+      }
+
+      if (identity.outcome === "unavailable") {
+        return {
+          outcome: "operation-failed",
+          detail: "The Synthesis source context could not be checked.",
+        };
+      }
+
+      contextIdentities.set(item.annotationId, {
+        sourceIdentity: identity.sourceIdentity,
+        contentIdentity: identity.contentIdentity,
+      });
+    }
+
+    return contextIdentities;
+  };
+
   const saveSynthesisResult = async (
     input: SaveSynthesisResultInput,
   ): Promise<SaveSynthesisResultOutcome> => {
@@ -624,86 +718,13 @@ export const createSourceProcessing = (
       };
     }
 
-    const contextIdentities = new Map<
-      string,
-      { sourceIdentity: string; contentIdentity: string }
-    >();
+    const contextIdentities = await readSynthesisContextIdentities(input);
 
-    if (input.includePromptAndContext) {
-      if (dependencies.sourceIdentity === undefined) {
-        return {
-          outcome: "operation-failed",
-          detail: "The Synthesis source context could not be checked.",
-        };
-      }
-
-      for (const item of input.preview.payload.context) {
-        let identity: SynthesisSourceIdentityOutcome;
-
-        try {
-          identity = await dependencies.sourceIdentity.readIdentity(
-            item.sourceRecord.id,
-          );
-        } catch (cause: unknown) {
-          dependencies.diagnostics?.record(cause);
-          return {
-            outcome: "operation-failed",
-            detail: "The Synthesis source context could not be checked.",
-          };
-        }
-
-        if (identity.outcome === "unavailable") {
-          return {
-            outcome: "operation-failed",
-            detail: "The Synthesis source context could not be checked.",
-          };
-        }
-
-        contextIdentities.set(item.annotationId, {
-          sourceIdentity: identity.sourceIdentity,
-          contentIdentity: identity.contentIdentity,
-        });
-      }
+    if ("outcome" in contextIdentities) {
+      return contextIdentities;
     }
 
-    const result: SynthesisSavedResult = {
-      id: input.resultId,
-      state: "working-material",
-      title: input.draft.title,
-      text: input.draft.text,
-      targetTopic: { ...input.preview.payload.targetTopic },
-      provenance: {
-        attribution: "agent-generated",
-        provider: input.preview.provider.destination,
-        model: input.preview.provider.model,
-        generatedAt: input.generatedAt,
-        operation: input.preview.payload.operation,
-        sourceContext: input.preview.payload.context.map((item) => ({
-          annotationId: item.annotationId,
-          sourceRecord: { ...item.sourceRecord },
-          sourceLocator: item.sourceLocator,
-          attribution: item.attribution,
-          classification: item.classification,
-        })),
-      },
-      ...(input.includePromptAndContext
-        ? {
-            ...(input.preview.prompt === undefined
-              ? {}
-              : { prompt: input.preview.prompt }),
-            contextSnapshot: input.preview.payload.context.map((item) => ({
-              // Every context item was checked and inserted immediately above.
-              ...contextIdentities.get(item.annotationId)!,
-              annotationId: item.annotationId,
-              sourceRecord: { ...item.sourceRecord },
-              sourceLocator: item.sourceLocator,
-              summary: `Selected ${item.classification === "source-claim" ? "source claim" : item.classification} from the ${item.sourceRecord.title}.`,
-            })),
-            contextSnapshotVersion: 1,
-            contextSnapshotRefreshedAt: input.generatedAt,
-          }
-        : {}),
-    };
+    const result = buildSavedSynthesisResult(input, contextIdentities);
 
     try {
       await dependencies.results.saveResult(result);

@@ -70,108 +70,87 @@ const isHumanEdit = (value: unknown): value is SynthesisHumanEdit =>
   value.changedFields.length > 0 &&
   value.changedFields.every((field) => field === "title" || field === "text");
 
+const isPositiveInteger = (value: unknown): boolean =>
+  typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+
+const isOptionalNonEmptyString = (value: unknown): boolean =>
+  value === undefined || isNonEmptyString(value);
+
+const isValidContextSnapshot = (
+  value: unknown,
+  sourceContext: unknown[],
+): boolean => {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (!Array.isArray(value) || !value.every(isContextSnapshot)) {
+    return false;
+  }
+
+  return value.every((snapshot) =>
+    sourceContext.some(
+      (source) =>
+        isRecord(source) && source.annotationId === snapshot.annotationId,
+    ),
+  );
+};
+
+const isValidSynthesisResultCore = (
+  value: Record<string, unknown>,
+  provenance: Record<string, unknown>,
+  sourceContext: unknown[],
+): boolean =>
+  isNonEmptyString(value.id) &&
+  value.state === "working-material" &&
+  isNonEmptyString(value.title) &&
+  isNonEmptyString(value.text) &&
+  isRecord(value.targetTopic) &&
+  isNonEmptyString(value.targetTopic.id) &&
+  isNonEmptyString(value.targetTopic.title) &&
+  provenance.attribution === "agent-generated" &&
+  isNonEmptyString(provenance.provider) &&
+  isNonEmptyString(provenance.model) &&
+  isNonEmptyString(provenance.generatedAt) &&
+  provenance.operation === "synthesize-into-topic" &&
+  sourceContext.every(isSourceContextReference);
+
+const isValidSynthesisResultMetadata = (
+  value: Record<string, unknown>,
+  sourceContext: unknown[],
+): boolean =>
+  isOptionalNonEmptyString(value.prompt) &&
+  isValidContextSnapshot(value.contextSnapshot, sourceContext) &&
+  (value.contextSnapshotVersion === undefined ||
+    isPositiveInteger(value.contextSnapshotVersion)) &&
+  isOptionalNonEmptyString(value.contextSnapshotRefreshedAt) &&
+  (value.humanAuthorship === undefined ||
+    value.humanAuthorship === "human-authored") &&
+  (value.humanEdits === undefined ||
+    (Array.isArray(value.humanEdits) && value.humanEdits.every(isHumanEdit))) &&
+  (value.resultVersion === undefined ||
+    isPositiveInteger(value.resultVersion)) &&
+  (value.priorResults === undefined ||
+    (Array.isArray(value.priorResults) &&
+      value.priorResults.every(isSynthesisSavedResult)));
+
 const isSynthesisSavedResult = (
   value: unknown,
 ): value is SynthesisSavedResult => {
-  const provenance =
-    isRecord(value) && isRecord(value.provenance)
-      ? value.provenance
-      : undefined;
-  const sourceContext =
-    provenance !== undefined && Array.isArray(provenance.sourceContext)
-      ? provenance.sourceContext
-      : undefined;
-
-  if (
-    !isRecord(value) ||
-    !isNonEmptyString(value.id) ||
-    value.state !== "working-material" ||
-    !isNonEmptyString(value.title) ||
-    !isNonEmptyString(value.text) ||
-    !isRecord(value.targetTopic) ||
-    !isNonEmptyString(value.targetTopic.id) ||
-    !isNonEmptyString(value.targetTopic.title) ||
-    provenance === undefined ||
-    provenance.attribution !== "agent-generated" ||
-    !isNonEmptyString(provenance.provider) ||
-    !isNonEmptyString(provenance.model) ||
-    !isNonEmptyString(provenance.generatedAt) ||
-    provenance.operation !== "synthesize-into-topic" ||
-    sourceContext === undefined ||
-    !sourceContext.every(isSourceContextReference)
-  ) {
+  if (!isRecord(value) || !isRecord(value.provenance)) {
     return false;
   }
 
-  if (
-    value.prompt !== undefined &&
-    (typeof value.prompt !== "string" || value.prompt.length === 0)
-  ) {
+  const sourceContext = value.provenance.sourceContext;
+
+  if (!Array.isArray(sourceContext)) {
     return false;
   }
 
-  if (
-    value.contextSnapshot !== undefined &&
-    (!Array.isArray(value.contextSnapshot) ||
-      !value.contextSnapshot.every(isContextSnapshot) ||
-      !value.contextSnapshot.every((snapshot) =>
-        sourceContext.some(
-          (source: unknown) =>
-            isRecord(source) && source.annotationId === snapshot.annotationId,
-        ),
-      ))
-  ) {
-    return false;
-  }
-
-  if (
-    value.contextSnapshotVersion !== undefined &&
-    (typeof value.contextSnapshotVersion !== "number" ||
-      !Number.isSafeInteger(value.contextSnapshotVersion) ||
-      value.contextSnapshotVersion <= 0)
-  ) {
-    return false;
-  }
-
-  if (
-    value.contextSnapshotRefreshedAt !== undefined &&
-    !isNonEmptyString(value.contextSnapshotRefreshedAt)
-  ) {
-    return false;
-  }
-
-  if (
-    value.humanAuthorship !== undefined &&
-    value.humanAuthorship !== "human-authored"
-  ) {
-    return false;
-  }
-
-  if (
-    value.humanEdits !== undefined &&
-    (!Array.isArray(value.humanEdits) || !value.humanEdits.every(isHumanEdit))
-  ) {
-    return false;
-  }
-
-  if (
-    value.resultVersion !== undefined &&
-    (typeof value.resultVersion !== "number" ||
-      !Number.isSafeInteger(value.resultVersion) ||
-      value.resultVersion <= 0)
-  ) {
-    return false;
-  }
-
-  if (
-    value.priorResults !== undefined &&
-    (!Array.isArray(value.priorResults) ||
-      !value.priorResults.every(isSynthesisSavedResult))
-  ) {
-    return false;
-  }
-
-  return true;
+  return (
+    isValidSynthesisResultCore(value, value.provenance, sourceContext) &&
+    isValidSynthesisResultMetadata(value, sourceContext)
+  );
 };
 
 const resultFilePath = (

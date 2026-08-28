@@ -384,7 +384,7 @@ At S3, prove that **Synthesize into topic** shows a concise summary and inspecta
 - **Green evidence:** The focused packaged workflow passed. The local full packaged workflow suite passed all 21 WebdriverIO specs, including renderer styling, whole-context-item removal, and regenerated preview assertions. `npm run check` passed formatting, linting, strict type checking, and 42 Vitest tests.
 - **Scope confirmed:** The surface does not call a production provider, fabricate a successful draft, apply Governed Knowledge changes, or add a fourth primary workspace. Provider-unavailable behavior remains visible and local workflows remain usable.
 - **Human acceptance:** On August 28, 2026, the user completed and accepted all five manual checks: packaged layout; initial Synthesis preview and exact payload; whole-context-item removal and regenerated preview; decline/cancel/provider-unavailable outcomes; and saved-result provenance/version/restore behavior. The review confirmed the states were legible and operable in the packaged app.
-- **CI follow-up:** PR #24 still has a required desktop-workflow failure at `review-synthesis-confirmation.e2e.ts:83`, where the test asserts the Cancel outcome before the asynchronous UI update is visible. This remains a merge blocker and is separate from the accepted manual UI behavior.
+- **CI follow-up:** PR #24 merged successfully after its required checks completed. The packaged desktop workflow and full validation gate are passing; the earlier timing failure at `review-synthesis-confirmation.e2e.ts:83` is historical and no longer a merge blocker.
 - **Next behavior:** Production provider integration and later Proposal/Governance work remain outside TB7.
 
 ### 8. Apply one governed change
