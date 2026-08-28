@@ -581,6 +581,8 @@ Before implementation, complete the [documentation prerequisite](#documentation-
 
 At S3, prove that an unavailable or hash-changed linked PDF preserves the Source Record and annotations. In the next cycle, prove relinking makes the known page available without silently accepting changed bytes or changing its logical Source Locator.
 
+The implementation entry point is the [TB15 specification](tracer-bullet-15-spec.md). Its explicit preparation task is to review the governing documentation, record the guidance-compliant behavior and test seam, document deferred work and discarded alternatives with rationale, and obtain human confirmation before implementation begins.
+
 ### 16. Complete the desktop quality contract
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
