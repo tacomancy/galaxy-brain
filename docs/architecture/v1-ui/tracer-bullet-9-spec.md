@@ -148,7 +148,7 @@ The next TB9 slice owns invalid dependency subsets. The later TB9 slice owns ind
 
 ## Alternatives considered and deferred
 
-- **Reuse `not-eligible` without a distinct stale outcome:** proposed as insufficient for this slice because a caller must distinguish a recoverable stale review from other eligibility failures and guide the person toward creating a new Proposal/Judgment. If the user prefers one generic outcome, update this brief before the Red test.
+- **Reuse `not-eligible` without a distinct stale outcome:** discarded as insufficient for this slice because a caller must distinguish a recoverable stale review from other eligibility failures and guide the person toward creating a new Proposal/Judgment.
 - **Automatically rebase the Proposal onto the new current version:** discarded because it would change the material that the person reviewed and could turn an exact Judgment into hidden approval of a different version.
 - **Re-run the same exact change against the new version if the text still matches:** discarded because exact-version review is the trust boundary; textual applicability does not prove that the person reviewed the newer version.
 - **Invalidate or delete the stale Proposal/Judgment:** deferred because prior review decisions are provenance and must remain inspectable; rejection should preserve them without making them eligible.
@@ -166,4 +166,4 @@ The user confirmed this proposed outcome and literal stale-review scenario befor
 - proof that the stale attempt did not invoke version mutation and did not alter current/history state; and
 - human confirmation that a Judgment accepted for `bayesian-statistics-v1` is visibly rejected after `bayesian-statistics-v2` becomes current, while the newer version remains current and the prior version remains retrievable.
 
-The focused Red run returned the prior generic `not-eligible` outcome as expected. The focused Green run now returns the exact `stale-judgment` result, preserves the current and prior versions, and does not call the storage Adapter's mutation operation. Confirmation is scoped to this first slice; it does not approve dependency subsets, multi-change decisions, or the TB10 review UI.
+The focused Red run returned the prior generic `not-eligible` outcome as expected. The focused Green run now returns the exact `stale-judgment` result, preserves the current and prior versions, and does not call the storage Adapter's mutation operation. The user accepted this first slice on August 28, 2026. That acceptance is scoped to this first slice; it does not approve dependency subsets, multi-change decisions, or the TB10 review UI.
