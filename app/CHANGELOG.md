@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/tacomancy/galaxy-brain/compare/v0.5.0...v0.6.0) (2026-08-28)
+
+
+### Features
+
+* enforce production complexity limits ([#55](https://github.com/tacomancy/galaxy-brain/issues/55)) ([fb87e17](https://github.com/tacomancy/galaxy-brain/commit/fb87e1760b986444634274326f32051d5cf0e93f))
+
 ## [0.5.0](https://github.com/tacomancy/galaxy-brain/compare/v0.4.0...v0.5.0) (2026-08-27)
 
 
