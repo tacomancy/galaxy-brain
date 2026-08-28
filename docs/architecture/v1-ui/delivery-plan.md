@@ -409,6 +409,8 @@ The first S2 cycle uses opaque test-store version identifiers only. A required l
 
 The first S2 cycle also supplies a literal in-memory Working Material draft to Governance. Durable draft serialization, draft reopening/history, autosave, rich/source editing, and the Knowledge Authoring UI remain deferred to the authoring tracer bullet.
 
+The required next TB8 cycle is the S5 file-backed persistence path. Its proposed applied-record JSON, targeted rollback, stable version mapping, transaction staging, fingerprint checks, and recovery behavior are documented in the [TB8 brief](tracer-bullet-8-spec.md#required-second-cycle-persist-one-governed-change-through-s5) and require explicit confirmation before implementation because they establish the first concrete applied-version schema within Repository Format v1.
+
 #### TB8 first S2 application cycle — August 28, 2026
 
 - **Public Behavior:** The S2 Governance Interface accepts the literal `working-material-tb8-bayesian-statistics-evidence` draft, creates `proposal-tb8-bayesian-statistics-evidence`, records the accepted exact-version Judgment `judgment-tb8-bayesian-statistics-evidence`, and applies it as `bayesian-statistics-v2` while preserving `bayesian-statistics-v1`.

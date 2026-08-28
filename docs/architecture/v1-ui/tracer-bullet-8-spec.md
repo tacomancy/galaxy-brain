@@ -1,6 +1,6 @@
 # Tracer Bullet 8: Apply one governed change
 
-Status: first S2 implementation cycle complete on August 28, 2026; human acceptance pending.
+Status: first S2 implementation cycle complete and merged on August 28, 2026; S5 persistence design pending confirmation.
 
 This brief coordinates the first Governance implementation slice in the [delivery plan](delivery-plan.md#8-apply-one-governed-change). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, testing, or accepted ADR decisions.
 
@@ -150,6 +150,134 @@ The first-cycle record must also state that persistence is deferred. The later p
 The implementation is not TB8-accepted until the user reviews the resulting Governance behavior and explicitly confirms that the governed current version stayed unchanged until application and that the prior version remained retrievable afterward.
 
 The first TB8 cycle is not accepted until the user reviews the resulting behavior and explicitly confirms it. Later TB8–TB10 cycles require their own documentation check, evidence, and human acceptance.
+
+## Required second cycle: persist one governed change through S5
+
+This is the next TB8 implementation cycle identified by the delivery plan. Its documentation prerequisite was reviewed against the accepted Product Decisions, Architecture, Repository Format, Test Strategy S2/S5 guidance, ADRs 0002, 0005, 0006, and 0009, the merged TB8 S2 implementation, and the existing atomic-write Adapter on August 28, 2026. The concrete Repository Format schema below was explicitly confirmed as an addition to V1 on August 28, 2026.
+
+### Public Behavior
+
+Using a copy of the checked-in fixture repository and the same literal Proposal/Judgment from the S2 cycle, the file-backed Governance storage Adapter must:
+
+1. Load the initial `bayesian-statistics-v1` version from the existing `knowledge/bayesian-statistics.md` target without incidental mutation.
+2. Apply the accepted Proposal through the public Governance Interface.
+3. Write the approved `knowledge/bayesian-statistics.md` content, an immutable applied audit record, and targeted rollback data as one recoverable local transaction.
+4. Reopen the same repository through a new Governance instance.
+5. Return `bayesian-statistics-v2` as current and retrieve `bayesian-statistics-v1` with its original bytes through the same public Interface.
+
+The independently known S5 values are:
+
+- Target: `bayesian-statistics`, path `knowledge/bayesian-statistics.md`.
+- Initial version: `bayesian-statistics-v1`.
+- New version: `bayesian-statistics-v2`.
+- Previous target SHA-256: `5fb3de504a1d39faaa32c199f9b8209dabb9abb4deb419633b2679de242c41df`.
+- New target SHA-256: `e2f8bbc083c57de5e4c01ad7c92fc965cc54d05061b0b85b06fa8b8e3ec504d1`.
+- Applied record path: `proposals/applied/applied-proposal-tb8-bayesian-statistics-evidence.json`.
+- Rollback path: `proposals/applied/applied-proposal-tb8-bayesian-statistics-evidence/rollback/knowledge/bayesian-statistics.md`.
+- Transaction staging path: `proposals/applied/.transactions/applied-proposal-tb8-bayesian-statistics-evidence/`.
+- Applied record identity: `applied-proposal-tb8-bayesian-statistics-evidence`.
+- The audit binds Proposal `proposal-tb8-bayesian-statistics-evidence`, fingerprint `proposal-fingerprint-tb8-bayesian-statistics-evidence`, Judgment `judgment-tb8-bayesian-statistics-evidence`, decision `accepted`, target path, previous/new version IDs, and previous/new fingerprints.
+
+### Proposed persisted representation
+
+The first file-backed Adapter stores one immutable JSON audit record at the applied record path above. It contains the applied identity, the exact Proposal metadata and patch, the exact Judgment metadata and decision, target identity/path, previous and new Governance-domain version IDs, and previous/new target fingerprints. Its rollback field points to the repository-relative rollback file containing the original UTF-8 target bytes. The current target remains at its ordinary `knowledge/` path; history is reconstructed from the applied record and rollback bytes, so no duplicate governed copy is introduced under a new top-level knowledge path.
+
+#### Decision 1 — applied audit location and immutability: accepted
+
+The user explicitly accepted this location and immutability rule on August 28, 2026. A successful application therefore creates exactly one immutable record at `proposals/applied/<applied-record-id>.json`. Existing records are never overwritten. Reusing an applied identity with different content is an explicit failure, not an implicit update or repair. The record is self-contained enough to explain what was approved and applied without consulting UI state, Git, or an external service.
+
+The following alternatives were considered and discarded for this cycle:
+
+- **Store the audit record beside the target under `knowledge/`:** discarded because it would mix governance history with the current knowledge namespace, make portable repository discovery less predictable, and conflict with the accepted Repository Format location for applied audit records.
+- **Store only a Git commit, tag, or external database reference:** discarded because Git and external services are outside the product boundary, are optional under ADR 0005, and cannot provide the portable application-readable audit required by the Repository Format.
+- **Use a mutable single `proposals/applied/latest.json` record:** discarded because overwriting would destroy provenance, make duplicate application identity ambiguous, and prevent reliable audit/recovery after a partial or repeated operation.
+- **Store only a compact summary and recover Proposal/Judgment details elsewhere:** discarded because reopening must not depend on UI state or transient Working Material; the applied record must preserve the exact approved inputs and resulting fingerprints.
+- **Write a second full current-version copy under a new top-level history directory:** discarded because the ordinary `knowledge/` target remains the source of current content, while the targeted rollback file is sufficient for this narrow retained-history path and avoids introducing duplicate authorities.
+
+Deferred from this decision are broad audit indexing/search, schema migration from any pre-existing applied-record format, compaction or archival of immutable records, and multi-target audit bundles. Those behaviors require additional product and Repository Format decisions and are not needed to establish the first portable one-target application contract.
+
+#### Decision 2 — targeted rollback representation: accepted
+
+The user explicitly confirmed this rollback representation on August 28, 2026. The first file-backed Adapter preserves the exact original bytes of each targeted file at `proposals/applied/<applied-record-id>/rollback/<target-relative-path>`. The applied audit record points to that repository-relative path. The rollback artifact becomes immutable after successful application and serves retained history, interrupted-transaction recovery, and a future rollback operation; it is not a competing source of current content. This cycle preserves only files targeted by the Proposal.
+
+The following alternatives were considered and discarded for this cycle:
+
+- **Store a reverse patch instead of original bytes:** discarded because patch application can depend on surrounding content and newline interpretation, while exact original bytes make restoration and retained-version retrieval deterministic.
+- **Delegate rollback to Git:** discarded because Git is optional and outside the product boundary; a portable repository must retain its own application-readable recovery data.
+- **Snapshot the entire repository:** discarded because it has poor locality, increases transaction scope, and is unnecessary for the one-target Proposal that defines this cycle.
+- **Write a second full versioned copy under `knowledge/`:** discarded because it would create competing content authorities; the current target remains authoritative and the targeted rollback artifact supplies the prior bytes.
+
+Deferred from this decision are multi-file rollback bundles beyond the targeted files, repository-wide snapshots, user-facing rollback controls, and rollback retention/garbage-collection policy. These require separate scope and lifecycle decisions; they must not be inferred from this first targeted artifact.
+
+#### Decision 3 — transaction staging and recovery: accepted
+
+The user explicitly confirmed this staging, fingerprint, interruption-recovery, and cleanup rule on August 28, 2026. The first file-backed Adapter stages the journal, replacement target, targeted rollback bytes, and applied audit record under `proposals/applied/.transactions/<applied-record-id>/` before mutating the live target. It rechecks the live target fingerprint immediately before replacement. On the next open, an interrupted transaction is resolved deterministically from its journal and staged artifacts: the Adapter either completes a fully staged application or restores the prior target, returns an explicit recovery outcome, and removes the transaction directory only after the repository is coherent. An external target edit is never silently overwritten and returns an explicit conflict outcome.
+
+The following alternatives were considered and discarded for this cycle:
+
+- **Mutate the target first and write audit/rollback afterward:** discarded because a failure between those operations could destroy the prior bytes or leave an applied change without provenance.
+- **Rely on filesystem rename alone:** discarded because rename can protect an individual file but does not define recovery across the target, rollback, audit, and journal artifacts as one operation.
+- **Leave staging directories for manual cleanup:** discarded because an ambiguous transaction would make reopen behavior nondeterministic and could expose stale or misleading governance state.
+- **Always choose finish or always choose restore after interruption:** discarded because the correct outcome depends on the journal and complete staged artifacts; an unconditional policy could either lose an approved application or overwrite evidence of an incomplete one.
+
+Deferred from this decision are concurrent applications, cross-repository transactions, automatic cleanup of unknown or orphaned transaction directories, durability guarantees stronger than the local filesystem contract, and a user-facing recovery UI. These are separate concurrency, storage, or product decisions and are not implied by the first recoverable local transaction.
+
+#### Decision 4 — persisted version mapping and reopen behavior: accepted
+
+The user explicitly confirmed this version-mapping and reopen rule on August 28, 2026. For the literal fixture, an existing target with no applied record seeds `bayesian-statistics-v1`. A successful applied record establishes `bayesian-statistics-v2` and names `bayesian-statistics-v1` as its parent. Reopening derives the current version from the valid applied record and retrieves the prior version from its targeted rollback bytes. These stable Governance-domain IDs are persisted as explicit record fields; they are not Repository Format versions and are not derived from content, timestamps, or filesystem metadata. This first cycle supports only the literal one-target `v1` → `v2` lineage.
+
+The following alternatives were considered and discarded for this cycle:
+
+- **Derive version IDs from content hashes:** discarded because identity would become coupled to byte representation or normalization and would change when content representation changes.
+- **Derive version IDs from timestamps or filesystem metadata:** discarded because those values are unstable, environment-dependent, and not portable repository lineage.
+- **Use Git commits or tags as version IDs:** discarded because Git is optional and outside the product boundary; governance history must remain application-readable without Git.
+- **Treat the latest file modification as the current version:** discarded because it loses explicit governance lineage and cannot prove which Proposal and Judgment produced the content.
+
+Deferred from this decision are general version-ID allocation, multi-application lineage, branching histories, multi-target lineage, migration of repositories that already contain applied records, and broad history indexing. The first S5 contract intentionally establishes only a deterministic one-target reopen path; these later behaviors require their own schema and policy decisions.
+
+#### Decision 5 — Repository Format boundary: accepted
+
+The user explicitly confirmed this Repository Format boundary and documentation rule on August 28, 2026. The accepted S5 representation remains inside `format: galaxy-brain`, `format_version: 1`. The concrete applied-record JSON, relative rollback paths, transaction staging layout, fingerprint rules, preservation rules, and recovery outcomes are application-readable contract and must be documented in [Repository Format](repository-format.md) before the S5 Red test. The file-backed Adapter owns serialization, fingerprints, staging, and filesystem failure translation; the Governance Module owns Proposal/Judgment validation and eligibility. Unknown repository files, frontmatter, and Markdown extensions remain preserved unless the exact Proposal targets them.
+
+The following alternatives were considered and discarded for this cycle:
+
+- **Bump `format_version` for this additive schema:** discarded because the existing root structure remains valid and repositories without applied records remain readable without migration.
+- **Leave the schema implicit in production code:** discarded because portable repository behavior must be inspectable and independently implementable by conforming tools.
+- **Store governance metadata in an application-private database:** discarded because it would violate the application-independent repository boundary and make the repository incomplete when moved between Workbench installations.
+- **Put approval and eligibility policy in the file format:** discarded because the format records approved facts; Governance remains responsible for deciding whether a Proposal/Judgment may be applied.
+
+Deferred from this decision are formal schema migration/version negotiation, criteria for a future format-version bump, standalone validation tooling for later schemas, and cross-application compatibility testing. These require additional format evolution work and are not needed to establish the first V1 applied-record contract.
+
+### S5 Test Seam and minimum vertical path
+
+Use the confirmed S5 file-backed Governance storage Adapter contract plus the public S2 Governance Interface. The contract may inspect portable files to verify the Repository Format; the S2 behavior test must continue to observe current/history and applied outcomes through Governance rather than reading files as a side channel.
+
+The first S5 behavior test copies `app/tests/fixtures/knowledge-repository/` into an isolated temporary repository, uses the literal S2 Proposal/Judgment, applies through Governance, creates a new Governance instance over the same root, and asserts the literal current/prior versions and applied identity. It must also assert that the original fixture's unrelated files remain present and that the applied audit and rollback paths contain the expected exact values.
+
+The storage seam should extend the existing Governance version-store contract with one application operation that receives the already-validated Proposal/Judgment and writes the target, rollback bytes, and audit record as one recoverable unit. Governance retains policy ownership; the Adapter owns serialization, fingerprints, staging, recovery, and filesystem failure translation. The in-memory Adapter remains deterministic and continues to satisfy the S2 behavior test.
+
+Minimum path:
+
+1. Obtain explicit confirmation for the proposed persisted representation and update the Repository Format at its owning boundary.
+2. Add the S5 contract test and observe its expected failure before implementation.
+3. Extend the public storage seam only as needed for the application bundle, retaining the existing S2 public Interface.
+4. Implement successful file-backed round-trip history, immutable applied audit, targeted rollback, and reopen recovery for the literal fixture.
+5. Add focused failure cycles for external target edits, interrupted target/audit writes, recovery cleanup, and rollback restoration; each must preserve or recover the prior governed version and return an explicit outcome.
+6. Run the focused S2/S5 suites, `npm run check`, coverage, public documentation validation, and the packaged workflow suite. Record each Red/Green result before selecting the next behavior.
+
+### Explicit deferrals
+
+This second cycle does not add the S1 Proposal Review route, stale Judgment rejection, changed dependency subsets, selective decisions across multiple changes, agent-assisted Proposal drafting, Knowledge Authoring UI, or OpenAI requests. TB9 owns stale and incoherent application policy; TB10 owns desktop Proposal Review.
+
+Within persistence, the first success path defers multi-target transactions, general version-ID allocation beyond the literal seeded `v1` → `v2` case, branching lineage, migration from pre-existing applied schemas, automatic cleanup of unknown staging directories, and broad repository history indexing. These are follow-up behaviors only after the literal round-trip contract is green.
+
+The failure cycles for external edits, interrupted writes, recovery cleanup, and rollback restoration are required before broader TB8 completion but are separate Red-to-Green cycles; they must not be silently omitted because the initial success path passes.
+
+### Acceptance evidence and confirmation
+
+Completion requires literal S5 round-trip evidence, applied-record and rollback contract evidence, preservation of unrelated repository content, focused and full automated gates, and explicit human confirmation that reopening returns `bayesian-statistics-v2` while `bayesian-statistics-v1` remains retrievable. TB8 remains incomplete until the required failure cycles and their recovery evidence are recorded.
+
+The concrete Repository Format representation above was confirmed by the user before implementation. If implementation exposes a contradiction with the accepted applied-record, rollback, version-mapping, or transaction layout, stop, update this brief and `repository-format.md`, and obtain renewed confirmation before changing the S5 test or code.
 
 ## Required confirmation
 
