@@ -136,6 +136,10 @@ const createWindow = async (): Promise<void> => {
   const isSilentTestMode = process.argv.includes(
     "--galaxy-brain-test-mode=silent",
   );
+  const isHumanReviewMode = process.argv.includes(
+    "--galaxy-brain-test-mode=review",
+  );
+  const isFixtureMode = isSilentTestMode || isHumanReviewMode;
   const starterRoot = app.isPackaged
     ? join(process.resourcesPath, "knowledge-repository")
     : join(app.getAppPath(), "templates", "knowledge-repository");
@@ -167,7 +171,7 @@ const createWindow = async (): Promise<void> => {
 
     authoringRepositoryPath = workbench.repositoryPath;
     authoring = createKnowledgeAuthoring(
-      isSilentTestMode
+      isFixtureMode
         ? createFixtureAuthoringDraftSource()
         : createEmptyAuthoringDraftSource(),
     );
@@ -228,7 +232,7 @@ const createWindow = async (): Promise<void> => {
           nextVersionId: "bayesian-statistics-v2",
         }),
       }),
-      source: isSilentTestMode
+      source: isFixtureMode
         ? createFixtureProposalReviewSource()
         : createEmptyProposalReviewSource(),
     });
