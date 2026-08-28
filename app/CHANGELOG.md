@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0](https://github.com/tacomancy/galaxy-brain/compare/v0.9.0...v0.10.0) (2026-08-28)
+
+
+### Features
+
+* complete TB9 governance decision slices ([#96](https://github.com/tacomancy/galaxy-brain/issues/96)) ([578860e](https://github.com/tacomancy/galaxy-brain/commit/578860e18aeb616fb0379546894edd2f7fd0751b))
+
+
+### Bug Fixes
+
+* complete documentation quality PR gate ([#92](https://github.com/tacomancy/galaxy-brain/issues/92)) ([f193634](https://github.com/tacomancy/galaxy-brain/commit/f193634202f7f7ca379fa5bca46b3a92ea34a86d))
+
 ## [0.9.0](https://github.com/tacomancy/galaxy-brain/compare/v0.8.0...v0.9.0) (2026-08-28)
 
 
