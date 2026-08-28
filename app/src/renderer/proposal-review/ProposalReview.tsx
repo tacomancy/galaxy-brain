@@ -91,7 +91,11 @@ const AppliedReview = ({
   </section>
 );
 
-/** Presents one exact Proposal and sends its decision through Governance. */
+/**
+ * Presents one exact Proposal and sends its decision through Governance.
+ * @param props Review data and route actions supplied by the Workbench shell.
+ * @returns The Proposal Review route.
+ */
 export const ProposalReview = ({
   review,
   applyOutcome,

@@ -1,0 +1,27 @@
+name: Set up pinned Node.js and npm
+description: Install the repository-pinned Node.js and npm toolchain and dependencies.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: app/.nvmrc
+        cache: npm
+        cache-dependency-path: app/package-lock.json
+
+    - name: Install pinned npm
+      shell: bash
+      run: npm install --global npm@11.17.0
+
+    - name: Verify pinned toolchain
+      shell: bash
+      run: |
+        test "$(node --version)" = "v$(tr -d '\n' < app/.nvmrc)"
+        test "$(npm --version)" = "11.17.0"
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: app
+      run: npm ci

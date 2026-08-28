@@ -37,7 +37,10 @@ source_record: sources/papers/bayesian-statistics.md
 Bayesian statistics uses evidence to update prior belief.
 `;
 
-/** Creates the bounded, provider-free TB10 Proposal source for S1. */
+/**
+ * Creates the bounded, provider-free TB10 Proposal source for S1.
+ * @returns A source that supplies one deterministic fixture draft.
+ */
 export const createFixtureProposalReviewSource = (): ProposalReviewSource => {
   let supplied = false;
 
@@ -84,7 +87,10 @@ export const createFixtureProposalReviewSource = (): ProposalReviewSource => {
   };
 };
 
-/** Creates the empty source used by normal launches without a pending item. */
+/**
+ * Creates the empty source used by normal launches without a pending item.
+ * @returns A source that reports no pending draft.
+ */
 export const createEmptyProposalReviewSource = (): ProposalReviewSource => ({
   async readDraft(): Promise<ProposalReviewDraft | undefined> {
     return undefined;

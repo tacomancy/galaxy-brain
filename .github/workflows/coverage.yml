@@ -18,16 +18,20 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
         with:
-          node-version-file: app/.nvmrc
-          cache: npm
-          cache-dependency-path: app/package-lock.json
+          fetch-depth: 0
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Set up pinned Node.js and npm
+        uses: ./.github/actions/setup-node
 
       - name: Enforce coverage limits
         run: npm run test:coverage
+
+      - name: Enforce changed-lines coverage
+        run: >-
+          npm run check:changed-coverage --
+          --lcov coverage/lcov.info
+          --base-ref "origin/${GITHUB_BASE_REF}"
+          --head-ref HEAD
+          --repository-root ..
+          --coverage-root .

@@ -72,7 +72,11 @@ const failed = (
   detail,
 });
 
-/** Composes a review session over Governance and one Proposal source. */
+/**
+ * Composes a review session over Governance and one Proposal source.
+ * @param dependencies Governance and transient Proposal source dependencies.
+ * @returns The Proposal Review application Interface.
+ */
 export const createProposalReview = ({
   governance,
   source,

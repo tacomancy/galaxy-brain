@@ -201,6 +201,7 @@ export interface Governance {
   getVersion(targetId: string, versionId: string): Promise<GetVersionOutcome>;
 }
 
+/** Dependencies supplied when composing the Governance Module. */
 export interface GovernanceDependencies {
   store: GovernanceVersionStore;
 }
@@ -443,7 +444,11 @@ const hasEligibleJudgment = (
   judgment.decision === "accepted" &&
   !appliedProposalIds.has(proposal.id);
 
-/** Composes Governance policy behind the confirmed S2 Interface. */
+/**
+ * Composes Governance policy behind the confirmed S2 Interface.
+ * @param dependencies The storage Adapter that owns durable versions.
+ * @returns The Governance Module Interface.
+ */
 export const createGovernance = (
   dependencies: GovernanceDependencies,
 ): Governance => {
@@ -455,6 +460,8 @@ export const createGovernance = (
   const loadCurrentVersion = async (
     targetId: string,
   ): Promise<LoadCurrentVersionOutcome> => {
+    // Recovery rationale: reopening recovers any durable transaction before
+    // the caller can observe the governed version.
     const recovery = await dependencies.store.recoverTransactions();
     const version = await dependencies.store.readCurrentVersion(targetId);
 

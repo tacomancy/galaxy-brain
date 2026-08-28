@@ -9,6 +9,7 @@ import type {
  * Creates the deterministic repository Adapter used by the first Workbench
  * path. It intentionally contains no selected repository or demonstration
  * data, so the fresh-session behavior cannot accidentally depend on fixtures.
+ * @returns The in-memory Knowledge Repository Adapter.
  */
 export const createInMemoryKnowledgeRepository = (): KnowledgeRepository => {
   const repositories = new Set<string>();
