@@ -535,6 +535,12 @@ At S1, prove that Atlas opens the dedicated review route, displays the fixture c
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
+#### TB11 first S1 authoring cycle — documentation preparation
+
+Before implementation, review the accepted [Product Decisions](product-decisions.md), [Architecture](architecture.md), [Repository Format](repository-format.md), [Test Strategy](test-strategy.md), applicable ADRs—especially [ADR 0003](../../adr/0003-keep-rich-and-source-editing-equivalent.md)—and the completed TB1–TB10 delivery records. Then complete the [TB11 implementation brief](tracer-bullet-11-spec.md), explicitly confirming the first supported extended-Markdown construct, literal draft values, Knowledge Authoring owner, confirmed S1 seam, minimum vertical path, persistence boundary, discarded alternatives, deferrals, and acceptance evidence before writing the Red test or implementation.
+
+Implementation must not begin until the user confirms the exact `==highlight==` fixture, rich-edit action, source representation, same-session reopen behavior, and explicit deferrals in the TB11 brief. Durable Working Material persistence, relaunch recovery, and additional constructs remain separate decisions and must not be inferred from this first cycle.
+
 At S1, prove one worked extended-Markdown construct can be edited in rich view, inspected in source view, reopened, and observed with the same meaning. Expand one construct per later cycle—link, embed, callout, equation, citation—letting each reveal the next necessary editor behavior.
 
 ### 12. Separate Search, Ask, and Jump
