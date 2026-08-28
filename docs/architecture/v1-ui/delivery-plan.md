@@ -438,7 +438,7 @@ The required next TB8 cycle is the S5 file-backed persistence path. Its applied-
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
-Continue at S2 one behavior per cycle: first prove stale Judgment is rejected, then prove an invalid dependency subset is rejected, and then prove independently reviewable changes can receive different decisions. Do not prebuild all dependency behavior in the first governance cycle.
+Continue at S2 one behavior per cycle, following the [TB9 implementation brief](tracer-bullet-9-spec.md): first prove stale Judgment is rejected, then prove an invalid dependency subset is rejected, and then prove independently reviewable changes can receive different decisions. Do not prebuild all dependency behavior in the first governance cycle.
 
 ### 10. Review through the desktop interface
 
