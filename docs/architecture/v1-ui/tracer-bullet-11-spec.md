@@ -1,5 +1,7 @@
 # Tracer Bullet 11: Preserve one rich/source editing meaning
 
+Status: implementation, automated acceptance, and human acceptance complete on August 28, 2026 for the bounded six-construct scope; pending merge into `main`.
+
 This brief coordinates the approved TB11 implementation slices in the [delivery plan](delivery-plan.md#11-preserve-meaning-across-editing-views). It is an implementation entry point, not a second authority for product behavior, architecture, Repository Format, testing, or accepted ADR decisions.
 
 ## Scope

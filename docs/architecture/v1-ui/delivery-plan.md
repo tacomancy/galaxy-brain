@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -586,7 +586,7 @@ At S1, prove one worked extended-Markdown construct can be edited in rich view, 
 - **Green evidence:** With Node.js `24.19.0`, the focused packaged workflow passed both TB11 cases, covering all six constructs. The focused Knowledge Authoring Module suite passed 2 tests. Full repository gates passed: 86 Vitest tests, 19 documentation tests, 26 documentation files, coverage at 82.07% statements / 73.32% branches / 96.60% functions / 81.97% lines, and complexity lint. The complete packaged workflow passed all 24 WebdriverIO specs after the visible review-mode addition. Post-commit changed-lines coverage passed at 89.47% (85/95 executable lines against an 80% threshold).
 - **Implementation:** Added the framework-independent Knowledge Authoring Module, transient fixture/empty sources, typed main/preload operations, Studio semantic-object authoring surface, construct selector, rich/source projections, and same-session close/reopen behavior. Updated the code map and TB11 brief with the approved six-construct scope and explicit deferrals.
 - **Scope confirmed:** Durable Working Material autosave, relaunch recovery, portable draft schema, arbitrary Markdown parsing, constructs outside the six fixtures, production editor-engine selection, arbitrary selection, metadata, Proposal/Governance behavior, concurrency, and non-S1 workspace behavior remain deferred.
-- **Acceptance:** Automated focused evidence is complete. Human acceptance remains pending; the user must manually observe the six construct round trips, same-session highlight reopen, Working Material labeling, and governed-topic nonmutation.
+- **Acceptance:** Accepted by the user on August 28, 2026. The user manually confirmed the six construct round trips, same-session highlight reopen, Working Material labeling, exact source projections, and governed-topic nonmutation.
 
 ### 12. Separate Search, Ask, and Jump
 
