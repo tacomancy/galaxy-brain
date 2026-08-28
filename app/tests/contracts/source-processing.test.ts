@@ -1,11 +1,15 @@
 import { strict as assert } from "node:assert";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, it } from "vitest";
 
 import { createFixturePdfAdapter } from "../../src/adapters/pdf/fixture-pdf-adapter";
+import {
+  defaultAtomicFileSystem,
+  type AtomicFileSystem,
+} from "../../src/adapters/file-backed-atomic-write";
 import { createFileBackedWorkingMaterialRepository } from "../../src/adapters/working-material/file-backed-working-material-repository";
 import { createInMemoryWorkingMaterialRepository } from "../../src/adapters/working-material/in-memory-working-material-repository";
 import type {
@@ -100,6 +104,110 @@ describe("Source Processing Adapter contracts", () => {
     try {
       await assertWorkingMaterialContract(
         createFileBackedWorkingMaterialRepository(repositoryPath),
+      );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves the previous annotation when atomic replacement fails", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const repositoryPath = join(temporaryRoot, "repository");
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedWorkingMaterialRepository(repositoryPath);
+      const updatedAnnotation = {
+        ...expectedAnnotation,
+        text: "The externally reviewed Bayesian inference claim.",
+      };
+
+      await repository.saveAnnotation(expectedAnnotation);
+
+      const replacementFailure: AtomicFileSystem = {
+        ...defaultAtomicFileSystem,
+        rename: async () => {
+          throw new Error("replacement interrupted");
+        },
+      };
+
+      await assert.rejects(
+        createFileBackedWorkingMaterialRepository(
+          repositoryPath,
+          undefined,
+          replacementFailure,
+        ).saveAnnotation(updatedAnnotation),
+        /replacement interrupted/,
+      );
+      assert.deepEqual(await repository.readAnnotation(expectedAnnotation.id), {
+        outcome: "found",
+        annotation: expectedAnnotation,
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects an external annotation edit observed after staging", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const repositoryPath = join(temporaryRoot, "repository");
+    const annotationPath = join(
+      repositoryPath,
+      "sources",
+      "annotations",
+      `${expectedAnnotation.id}.md`,
+    );
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const originalRepository =
+        createFileBackedWorkingMaterialRepository(repositoryPath);
+      await originalRepository.saveAnnotation(expectedAnnotation);
+
+      const externalEditFilesystem: AtomicFileSystem = {
+        ...defaultAtomicFileSystem,
+        writeFile: async (path, contents, options) => {
+          await defaultAtomicFileSystem.writeFile(path, contents, options);
+
+          if (String(path).includes(".galaxy-brain-atomic-")) {
+            const current = await readFile(annotationPath, "utf8");
+            await writeFile(
+              annotationPath,
+              current.replace(expectedAnnotation.text, "an external edit"),
+              "utf8",
+            );
+          }
+        },
+      };
+
+      await assert.rejects(
+        createFileBackedWorkingMaterialRepository(
+          repositoryPath,
+          undefined,
+          externalEditFilesystem,
+        ).saveAnnotation({
+          ...expectedAnnotation,
+          text: "a competing local edit",
+        }),
+        /changed while it was being saved/,
+      );
+      assert.deepEqual(
+        await originalRepository.readAnnotation(expectedAnnotation.id),
+        {
+          outcome: "found",
+          annotation: { ...expectedAnnotation, text: "an external edit" },
+        },
       );
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });

@@ -1,10 +1,14 @@
 import { strict as assert } from "node:assert";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { describe, it } from "vitest";
 
+import {
+  defaultAtomicFileSystem,
+  type AtomicFileSystem,
+} from "../../src/adapters/file-backed-atomic-write";
 import { createFileBackedSynthesisResultRepository } from "../../src/adapters/working-material/file-backed-synthesis-result-repository";
 import type { SynthesisSavedResult } from "../../src/modules/source-processing";
 
@@ -127,6 +131,86 @@ describe("Synthesis result Repository Adapter", () => {
       assert.deepEqual(await repository.readResult?.("missing-result"), {
         outcome: "not-found",
         detail: "The Synthesis result was not found.",
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves the previous result when atomic replacement fails", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+      await repository.saveResult(result);
+
+      const replacementFailure: AtomicFileSystem = {
+        ...defaultAtomicFileSystem,
+        rename: async () => {
+          throw new Error("replacement interrupted");
+        },
+      };
+
+      await assert.rejects(
+        createFileBackedSynthesisResultRepository(
+          repositoryPath,
+          undefined,
+          replacementFailure,
+        ).saveResult({ ...result, text: "a competing result" }),
+        /replacement interrupted/,
+      );
+      assert.deepEqual(await repository.readResult?.(result.id), {
+        outcome: "found",
+        result,
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("discards an abandoned result temporary file before reading", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+    const resultDirectory = join(
+      repositoryPath,
+      "scratch",
+      "synthesis-results",
+    );
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+      await repository.saveResult(result);
+      const abandonedTemporaryPath = join(
+        resultDirectory,
+        ".galaxy-brain-atomic-abandoned.tmp",
+      );
+      await writeFile(abandonedTemporaryPath, '{"incomplete":', "utf8");
+
+      assert.deepEqual(await repository.readResult?.(result.id), {
+        outcome: "found",
+        result,
+      });
+      await assert.rejects(readFile(abandonedTemporaryPath, "utf8"), {
+        code: "ENOENT",
       });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });

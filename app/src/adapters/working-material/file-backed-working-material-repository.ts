@@ -1,14 +1,13 @@
 import { createHash } from "node:crypto";
-import {
-  lstat,
-  mkdir,
-  readFile,
-  readdir,
-  realpath,
-  writeFile,
-} from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 
+import {
+  discardAbandonedTemporaryFiles,
+  defaultAtomicFileSystem,
+  type AtomicFileSystem,
+  writeFileAtomically,
+} from "../file-backed-atomic-write";
 import type {
   SourceLocator,
   StructuredAnnotation,
@@ -27,8 +26,6 @@ const annotationDirectoryName = join("sources", "annotations");
 class InvalidAnnotationError extends Error {}
 
 class UnsafeAnnotationTargetError extends Error {}
-
-class ExternalAnnotationChangeError extends Error {}
 
 const isErrnoException = (error: unknown): error is NodeJS.ErrnoException =>
   error instanceof Error && "code" in error;
@@ -267,7 +264,7 @@ const readAnnotationDirectory = async (
   }
 };
 
-type FileFingerprint = { digest: string } | undefined;
+type FileFingerprint = string | undefined;
 
 const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
   try {
@@ -280,7 +277,7 @@ const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
     }
 
     const contents = await readFile(filePath);
-    return { digest: createHash("sha256").update(contents).digest("hex") };
+    return createHash("sha256").update(contents).digest("hex");
   } catch (cause: unknown) {
     if (isErrnoException(cause) && cause.code === "ENOENT") {
       return undefined;
@@ -290,11 +287,6 @@ const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
   }
 };
 
-const sameFingerprint = (
-  left: FileFingerprint,
-  right: FileFingerprint,
-): boolean => left?.digest === right?.digest;
-
 /**
  * Persists source annotations as portable Markdown Working Material. The
  * adapter canonicalizes and checks the repository path, protects the target
@@ -303,6 +295,7 @@ const sameFingerprint = (
 export const createFileBackedWorkingMaterialRepository = (
   repositoryPath: string,
   diagnostics?: WorkingMaterialDiagnostics,
+  filesystem: AtomicFileSystem = defaultAtomicFileSystem,
 ): WorkingMaterialRepository => {
   const readAnnotation = async (
     annotationId: string,
@@ -328,6 +321,12 @@ export const createFileBackedWorkingMaterialRepository = (
           detail: "The source annotation was not found.",
         };
       }
+
+      await discardAbandonedTemporaryFiles(
+        annotationDirectory,
+        annotationFilePath(canonicalPath, annotationId),
+        filesystem,
+      );
 
       const contents = await readFile(
         annotationFilePath(canonicalPath, annotationId),
@@ -372,15 +371,15 @@ export const createFileBackedWorkingMaterialRepository = (
       await ensureAnnotationDirectory(canonicalPath);
       const filePath = annotationFilePath(canonicalPath, annotation.id);
       const existingFingerprint = await fingerprint(filePath);
-      const recheckedFingerprint = await fingerprint(filePath);
-
-      if (!sameFingerprint(existingFingerprint, recheckedFingerprint)) {
-        throw new ExternalAnnotationChangeError(
+      await writeFileAtomically({
+        contents: serializeAnnotation(annotation),
+        externalChangeDetail:
           "The source annotation changed while it was being saved.",
-        );
-      }
-
-      await writeFile(filePath, serializeAnnotation(annotation), "utf8");
+        expectedFingerprint: existingFingerprint,
+        filePath,
+        filesystem,
+        readFingerprint: () => fingerprint(filePath),
+      });
     },
     readAnnotation,
     readAnnotationForSourceRecord: async (
@@ -408,6 +407,12 @@ export const createFileBackedWorkingMaterialRepository = (
             detail: "The source annotation was not found.",
           };
         }
+
+        await discardAbandonedTemporaryFiles(
+          annotationDirectory,
+          resolve(annotationDirectory, "annotation.md"),
+          filesystem,
+        );
 
         const entries = await readdir(annotationDirectory, {
           encoding: "utf8",
@@ -478,6 +483,12 @@ export const createFileBackedWorkingMaterialRepository = (
             detail: "The source annotation was not found.",
           };
         }
+
+        await discardAbandonedTemporaryFiles(
+          annotationDirectory,
+          resolve(annotationDirectory, "annotation.md"),
+          filesystem,
+        );
 
         const entries = await readdir(annotationDirectory, {
           encoding: "utf8",
