@@ -424,6 +424,92 @@ describe("file-backed Knowledge Repository contract", () => {
     }
   });
 
+  it("reports all complete contexts in stable order when a repository has multiple topics", async () => {
+    const repositoryPath = join(temporaryRoot, "ambiguous-context-repository");
+    await cp(
+      resolve(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+    await rm(join(repositoryPath, "knowledge", "bayesian-statistics.md"));
+    await rm(
+      join(repositoryPath, "sources", "papers", "bayesian-statistics.md"),
+    );
+
+    await writeFile(
+      join(repositoryPath, "knowledge", "zeta-topic.md"),
+      `---
+id: zeta-topic
+title: Zeta topic
+type: topic
+source_record: sources/papers/zeta-source.md
+---
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(repositoryPath, "knowledge", "alpha-topic.md"),
+      `---
+id: alpha-topic
+title: Alpha topic
+type: topic
+source_record: sources/papers/alpha-source.md
+---
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(repositoryPath, "knowledge", "incomplete-topic.md"),
+      `---
+id: incomplete-topic
+title: Incomplete topic
+type: topic
+source_record: sources/papers/missing-source.md
+---
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(repositoryPath, "sources", "papers", "zeta-source.md"),
+      `---
+id: zeta-source
+title: Zeta source
+type: source
+---
+`,
+      "utf8",
+    );
+    await writeFile(
+      join(repositoryPath, "sources", "papers", "alpha-source.md"),
+      `---
+id: alpha-source
+title: Alpha source
+type: source
+---
+`,
+      "utf8",
+    );
+
+    const result =
+      await createFileBackedKnowledgeRepository(
+        starterRoot,
+      ).readWorkbenchContext(repositoryPath);
+
+    assert.deepEqual(result, {
+      outcome: "ambiguous",
+      contexts: [
+        {
+          topic: { id: "alpha-topic", title: "Alpha topic" },
+          sourceRecord: { id: "alpha-source", title: "Alpha source" },
+        },
+        {
+          topic: { id: "zeta-topic", title: "Zeta topic" },
+          sourceRecord: { id: "zeta-source", title: "Zeta source" },
+        },
+      ],
+    });
+  });
+
   it("reads the saved source annotation for its Source Record", async () => {
     const repositoryPath = join(temporaryRoot, "annotation-repository");
     await cp(
@@ -464,6 +550,202 @@ describe("file-backed Knowledge Repository contract", () => {
 });
 
 describe("Workbench Session selection contract", () => {
+  it("keeps ambiguous context candidates visible until the user selects one", async () => {
+    const contexts: WorkbenchContext[] = [
+      {
+        topic: { id: "alpha-topic", title: "Alpha topic" },
+        sourceRecord: { id: "alpha-source", title: "Alpha source" },
+      },
+      {
+        topic: { id: "zeta-topic", title: "Zeta topic" },
+        sourceRecord: { id: "zeta-source", title: "Zeta source" },
+      },
+    ];
+
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/ambiguous-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/ambiguous-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "ambiguous" as const,
+          contexts,
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+      },
+      {
+        readSession: async () => undefined,
+        writeSession: async () => {},
+      },
+    );
+
+    assert.deepEqual(await session.createRepository("/requested-repository"), {
+      outcome: "created",
+      repositoryPath: "/ambiguous-repository",
+    });
+    assert.deepEqual(await session.openFreshWorkbench(), {
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: "/ambiguous-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "created",
+      contextOptions: contexts,
+    });
+  });
+
+  it("selects and persists one explicit context candidate", async () => {
+    const contexts: WorkbenchContext[] = [
+      {
+        topic: { id: "alpha-topic", title: "Alpha topic" },
+        sourceRecord: { id: "alpha-source", title: "Alpha source" },
+      },
+      {
+        topic: { id: "zeta-topic", title: "Zeta topic" },
+        sourceRecord: { id: "zeta-source", title: "Zeta source" },
+      },
+    ];
+    let latestSnapshot: WorkbenchSessionSnapshot | undefined;
+
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/ambiguous-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/ambiguous-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "ambiguous" as const,
+          contexts,
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+      },
+      {
+        readSession: async () => undefined,
+        writeSession: async (snapshot) => {
+          latestSnapshot = snapshot;
+        },
+      },
+    );
+
+    await session.createRepository("/requested-repository");
+
+    assert.deepEqual(
+      await session.selectWorkbenchContext({
+        topicId: "zeta-topic",
+        sourceRecordId: "zeta-source",
+      }),
+      {
+        outcome: "selected",
+        workbench: {
+          activeWorkspace: "atlas",
+          repositoryStatus: "selected",
+          repositoryPath: "/ambiguous-repository",
+          repositoryAccess: "read-write",
+          repositorySelection: "created",
+          context: contexts[1],
+        },
+      },
+    );
+    assert.deepEqual(latestSnapshot, {
+      selectedRepositoryPath: "/ambiguous-repository",
+      activeWorkspace: "atlas",
+      selectedContext: {
+        topicId: "zeta-topic",
+        sourceRecordId: "zeta-source",
+      },
+    });
+    assert.deepEqual(await session.switchWorkspace("studio"), {
+      outcome: "transitioned",
+      workbench: {
+        activeWorkspace: "studio",
+        repositoryStatus: "selected",
+        repositoryPath: "/ambiguous-repository",
+        repositoryAccess: "read-write",
+        repositorySelection: "created",
+        context: contexts[1],
+      },
+    });
+    assert.deepEqual(latestSnapshot, {
+      selectedRepositoryPath: "/ambiguous-repository",
+      activeWorkspace: "studio",
+      selectedContext: {
+        topicId: "zeta-topic",
+        sourceRecordId: "zeta-source",
+      },
+    });
+    assert.deepEqual(await session.openFreshWorkbench(), {
+      activeWorkspace: "studio",
+      repositoryStatus: "selected",
+      repositoryPath: "/ambiguous-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "created",
+      context: contexts[1],
+    });
+  });
+
+  it("keeps a replacement candidate explicit when the remembered context disappears", async () => {
+    const replacementContext: WorkbenchContext = {
+      topic: { id: "replacement-topic", title: "Replacement topic" },
+      sourceRecord: {
+        id: "replacement-source",
+        title: "Replacement source",
+      },
+    };
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/replacement-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/replacement-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "available" as const,
+          context: replacementContext,
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+      },
+      {
+        readSession: async () => ({
+          selectedRepositoryPath: "/replacement-repository",
+          selectedContext: {
+            topicId: "removed-topic",
+            sourceRecordId: "removed-source",
+          },
+        }),
+        writeSession: async () => {},
+      },
+    );
+
+    assert.deepEqual(await session.openFreshWorkbench(), {
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: "/replacement-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "opened",
+      contextOptions: [replacementContext],
+    });
+  });
+
   it("preserves the selected repository after a failed replacement", async () => {
     const session = createWorkbenchSession(
       {
@@ -625,6 +907,10 @@ describe("Workbench Session selection contract", () => {
     assert.deepEqual(latestSnapshot, {
       selectedRepositoryPath: "/contextual-repository",
       activeWorkspace: "paper-desk",
+      selectedContext: {
+        topicId: "topic-id",
+        sourceRecordId: "source-id",
+      },
       readingPosition: {
         sourceRecordId: "source-id",
         page: 2,

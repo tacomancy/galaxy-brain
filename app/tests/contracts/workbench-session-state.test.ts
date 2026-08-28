@@ -229,4 +229,26 @@ describe("file-backed Workbench session-state contract", () => {
       undefined,
     );
   });
+
+  it("round-trips an explicitly selected Workbench context", async () => {
+    const sessionStatePath = join(temporaryRoot, "workbench.json");
+    const sessionState =
+      createFileBackedWorkbenchSessionState(sessionStatePath);
+    const expected = {
+      selectedRepositoryPath: "/repositories/multiple-topics",
+      activeWorkspace: "atlas" as const,
+      selectedContext: {
+        topicId: "bayesian-statistics",
+        sourceRecordId: "bayesian-statistics-fixture-source",
+      },
+    };
+
+    await sessionState.writeSession(expected);
+
+    assert.deepEqual(await sessionState.readSession(), expected);
+    assert.equal(
+      await readFile(sessionStatePath, "utf8"),
+      `${JSON.stringify(expected)}\n`,
+    );
+  });
 });
