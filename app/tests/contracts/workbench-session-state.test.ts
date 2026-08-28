@@ -165,4 +165,68 @@ describe("file-backed Workbench session-state contract", () => {
       [],
     );
   });
+
+  it("treats a missing session directory as an unavailable first launch", async () => {
+    assert.equal(
+      await createFileBackedWorkbenchSessionState(
+        join(temporaryRoot, "missing", "workbench.json"),
+      ).readSession(),
+      undefined,
+    );
+  });
+
+  it("continues reading state when abandoned-file cleanup fails", async () => {
+    const sessionStatePath = join(temporaryRoot, "workbench.json");
+    const expected = {
+      selectedRepositoryPath: "/repositories/bayesian-statistics",
+    };
+
+    await writeFile(sessionStatePath, `${JSON.stringify(expected)}\n`, "utf8");
+    await writeFile(
+      join(temporaryRoot, ".galaxy-brain-atomic-abandoned.tmp"),
+      "incomplete",
+      "utf8",
+    );
+
+    const cleanupFailure = {
+      ...defaultAtomicFileSystem,
+      mkdir,
+      rm: async () => {
+        throw new Error("cleanup unavailable");
+      },
+    };
+
+    assert.deepEqual(
+      await createFileBackedWorkbenchSessionState(
+        sessionStatePath,
+        cleanupFailure,
+      ).readSession(),
+      expected,
+    );
+  });
+
+  it("treats unexpected temporary-directory read failures as a first launch", async () => {
+    const sessionStatePath = join(temporaryRoot, "workbench.json");
+    await writeFile(
+      sessionStatePath,
+      '{"selectedRepositoryPath":"/repositories/bayesian-statistics"}\n',
+      "utf8",
+    );
+
+    const directoryReadFailure = {
+      ...defaultAtomicFileSystem,
+      mkdir,
+      readdir: async () => {
+        throw new Error("directory unavailable");
+      },
+    };
+
+    assert.equal(
+      await createFileBackedWorkbenchSessionState(
+        sessionStatePath,
+        directoryReadFailure,
+      ).readSession(),
+      undefined,
+    );
+  });
 });
