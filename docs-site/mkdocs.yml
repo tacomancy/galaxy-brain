@@ -47,6 +47,7 @@ nav:
   - Overview: index.md
   - Application: application.md
   - Project documentation: project-documentation.md
+  - Human-agent collaboration: agent-guidance.md
   - Tutorials:
       - Overview: tutorials/index.md
       - First launch: tutorials/first-run.md
