@@ -1,6 +1,6 @@
 # Tracer Bullet 8: Apply one governed change
 
-Status: documentation prerequisite complete on August 28, 2026; implementation not started.
+Status: first S2 implementation cycle complete on August 28, 2026; human acceptance pending.
 
 This brief coordinates the first Governance implementation slice in the [delivery plan](delivery-plan.md#8-apply-one-governed-change). It is an implementation entry point, not a second authority for product behavior, architecture, repository format, testing, or accepted ADR decisions.
 
@@ -18,7 +18,7 @@ Before writing behavior tests or implementation code, and again before each late
 2. Create or update this guidance-compliant `tracer-bullet-8-spec.md` with the Public Behavior, confirmed Test Seam, literal expected values, fixtures and External System Seams, minimum vertical path, boundaries, deferrals, acceptance evidence, and required confirmation recorded below.
 3. Check the proposed behavior against those authorities before the Red test run. If implementation reveals a conflict or an unconfirmed seam, stop, update the owning document and this brief, and obtain the required human confirmation before continuing.
 
-This prerequisite was completed for the first cycle on August 28, 2026. The reviewed authorities are listed below so a future cycle can repeat the check rather than relying on memory.
+This prerequisite was completed for the first cycle on August 28, 2026. The reviewed authorities are listed below so a future cycle can repeat the check rather than relying on memory. The first S2 Red-to-Green cycle is complete; the user-facing behavior remains pending explicit human acceptance.
 
 ## Authoritative decisions
 
@@ -51,15 +51,17 @@ The independently known literal fixture values are:
 - Target path: `knowledge/bayesian-statistics.md`.
 - Current version identifier before application: `bayesian-statistics-v1`.
 - Previous governed paragraph:
-  `This fixture topic gives the S1 workflow a stable item to carry between workspaces.`
+  `This fixture topic gives the S1 workflow a stable item to carry between` followed by `workspaces.` on the next line.
 - Proposed governed paragraph:
   `Bayesian statistics uses evidence to update prior belief.`
 - Exact first-cycle patch:
   ```diff
-  -This fixture topic gives the S1 workflow a stable item to carry between workspaces.
+  -This fixture topic gives the S1 workflow a stable item to carry between
+  -workspaces.
   +Bayesian statistics uses evidence to update prior belief.
   ```
 - Proposal identity: `proposal-tb8-bayesian-statistics-evidence`.
+- Proposal fingerprint: `proposal-fingerprint-tb8-bayesian-statistics-evidence`.
 - Judgment identity: `judgment-tb8-bayesian-statistics-evidence`.
 - Judgment decision: `accepted`.
 - New current version identifier after application: `bayesian-statistics-v2`.
@@ -67,7 +69,7 @@ The independently known literal fixture values are:
 - Applied audit identity: `applied-proposal-tb8-bayesian-statistics-evidence`.
 - Working Material draft identity: `working-material-tb8-bayesian-statistics-evidence`.
 - Working Material draft base version: `bayesian-statistics-v1`.
-- Working Material draft content: the complete fixture file, with only the paragraph in the exact patch above replaced; its frontmatter remains `id: bayesian-statistics`, `title: Bayesian statistics`, `type: topic`, `status: current`, and `source_record: sources/papers/bayesian-statistics.md`.
+- Working Material draft content: the complete fixture file, with only the two-line paragraph in the exact patch above replaced by the single proposed line; its frontmatter remains `id: bayesian-statistics`, `title: Bayesian statistics`, `type: topic`, `status: current`, and `source_record: sources/papers/bayesian-statistics.md`.
 - Material state before and after the Proposal workflow: the draft is `working-material`; only explicit application changes the target's governed current version.
 
 The `v1` and `v2` identifiers above are opaque Governance domain version identifiers seeded by the deterministic S2 test store, not Repository Format versions and not file-derived hashes. The first cycle deliberately does not freeze a persisted version schema. The Repository Format remains `format: galaxy-brain` and `format_version: 1`.
@@ -81,12 +83,14 @@ The expected result is that the current version remains `bayesian-statistics-v1`
 The first S2 cycle exposes the following minimal public lifecycle. The eventual concrete TypeScript names may follow the repository's established naming conventions, but the operations and authority boundaries are fixed here:
 
 - `loadCurrentVersion(targetId)` returns the current `GovernedVersion` or an explicit `not-found` outcome.
-- `createProposal({ target, baseVersionId, workingMaterial, exactChange })` returns the manually authored `Proposal` or an explicit validation outcome. It does not change the current governed version.
-- `recordJudgment({ proposalId, proposalFingerprint, decision })` returns the exact-version-bound `Judgment` or an explicit validation outcome. The first cycle accepts the literal decision `accepted`; other decision types remain later-cycle behavior.
+- `createProposal({ proposalId, proposalFingerprint, target, baseVersionId, workingMaterial, exactChange })` returns the manually authored `Proposal` or an explicit validation outcome. It does not change the current governed version.
+- `recordJudgment({ judgmentId, proposalId, proposalFingerprint, decision })` returns the exact-version-bound `Judgment` or an explicit validation outcome. The first cycle accepts the literal decision `accepted`; other decision types remain later-cycle behavior.
 - `applyProposal({ proposalId, judgmentId })` returns `applied` with the new current version, preserved prior version, and immutable applied-record identity, or an explicit ineligible/validation outcome. It cannot apply without the matching accepted Judgment.
 - `getVersion(targetId, versionId)` returns the requested retained `GovernedVersion` or an explicit `not-found` outcome.
 
 The first-cycle outcome vocabulary must distinguish at least `not-found`, `invalid-proposal`, `invalid-judgment`, `judgment-required`, `not-eligible`, and `applied`. Errors must remain caller-visible domain outcomes; they must not be inferred from thrown storage or provider errors.
+
+For this first deterministic cycle, the caller supplies the literal Proposal identity `proposal-tb8-bayesian-statistics-evidence` and fingerprint `proposal-fingerprint-tb8-bayesian-statistics-evidence`, and the literal Judgment identity `judgment-tb8-bayesian-statistics-evidence`. Governance verifies the Proposal fingerprint and exact-version binding rather than deriving or trusting a replacement identity. The in-memory storage Adapter is seeded with the literal next version ID `bayesian-statistics-v2`; durable ID allocation remains part of the deferred S5 persistence design.
 
 ## Test Seam and fixtures
 
@@ -142,6 +146,8 @@ Implementation completion must record:
 - the user-facing evidence that the current version stayed unchanged until explicit application and that the previous version remained retrievable afterward.
 
 The first-cycle record must also state that persistence is deferred. The later persistence-cycle record must add the S5 Adapter, Repository Format, transaction, audit, rollback, external-edit, and interrupted-write evidence listed in the minimum vertical path before TB8 is complete.
+
+The implementation is not TB8-accepted until the user reviews the resulting Governance behavior and explicitly confirms that the governed current version stayed unchanged until application and that the prior version remained retrievable afterward.
 
 The first TB8 cycle is not accepted until the user reviews the resulting behavior and explicitly confirms it. Later TB8–TB10 cycles require their own documentation check, evidence, and human acceptance.
 

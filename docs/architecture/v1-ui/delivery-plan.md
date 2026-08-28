@@ -399,6 +399,17 @@ The first S2 cycle uses opaque test-store version identifiers only. A required l
 
 The first S2 cycle also supplies a literal in-memory Working Material draft to Governance. Durable draft serialization, draft reopening/history, autosave, rich/source editing, and the Knowledge Authoring UI remain deferred to the authoring tracer bullet.
 
+#### TB8 first S2 application cycle — August 28, 2026
+
+- **Public Behavior:** The S2 Governance Interface accepts the literal `working-material-tb8-bayesian-statistics-evidence` draft, creates `proposal-tb8-bayesian-statistics-evidence`, records the accepted exact-version Judgment `judgment-tb8-bayesian-statistics-evidence`, and applies it as `bayesian-statistics-v2` while preserving `bayesian-statistics-v1`.
+- **Test Seam:** S2 Governance behavior through the public Governance Interface, with the deterministic in-memory Governance version-storage Adapter seeded by the literal current and next version IDs.
+- **Red evidence:** `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm test -- --run tests/governance/apply-governed-change.test.ts` first failed because the Governance Module and in-memory version-storage Adapter did not exist; after the initial implementation it exposed the missing literal next-version seed before reaching Green.
+- **Green evidence:** The focused S2 test passed. `PATH=/Users/slehr/.nvm/versions/node/v24.19.0/bin:$PATH npm run check` passed formatting, linting, strict type checking, and 55 Vitest tests.
+- **Scope confirmed:** The cycle is S2-only and in-memory. It proves that Working Material and Proposal creation do not mutate the current governed version, accepted Judgment is exact-version bound, application returns the expected new version, the prior version remains retrievable, and the applied identity preserves Proposal/Judgment provenance. No Agent Provider, network, UI, file-backed Repository Format schema, durable draft, or Knowledge Authoring behavior was added.
+- **Deferred work:** The required later S5 cycle still owns persisted version records and ID mapping/allocation/lineage across reopen, applied audit records, targeted rollback data, fingerprint checks, recoverable filesystem transactions, external-edit detection, and Repository Format/code-map updates for those Adapters. Durable Working Material drafts, autosave, reopening/history, rich/source editing, and the Knowledge Authoring UI remain deferred to the authoring tracer bullet.
+- **Acceptance:** Human review is pending. The user must confirm the current version stayed unchanged until explicit application and the prior version remained retrievable afterward before this first cycle is accepted.
+- **Next behavior:** Before adding the next TB8 behavior, repeat the documentation prerequisite. The next planned TB8 cycle is the required file-backed persistence/S5 contract work; TB9 owns stale and incoherent application rejection.
+
 ### 9. Reject stale and incoherent applications
 
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
