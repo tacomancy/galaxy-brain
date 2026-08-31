@@ -141,7 +141,7 @@ If any of TB12–TB14 is required for V1, review the governing documentation and
 ## Final declaration
 
 - [ ] Provider-free core release gate passed.
-- [ ] TB15 integrated and accepted.
+- [x] TB15 integrated and accepted in PR #104 on August 31, 2026.
 - [x] TB16 integrated and accepted in PR #106 on August 31, 2026.
 - [x] TB12–TB14 are classified as in scope for V1; implementation and acceptance remain open.
 - [ ] Distribution and release-operations outcome recorded.
