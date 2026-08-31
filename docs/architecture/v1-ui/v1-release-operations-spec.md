@@ -1,8 +1,8 @@
 # V1 stable distribution and release operations specification
 
-Status: implementation complete for the selected developer-only V1 path;
-human release-candidate acceptance remains pending. The documentation review
-and implementation gates are complete. This brief
+Status: accepted by the human owner on August 31, 2026 for the selected
+developer-only V1 path. The documentation review, implementation gates, and
+eight human release-candidate checks are complete. This brief
 covers the stable-distribution and release-operations work in [Section D of
 the V1 victory checklist](v1-victory-checklist.md#d-stable-distribution-and-release-operations),
 tracked by [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25)
@@ -420,10 +420,9 @@ Recorded green evidence:
 - production and full dependency audit commands remain required release gates
   and are recorded with the final candidate evidence.
 
-These results establish implementation evidence, not clean-machine human
-acceptance. The eight human checks above remain open, as do the explicitly
-deferred signed/notarized installer, x64/universal packaging, updater, and
-other post-V1 work.
+These results establish implementation and human acceptance evidence for the
+selected developer-only scope. The signed/notarized installer, x64/universal
+packaging, updater, and other post-V1 work remain explicitly deferred.
 
 ## Explicit deferrals
 
@@ -481,17 +480,26 @@ issue tracker before Section D can be declared complete.
 
 ## Completion record
 
-This section remains open until the human release-candidate acceptance. The
-final record must include:
+The human owner accepted the selected developer-only V1 release-operations
+scope on August 31, 2026. The accepted candidate is version `0.13.1` from
+commit `175fab66b19d1b2927c7bf741b5f47622d8ab1c3`, targeting unsigned macOS
+arm64 with Node.js `24.19.0` and the committed npm lockfile. Its artifact is
+`out/Galaxy Brain-darwin-arm64/Galaxy Brain.app`, with 334833159 bytes, 853
+files, and SHA-256
+`15d465cad6f30d50bb101bdb9bd5efd497bf02d93af75f4d245b56c300931d67`. The
+manifest checksum is
+`ecf7fa10b23214351995bc7a9f6698841a2707628f04c299b319871963048d59`.
 
-- selected distribution outcome and the confirming owner/date;
-- confirmed platform and architecture scope;
-- confirmed support/version policy and any ADR identifiers;
-- exact release version, source revision, artifact names, checksums, and
-  provenance;
-- automated gate results and links to retained diagnostics;
-- human acceptance results for all eight checks above;
-- explicit deferred work with owners and residual risks; and
-- the corresponding updates to Issues #25/#34, the delivery plan, the
-  victory checklist, public capability documentation, `SECURITY.md`, and
-  release notes.
+Automated evidence passed: repository checks (127 tests, MC/DC, and
+documentation checks), coverage, complexity, changed-lines coverage, both
+dependency audits, public-docs validation, artifact manifest generation and
+verification, and all 28 silent packaged-app workflow specs. The human owner
+also passed all eight acceptance checks: artifact identity, clean installation
+boundary, first launch, repository lifecycle, recovery/uninstall, privacy and
+diagnostics, supportability, and release declaration.
+
+The accepted V1 boundary explicitly defers signed/notarized DMG/ZIP and public
+end-user distribution (Issue #25), x64/universal artifacts, auto-update,
+Windows and enterprise deployment, and the other post-V1 work listed above.
+Issue #34's selected V1 release-operations scope is complete; deferred items
+remain tracked with their residual risks in the issue tracker and this brief.

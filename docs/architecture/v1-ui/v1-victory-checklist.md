@@ -83,11 +83,11 @@ Resolve the distribution boundary tracked by [Issue #25](https://github.com/taco
 
 Whichever distribution outcome is selected, complete or explicitly defer every material release-operations requirement with its residual risk recorded:
 
-- [ ] Installation, upgrade, rollback, uninstall, migration, recovery, and compatibility procedures are documented and tested for the selected distribution.
-- [ ] Reproducible build metadata, artifact checksums, release provenance, and verification instructions are published.
-- [ ] Diagnostic collection is opt-in or explicitly documented and cannot retain repository content, credentials, hidden provider payloads, absolute private paths, or raw sensitive exceptions.
-- [ ] Support channels, severity levels, ownership, response expectations, and incident runbooks are documented.
-- [ ] Issue #34 is complete, or its remaining requirements are explicitly deferred with rationale, owner, and a statement of what “supported V1” means without them.
+- [x] Installation, upgrade, rollback, uninstall, migration, recovery, and compatibility procedures are documented and tested for the selected distribution; all eight human release-candidate checks passed on August 31, 2026.
+- [x] Reproducible build metadata, artifact checksums, release provenance, and verification instructions are published and were verified for commit `175fab6`.
+- [x] Diagnostic collection is opt-in or explicitly documented and cannot retain repository content, credentials, hidden provider payloads, absolute private paths, or raw sensitive exceptions; human privacy review passed on August 31, 2026.
+- [x] Support channels, severity levels, ownership, response expectations, and incident runbooks are documented; human supportability review passed on August 31, 2026.
+- [x] Issue #34's selected V1 scope is complete; remaining post-V1 requirements are explicitly deferred with rationale, owner, and the supported-V1 boundary recorded in the release-operations specification and runbook.
 
 ## E. Post-tracer-bullet hardening and whole-release acceptance
 

@@ -725,10 +725,11 @@ and the existing latest-published-release/current-main support policy. It
 defines the S1 packaged workflow, S5 file-backed contract, and
 release-artifact/workflow boundaries; the vertical path; independently known
 expected values; lifecycle and privacy evidence; explicit deferrals; discarded
-alternatives; and final human acceptance. Implementation evidence is recorded
-in the specification; Section D remains open only for the eight human release-
-candidate checks, and the existing unsigned local package must not be
-described as an end-user distribution.
+alternatives; and final human acceptance. Implementation evidence and all
+eight human acceptance results are recorded in the specification; the human
+owner accepted the selected developer-only scope on August 31, 2026. Section D
+is complete for that scope, while the existing unsigned local package must not
+be described as an end-user distribution.
 
 ## Review checkpoints
 

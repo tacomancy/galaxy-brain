@@ -1,7 +1,7 @@
 # Developer-only release operations runbook
 
-Status: implemented operating boundary for V1 developer-only distribution;
-the human owner still needs to complete the release-candidate acceptance
+Status: accepted operating boundary for V1 developer-only distribution as of
+August 31, 2026. The human owner completed the release-candidate acceptance
 checks in the [V1 release-operations specification](architecture/v1-ui/v1-release-operations-spec.md).
 
 This runbook implements the selected Section D outcome. V1 supports a source
