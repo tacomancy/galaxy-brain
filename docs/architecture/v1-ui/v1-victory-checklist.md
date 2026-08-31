@@ -1,6 +1,10 @@
 # V1 Victory Checklist
 
-Status: draft release checklist. TB15 and TB16 are merged and accepted; the provider-free release gate, MC/DC evidence, final V1 scope decision, and release-readiness dispositions below remain open.
+Status: draft release checklist. TB15 and TB16 are merged and accepted; the
+provider-free release gate now has focused packaged-workflow evidence for its
+local governance and recovery behaviors, while the linked-PDF packaging
+boundary, privacy review, MC/DC release-candidate rule, final V1 scope
+decision, and release-readiness dispositions below remain open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
@@ -39,19 +43,19 @@ Verify the packaged macOS Workbench against a real file-backed Knowledge Reposit
 
 - [x] Build and package using the repository's pinned runtime/toolchain; the
       named automated gate is `npm run test:provider-free`, which packages with
-      Node.js `24.19.0` and runs the isolated S1 provider-free workflow.
+      Node.js `24.19.0` and runs the isolated S1 provider-free workflows.
 - [x] Create and reopen a real file-backed repository; creation/opening is
       covered by the named gate and relaunch/reopen by the existing
       `resume-selected-knowledge-repository` workflow.
-- [ ] Complete the core workflow locally without Git, GitHub, credentials, network, or an Agent Provider.
-- [ ] Detect an external edit and preserve the user's work safely.
-- [ ] Recover from an interrupted transaction without silent data loss.
-- [ ] Roll back and recover a prior version or saved result.
-- [ ] Show truthful local-save status; never imply a commit, backup, or remote sync that did not occur.
-- [ ] Handle an unavailable or changed linked PDF without corrupting the repository.
+- [x] Complete the core workflow locally without Git, GitHub, credentials, network, or an Agent Provider; the named gate now includes repository creation/opening, a local governed apply, saved-result recovery, and unavailable-provider confirmation.
+- [x] Detect an external edit and preserve the user's work safely; `v1-provider-free-recovery-gate.e2e.ts` mutates an isolated repository after review and verifies that the external bytes remain unchanged.
+- [x] Recover from an interrupted transaction without silent data loss; the packaged gate opens an isolated repository with a deliberately interrupted journal and verifies restoration and transaction cleanup.
+- [x] Roll back and recover a prior version or saved result; the packaged gate restores the prior saved-result version without a provider request, while the governed apply retains its prior version.
+- [x] Show truthful local-save status; never imply a commit, backup, or remote sync that did not occur; the packaged gate asserts the exact local-save notice.
+- [ ] Handle an unavailable or changed linked PDF without corrupting the repository. S3/S5 contract evidence covers missing and changed PDF identities, but the packaged Workbench still uses the documented fixture preview while production PDF rendering remains deferred.
 - [x] Show a clear unavailable-provider state without blocking provider-free
       workflows; the named packaged gate reports `agent-provider-unavailable`.
-- [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy.
+- [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy. This remains an explicit human inspection of packaged logs, session state, repository artifacts, and the confirmation surface.
 
 This gate proves the packaged application behavior. It does not by itself prove that an unsigned development `.app` is a supported end-user distribution.
 

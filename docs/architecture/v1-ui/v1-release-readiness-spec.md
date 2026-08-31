@@ -1,10 +1,11 @@
 # V1 release-readiness specification
 
-Status: implementation in progress on `codex/v1-release-readiness`. The first
-provider-free packaged-app workflow and initial mixed condition/decision
-coverage (MC/DC) evaluator are implemented. This brief remains the bounded
-work plan for the remaining release evidence; it is not a replacement for the
-V1 victory checklist, which remains the release decision authority.
+Status: implementation in progress on `codex/provider-free-release-gate`. The
+provider-free packaged-app workflow, local governance/recovery workflows, and
+initial mixed condition/decision coverage (MC/DC) evaluator are implemented.
+This brief remains the bounded work plan for the remaining release evidence;
+it is not a replacement for the V1 victory checklist, which remains the
+release decision authority.
 
 ## Governing documentation
 
@@ -108,7 +109,13 @@ selected by this brief.
    native dialog mocks across a `reloadSession` connection.
 3. Add S1/S5 evidence for external-edit preservation, interrupted transaction
    recovery, rollback/history recovery, truthful local-save status, and linked
-   PDF/provider failure states, one public behavior at a time.
+   PDF/provider failure states, one public behavior at a time. The focused
+   packaged gate now covers external-edit preservation, interrupted-journal
+   restoration, local governed application, truthful local-save status, saved
+   result recovery, and unavailable-provider non-retention. The remaining
+   linked-PDF item is intentionally bounded by the existing production PDF
+   rendering deferral and requires a future packaged PDF path before it can be
+   claimed as complete.
 4. Add the initial MC/DC manifest and independently authored truth-table/
    witness cases for the selected Governance and Source Processing decisions.
    The checked-in manifest now covers `governance.target-identity-match` and
@@ -169,13 +176,18 @@ separate checklist items tracked by Issues #25 and #34.
 
 ## Acceptance evidence
 
-The first selected automated gates now pass: `npm run test:mcdc`,
-`npm run check:mcdc`, the named provider-free packaged workflow, and the
+The selected automated gates now pass: `npm run test:mcdc`,
+`npm run check:mcdc`, the named provider-free packaged workflow (two focused
+spec files, including external-edit and interrupted-journal recovery), and the
 documentation/type/lint checks. The MC/DC evaluator is included in the
 changed-lines coverage surface so new quality logic cannot bypass that PR
 gate. With the repository root aligned to Git paths, changed-lines coverage
-passes at 85.96% (49/57 applicable lines, against the 80% threshold). The
-remaining release work is the broader S1/S5 evidence and human review.
+reports `NOT APPLICABLE` on this documentation/test-only branch because there
+are no changed executable lines; the full global coverage gate remains green
+at 82.68% statements, 74.43% branches, 96.86% functions, and 82.57% lines.
+The remaining release work is the packaged production-PDF boundary, explicit
+privacy/non-retention human review, MC/DC evidence for changed registered
+decisions, and final release acceptance.
 Implementation is complete only when that evidence passes, coverage and
 complexity evidence is current, the code map and release documents are
 current, and the provider-free packaged workflow is ready for a visible human
@@ -186,3 +198,27 @@ items are marked complete.
 Any newly discovered persistence representation, product behavior, or
 hard-to-reverse decision must pause this path and be documented with rationale
 before implementation continues.
+
+## Remaining human checks
+
+The following checks are intentionally not inferred from automated output:
+
+1. **Privacy and non-retention:** launch the exact packaged application tested
+   by `npm run test:provider-free` with no real credentials configured. Create
+   or open an isolated temporary repository, prepare a Synthesis preview, and
+   confirm that the exact payload is visible only on the confirmation surface.
+   Confirm that declining or receiving `agent-provider-unavailable` leaves no
+   new request, response, hidden payload, credential, or absolute private path
+   in the repository, session-state file, or application diagnostics. Use
+   explicit searches such as `grep -R -n -E "OPENAI_API_KEY|sk-[A-Za-z0-9]"
+   <temporary-root>`; do not paste a real secret into the test.
+2. **Production PDF boundary:** do not mark the linked-PDF checklist item
+   complete from the current fixture preview. It remains deferred until a
+   production PDF-backed packaged path exists and the missing/changed asset
+   scenarios can be observed there without changing Source Records or saved
+   locators.
+3. **Release-candidate MC/DC:** on the final release candidate, run
+   `npm run check:mcdc` after updating from the current merge base and confirm
+   that every changed registered decision has independently authored witnesses.
+   This is a release policy check, not a claim that LCOV branch coverage is
+   MC/DC.

@@ -638,12 +638,16 @@ The next work package is defined in the [V1 release-readiness specification](v1-
 
 Current evidence as of August 31, 2026: the named provider-free package gate
 passes, the MC/DC evaluator and manifest gate pass for the initial two
-registered decisions, the full silent packaged suite passes 26/26 specs, and
+registered decisions, the full silent packaged suite passes 27/27 specs, and
 the repository check, coverage, complexity, documentation, and changed-lines
-gates pass. Changed-lines coverage is 85.96% (49/57 applicable lines) when
-run with `--repository-root .. --coverage-root .` from `app/`. The remaining
-release work is the broader provider-free evidence checklist, explicit
-privacy/non-retention review, and human acceptance of the real packaged
+gates pass. The provider-free gate now includes isolated packaged workflows
+for external-edit preservation, interrupted-journal restoration, local
+governed application, truthful local-save status, saved-result recovery, and
+unavailable-provider non-retention. On this documentation/test-only branch,
+changed-lines coverage is `NOT APPLICABLE` because there are no changed
+executable lines. The remaining release work is the production-PDF packaging
+boundary, explicit privacy/non-retention human review, MC/DC evidence for
+changed registered decisions, and human acceptance of the real packaged
 application.
 
 Saved agent context must retain its point-in-time snapshot when the current source cannot be checked or lacks a comparable identity. The Workbench reports `source status unavailable` without blocking access or claiming that the snapshot is current. An explicit refresh must create a new snapshot/version while preserving the original and must never silently replace it in place. Refresh updates only the saved context representation; a separate result-regeneration action requires fresh confirmation before any new OpenAI request.
