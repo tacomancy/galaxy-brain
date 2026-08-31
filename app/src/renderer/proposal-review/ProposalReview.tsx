@@ -7,6 +7,7 @@ import type {
 } from "../../modules/proposal-review";
 
 interface ProposalReviewProps {
+  controls: JSX.Element;
   review: ProposalReviewItem | AppliedProposalReview;
   applyOutcome?: ProposalReviewApplyOutcome | undefined;
   onAcceptAndApply: () => Promise<void>;
@@ -97,6 +98,7 @@ const AppliedReview = ({
  * @returns The Proposal Review route.
  */
 export const ProposalReview = ({
+  controls,
   review,
   applyOutcome,
   onAcceptAndApply,
@@ -110,6 +112,7 @@ export const ProposalReview = ({
       aria-labelledby="proposal-review-heading"
     >
       <ReviewHeader />
+      {controls}
       <div className="workspace-content proposal-review-content">
         <div className="page-intro">
           <span className="eyebrow">Needs your judgment</span>

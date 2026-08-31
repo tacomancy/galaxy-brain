@@ -189,6 +189,12 @@ const createWindow = async (): Promise<void> => {
       outcome: "not-available",
       detail: "A Knowledge Repository must be selected first.",
     };
+  const undoAuthoringSemanticText =
+    async (): Promise<AuthoringOperationOutcome> =>
+      (await getAuthoring())?.undoLastEdit() ?? {
+        outcome: "not-available",
+        detail: "A Knowledge Repository must be selected first.",
+      };
   const setAuthoringMode = async (
     mode: AuthoringMode,
   ): Promise<AuthoringOperationOutcome> =>
@@ -347,6 +353,26 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.openFreshWorkbench();
   });
 
+  ipcMain.handle("workbench:read-theme", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return workbenchSession.readTheme();
+  });
+
+  ipcMain.handle("workbench:set-theme", (event, theme: unknown) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    if (theme !== "light" && theme !== "dark") {
+      throw new Error("Invalid Workbench theme.");
+    }
+
+    return workbenchSession.setTheme(theme);
+  });
+
   ipcMain.handle("workbench:read-authoring-draft", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
@@ -377,6 +403,14 @@ const createWindow = async (): Promise<void> => {
       return editAuthoringSemanticText(nextText);
     },
   );
+
+  ipcMain.handle("workbench:undo-authoring-semantic-text", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return undoAuthoringSemanticText();
+  });
 
   ipcMain.handle(
     "workbench:open-authoring-construct",
@@ -731,9 +765,12 @@ const createWindow = async (): Promise<void> => {
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
+    ipcMain.removeHandler("workbench:read-theme");
+    ipcMain.removeHandler("workbench:set-theme");
     ipcMain.removeHandler("workbench:read-authoring-draft");
     ipcMain.removeHandler("workbench:open-authoring-draft");
     ipcMain.removeHandler("workbench:edit-authoring-semantic-text");
+    ipcMain.removeHandler("workbench:undo-authoring-semantic-text");
     ipcMain.removeHandler("workbench:open-authoring-construct");
     ipcMain.removeHandler("workbench:set-authoring-mode");
     ipcMain.removeHandler("workbench:read-proposal-review");

@@ -13,6 +13,8 @@ import type {
   WorkbenchContextSelection,
   WorkbenchContextSelectionOutcome,
   WorkbenchWorkspace,
+  ThemeOperationOutcome,
+  WorkbenchTheme,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
 import type {
@@ -49,6 +51,8 @@ contextBridge.exposeInMainWorld("workbench", {
     nextText: string,
   ): Promise<AuthoringOperationOutcome> =>
     ipcRenderer.invoke("workbench:edit-authoring-semantic-text", nextText),
+  undoAuthoringSemanticText: (): Promise<AuthoringOperationOutcome> =>
+    ipcRenderer.invoke("workbench:undo-authoring-semantic-text"),
   setAuthoringMode: (mode: AuthoringMode): Promise<AuthoringOperationOutcome> =>
     ipcRenderer.invoke("workbench:set-authoring-mode", mode),
   readProposalReview: (): Promise<ProposalReviewReadOutcome> =>
@@ -99,4 +103,8 @@ contextBridge.exposeInMainWorld("workbench", {
     version: number,
   ): Promise<RestoreSynthesisResultOutcome> =>
     ipcRenderer.invoke("workbench:restore-synthesis-result", resultId, version),
+  readTheme: (): Promise<WorkbenchTheme> =>
+    ipcRenderer.invoke("workbench:read-theme"),
+  setTheme: (theme: WorkbenchTheme): Promise<ThemeOperationOutcome> =>
+    ipcRenderer.invoke("workbench:set-theme", theme),
 });

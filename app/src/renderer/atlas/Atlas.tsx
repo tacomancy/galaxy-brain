@@ -14,6 +14,7 @@ import type { JSX } from "react";
 
 /** Props supplied by the Workbench Session through the renderer entry point. */
 interface AtlasProps {
+  controls: JSX.Element;
   workbench: WorkbenchState;
   lastOutcome:
     | RepositoryOperationOutcome
@@ -38,7 +39,7 @@ const AtlasHeader = (): JSX.Element => (
       </span>
       <span>Galaxy Brain</span>
     </div>
-    <div className="workspace-label">
+    <div id="workspace-label" className="workspace-label">
       <span className="eyebrow">Local workspace</span>
       <strong>Atlas</strong>
     </div>
@@ -300,6 +301,7 @@ const AtlasOutcomeNotice = ({
  * @throws An error when the renderer receives an invalid workspace state.
  */
 export const Atlas = ({
+  controls,
   workbench,
   lastOutcome,
   onCreateRepository,
@@ -318,6 +320,7 @@ export const Atlas = ({
   return (
     <main className="workspace-page atlas-page" aria-labelledby="atlas-heading">
       <AtlasHeader />
+      {controls}
       <div className="workspace-content">
         <div className="page-intro">
           <span className="eyebrow">Knowledge atlas</span>

@@ -6,6 +6,9 @@ import type {
 /** Workspace names exposed by the V1 Workbench shell. */
 export type WorkbenchWorkspace = "atlas" | "studio" | "paper-desk";
 
+/** Explicit machine-local appearance choices supported by the desktop shell. */
+export type WorkbenchTheme = "light" | "dark";
+
 /** Stable, visible identity used when a topic is carried between workspaces. */
 export interface WorkbenchTopic {
   id: string;
@@ -80,6 +83,11 @@ export type RepositoryOperationOutcome =
   | { outcome: "unsupported-format"; detail: string }
   | { outcome: "operation-failed"; detail: string };
 
+/** Caller-visible result of changing the explicit theme preference. */
+export type ThemeOperationOutcome =
+  | { outcome: "updated"; theme: WorkbenchTheme }
+  | { outcome: "operation-failed"; detail: string };
+
 /** Outcomes that leave the Workbench unselected and require recovery choices. */
 export type RepositoryResumeFailure = Extract<
   RepositoryOperationOutcome,
@@ -151,7 +159,9 @@ export interface KnowledgeRepository {
  * Implementations must not store this state in the portable repository.
  */
 export interface WorkbenchSessionSnapshot {
-  selectedRepositoryPath: string;
+  /** Omitted when only machine-local appearance state has been selected. */
+  selectedRepositoryPath?: string;
+  theme?: WorkbenchTheme;
   activeWorkspace?: WorkbenchWorkspace;
   selectedContext?: WorkbenchContextSelection;
   readingPosition?: ReadingPosition;
@@ -193,7 +203,15 @@ export interface WorkbenchSession {
   ): Promise<WorkspaceTransitionOutcome>;
   /** Moves Paper Desk to the saved annotation and persists its position. */
   openSavedAnnotation(): Promise<ReadingPositionOutcome>;
+  /** Reads the explicit machine-local theme preference. */
+  readTheme(): Promise<WorkbenchTheme>;
+  /** Changes the explicit machine-local theme preference. */
+  setTheme(theme: WorkbenchTheme): Promise<ThemeOperationOutcome>;
 }
+
+const themeFromSnapshot = (
+  snapshot: WorkbenchSessionSnapshot | undefined,
+): WorkbenchTheme => snapshot?.theme ?? "light";
 
 /**
  * Composes repository and machine-local session Adapters behind the
@@ -227,6 +245,7 @@ export const createWorkbenchSession = (
   let repositoryResumeFailure: RepositoryResumeFailure | undefined;
   let activeWorkspace: WorkbenchWorkspace = "atlas";
   let readingPosition: ReadingPosition | undefined;
+  let theme: WorkbenchTheme = "light";
   type SelectedRepository = NonNullable<typeof selectedRepository>;
 
   const selectedContextFor = (
@@ -238,6 +257,11 @@ export const createWorkbenchSession = (
           topicId: repository.context.topic.id,
           sourceRecordId: repository.context.sourceRecord.id,
         };
+
+  const persistedTheme = (
+    nextTheme: WorkbenchTheme = theme,
+  ): { theme: WorkbenchTheme } | Record<string, never> =>
+    nextTheme === "light" ? {} : { theme: nextTheme };
 
   const readWorkbenchContext = async (
     repositoryPath: string,
@@ -397,6 +421,7 @@ export const createWorkbenchSession = (
 
     hasRestoredSession = true;
     const rememberedSession = await sessionState.readSession();
+    theme = themeFromSnapshot(rememberedSession);
     const rememberedPath = rememberedSession?.selectedRepositoryPath;
 
     if (rememberedPath === undefined) {
@@ -449,6 +474,7 @@ export const createWorkbenchSession = (
     try {
       await sessionState.writeSession({
         selectedRepositoryPath: outcome.repositoryPath,
+        ...persistedTheme(),
         activeWorkspace: "atlas",
       });
     } catch {
@@ -523,6 +549,7 @@ export const createWorkbenchSession = (
     try {
       await sessionState.writeSession({
         selectedRepositoryPath: repository.path,
+        ...persistedTheme(),
         activeWorkspace: workspace,
         ...(selectedContext === undefined ? {} : { selectedContext }),
         ...(readingPosition === undefined ? {} : { readingPosition }),
@@ -625,6 +652,7 @@ export const createWorkbenchSession = (
       try {
         await sessionState.writeSession({
           selectedRepositoryPath: repository.path,
+          ...persistedTheme(),
           activeWorkspace: "atlas",
           selectedContext: selection,
         });
@@ -713,6 +741,7 @@ export const createWorkbenchSession = (
       try {
         await sessionState.writeSession({
           selectedRepositoryPath: repository.path,
+          ...persistedTheme(),
           activeWorkspace: "paper-desk",
           ...(selectedContext === undefined ? {} : { selectedContext }),
           readingPosition: nextReadingPosition,
@@ -740,6 +769,56 @@ export const createWorkbenchSession = (
           readingPosition: nextReadingPosition,
         },
       };
+    },
+    readTheme: async (): Promise<WorkbenchTheme> => {
+      await restoreSelectedRepository();
+      return theme;
+    },
+    setTheme: async (nextTheme): Promise<ThemeOperationOutcome> => {
+      if (nextTheme !== "light" && nextTheme !== "dark") {
+        return {
+          outcome: "operation-failed",
+          detail: "The selected theme is not supported.",
+        };
+      }
+
+      if (selectedRepository === undefined) {
+        try {
+          await sessionState.writeSession({
+            ...persistedTheme(nextTheme),
+            activeWorkspace,
+            ...(readingPosition === undefined ? {} : { readingPosition }),
+          });
+        } catch {
+          return {
+            outcome: "operation-failed",
+            detail: "The Workbench theme could not be saved.",
+          };
+        }
+
+        theme = nextTheme;
+        return { outcome: "updated", theme };
+      }
+
+      const selectedContext = selectedContextFor(selectedRepository);
+
+      try {
+        await sessionState.writeSession({
+          selectedRepositoryPath: selectedRepository.path,
+          ...persistedTheme(nextTheme),
+          activeWorkspace,
+          ...(selectedContext === undefined ? {} : { selectedContext }),
+          ...(readingPosition === undefined ? {} : { readingPosition }),
+        });
+      } catch {
+        return {
+          outcome: "operation-failed",
+          detail: "The Workbench theme could not be saved.",
+        };
+      }
+
+      theme = nextTheme;
+      return { outcome: "updated", theme };
     },
   };
 };

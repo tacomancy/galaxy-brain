@@ -550,6 +550,94 @@ type: source
 });
 
 describe("Workbench Session selection contract", () => {
+  it("reads and persists the explicit theme without repository content", async () => {
+    let unselectedSnapshot: WorkbenchSessionSnapshot | undefined;
+    const unselectedSession = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/unselected-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/unselected-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "not-found" as const,
+          detail: "No context.",
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "No annotation.",
+        }),
+      },
+      {
+        readSession: async () => undefined,
+        writeSession: async (snapshot) => {
+          unselectedSnapshot = snapshot;
+        },
+      },
+    );
+
+    assert.deepEqual(await unselectedSession.setTheme("dark"), {
+      outcome: "updated",
+      theme: "dark",
+    });
+    assert.deepEqual(unselectedSnapshot, {
+      activeWorkspace: "atlas",
+      theme: "dark",
+    });
+
+    let writeCount = 0;
+    const selectedSession = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "not-found" as const,
+          detail: "No context.",
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "No annotation.",
+        }),
+      },
+      {
+        readSession: async () => ({
+          selectedRepositoryPath: "/selected-repository",
+          theme: "dark",
+        }),
+        writeSession: async () => {
+          writeCount += 1;
+          if (writeCount > 1) {
+            throw new Error("theme persistence unavailable");
+          }
+        },
+      },
+    );
+
+    assert.equal(await selectedSession.readTheme(), "dark");
+    // This invalid value deliberately exercises the runtime boundary behind the typed API.
+    assert.deepEqual(await selectedSession.setTheme("sepia" as never), {
+      outcome: "operation-failed",
+      detail: "The selected theme is not supported.",
+    });
+    assert.deepEqual(await selectedSession.setTheme("light"), {
+      outcome: "updated",
+      theme: "light",
+    });
+    assert.deepEqual(await selectedSession.setTheme("dark"), {
+      outcome: "operation-failed",
+      detail: "The Workbench theme could not be saved.",
+    });
+  });
+
   it("keeps ambiguous context candidates visible until the user selects one", async () => {
     const contexts: WorkbenchContext[] = [
       {

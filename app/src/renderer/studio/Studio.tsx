@@ -1,4 +1,4 @@
-import { useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 
 import type {
   AuthoringConstruct,
@@ -20,12 +20,14 @@ import type {
 } from "../../modules/workbench-session";
 
 interface StudioProps {
+  controls: JSX.Element;
   workbench: WorkbenchState;
   authoring: AuthoringReadOutcome;
   isAuthoringOpen: boolean;
   onOpenAuthoringDraft: () => Promise<void>;
   onOpenAuthoringConstruct: (construct: AuthoringConstruct) => Promise<void>;
   onEditAuthoringSemanticText: (nextText: string) => Promise<void>;
+  onUndoAuthoringSemanticText: () => Promise<void>;
   onSetAuthoringMode: (mode: AuthoringMode) => Promise<void>;
   onCloseAuthoringDraft: () => void;
   onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
@@ -53,7 +55,7 @@ const StudioHeader = (): JSX.Element => (
       </span>
       <span>Galaxy Brain</span>
     </div>
-    <div className="workspace-label">
+    <div id="workspace-label" className="workspace-label">
       <span className="eyebrow">Topic workspace</span>
       <strong>Studio</strong>
     </div>
@@ -131,6 +133,7 @@ const WorkingMaterialCard = ({
 interface AuthoringSurfaceProps {
   draft: AuthoringDraftView;
   onEdit: (nextText: string) => Promise<void>;
+  onUndo: () => Promise<void>;
   onOpenConstruct: (construct: AuthoringConstruct) => Promise<void>;
   onSetMode: (mode: AuthoringMode) => Promise<void>;
   onClose: () => void;
@@ -139,12 +142,20 @@ interface AuthoringSurfaceProps {
 const AuthoringSurface = ({
   draft,
   onEdit,
+  onUndo,
   onOpenConstruct,
   onSetMode,
   onClose,
 }: AuthoringSurfaceProps): JSX.Element => {
   const [isEditing, setIsEditing] = useState(false);
   const [nextText, setNextText] = useState(draft.rich.semanticText);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+    }
+  }, [isEditing]);
 
   const applyEdit = async (): Promise<void> => {
     await onEdit(nextText);
@@ -246,9 +257,14 @@ const AuthoringSurface = ({
               </label>
               <input
                 id="studio-rich-edit-input"
+                ref={inputRef}
+                aria-describedby="studio-rich-edit-help"
                 value={nextText}
                 onChange={(event) => setNextText(event.currentTarget.value)}
               />
+              <span id="studio-rich-edit-help" className="visually-hidden">
+                Enter one line of semantic object text.
+              </span>
               <button
                 id="studio-rich-edit-apply"
                 className="button button-primary"
@@ -259,6 +275,14 @@ const AuthoringSurface = ({
               </button>
             </div>
           ) : null}
+          <button
+            id="studio-rich-undo"
+            className="button button-quiet"
+            type="button"
+            onClick={() => void onUndo()}
+          >
+            Undo last edit
+          </button>
         </div>
       ) : null}
       <div className="authoring-governed-status">
@@ -288,6 +312,7 @@ const AuthoringDraftCard = ({
   isOpen,
   onOpen,
   onEdit,
+  onUndo,
   onOpenConstruct,
   onSetMode,
   onClose,
@@ -296,6 +321,7 @@ const AuthoringDraftCard = ({
   isOpen: boolean;
   onOpen: () => Promise<void>;
   onEdit: (nextText: string) => Promise<void>;
+  onUndo: () => Promise<void>;
   onOpenConstruct: (construct: AuthoringConstruct) => Promise<void>;
   onSetMode: (mode: AuthoringMode) => Promise<void>;
   onClose: () => void;
@@ -310,6 +336,7 @@ const AuthoringDraftCard = ({
         key={authoring.draft.id}
         draft={authoring.draft}
         onEdit={onEdit}
+        onUndo={onUndo}
         onOpenConstruct={onOpenConstruct}
         onSetMode={onSetMode}
         onClose={onClose}
@@ -483,7 +510,12 @@ const SynthesisReviewCard = ({
             role={
               synthesisOutcome.outcome === "operation-failed"
                 ? "alert"
-                : undefined
+                : "status"
+            }
+            aria-live={
+              synthesisOutcome.outcome === "operation-failed"
+                ? "assertive"
+                : "polite"
             }
             data-synthesis-outcome={synthesisOutcome.outcome}
           >
@@ -603,7 +635,12 @@ const SavedSynthesisResultsCard = ({
         <p
           id="studio-synthesis-restore-outcome"
           role={
-            restoreOutcome.outcome === "operation-failed" ? "alert" : undefined
+            restoreOutcome.outcome === "operation-failed" ? "alert" : "status"
+          }
+          aria-live={
+            restoreOutcome.outcome === "operation-failed"
+              ? "assertive"
+              : "polite"
           }
           data-synthesis-restore-outcome={restoreOutcome.outcome}
         >
@@ -623,12 +660,14 @@ const SavedSynthesisResultsCard = ({
  * @throws An error when the renderer receives an invalid workspace context.
  */
 export const Studio = ({
+  controls,
   workbench,
   authoring,
   isAuthoringOpen,
   onOpenAuthoringDraft,
   onOpenAuthoringConstruct,
   onEditAuthoringSemanticText,
+  onUndoAuthoringSemanticText,
   onSetAuthoringMode,
   onCloseAuthoringDraft,
   onOpenSourceRecordInPaperDesk,
@@ -658,6 +697,7 @@ export const Studio = ({
       aria-labelledby="studio-heading"
     >
       <StudioHeader />
+      {controls}
       <div className="workspace-content studio-content">
         <div className="page-intro">
           <span className="eyebrow">Knowledge in motion</span>
@@ -677,6 +717,7 @@ export const Studio = ({
             isOpen={isAuthoringOpen}
             onOpen={onOpenAuthoringDraft}
             onEdit={onEditAuthoringSemanticText}
+            onUndo={onUndoAuthoringSemanticText}
             onOpenConstruct={onOpenAuthoringConstruct}
             onSetMode={onSetAuthoringMode}
             onClose={onCloseAuthoringDraft}

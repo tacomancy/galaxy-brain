@@ -1,6 +1,6 @@
 /** Renderer entry point for the desktop Workbench shell. */
 import { createRoot } from "react-dom/client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 
 import "./styles.css";
 import { Atlas } from "./atlas/Atlas";
@@ -31,6 +31,7 @@ import type {
   WorkbenchContextSelection,
   WorkbenchContextSelectionOutcome,
   WorkbenchState,
+  WorkbenchTheme,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
@@ -52,6 +53,28 @@ const authoringReadFromOperation = (
     ? { outcome: "available", draft: outcome.draft }
     : outcome;
 
+const ThemeControl = ({
+  theme,
+  onChange,
+}: {
+  theme: WorkbenchTheme;
+  onChange: (theme: WorkbenchTheme) => Promise<void>;
+}): JSX.Element => (
+  <div id="appearance-controls">
+    <label htmlFor="workbench-theme">Theme</label>
+    <select
+      id="workbench-theme"
+      value={theme}
+      onChange={(event) =>
+        void onChange(event.currentTarget.value === "dark" ? "dark" : "light")
+      }
+    >
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  </div>
+);
+
 // Request session state through the typed preload bridge, then render the
 // workspace selected by the application Module.
 const WorkbenchShell = ({
@@ -59,15 +82,21 @@ const WorkbenchShell = ({
   initialSavedSynthesisResults,
   initialProposalReview,
   initialAuthoring,
+  initialTheme,
 }: {
   initialWorkbench: FreshWorkbench;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
   initialProposalReview: ProposalReviewReadOutcome;
   initialAuthoring: AuthoringReadOutcome;
+  initialTheme: WorkbenchTheme;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
   const [authoring, setAuthoring] =
     useState<AuthoringReadOutcome>(initialAuthoring);
+  const [theme, setTheme] = useState<WorkbenchTheme>(initialTheme);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
   const [isAuthoringOpen, setIsAuthoringOpen] = useState(
     initialAuthoring.outcome === "available",
   );
@@ -168,6 +197,21 @@ const WorkbenchShell = ({
         await window.workbench.editAuthoringSemanticText(nextText),
       ),
     );
+  };
+
+  const undoAuthoringSemanticText = async (): Promise<void> => {
+    setAuthoring(
+      authoringReadFromOperation(
+        await window.workbench.undoAuthoringSemanticText(),
+      ),
+    );
+  };
+
+  const changeTheme = async (nextTheme: WorkbenchTheme): Promise<void> => {
+    const outcome = await window.workbench.setTheme(nextTheme);
+    if (outcome.outcome === "updated") {
+      setTheme(outcome.theme);
+    }
   };
 
   const setAuthoringMode = async (mode: AuthoringMode): Promise<void> => {
@@ -337,6 +381,19 @@ const WorkbenchShell = ({
     }
   };
 
+  const controls = (
+    <div id="workbench-controls">
+      {workbench.repositoryStatus === "selected" ? (
+        <WorkspaceSwitcher
+          activeWorkspace={workbench.activeWorkspace}
+          hasContext={workbench.context !== undefined}
+          onSwitchWorkspace={switchWorkspace}
+        />
+      ) : null}
+      <ThemeControl theme={theme} onChange={changeTheme} />
+    </div>
+  );
+
   const workspace = (() => {
     if (
       isProposalReviewOpen &&
@@ -345,6 +402,7 @@ const WorkbenchShell = ({
     ) {
       return (
         <ProposalReview
+          controls={controls}
           review={proposalReview.review}
           applyOutcome={proposalReviewApplyOutcome}
           onAcceptAndApply={acceptProposalReview}
@@ -356,12 +414,14 @@ const WorkbenchShell = ({
     if (workbench.activeWorkspace === "studio") {
       return (
         <Studio
+          controls={controls}
           workbench={workbench}
           authoring={authoring}
           isAuthoringOpen={isAuthoringOpen}
           onOpenAuthoringDraft={openAuthoringDraft}
           onOpenAuthoringConstruct={openAuthoringConstruct}
           onEditAuthoringSemanticText={editAuthoringSemanticText}
+          onUndoAuthoringSemanticText={undoAuthoringSemanticText}
           onSetAuthoringMode={setAuthoringMode}
           onCloseAuthoringDraft={closeAuthoringDraft}
           onOpenSourceRecordInPaperDesk={openSourceRecordInPaperDesk}
@@ -381,6 +441,7 @@ const WorkbenchShell = ({
     if (workbench.activeWorkspace === "paper-desk") {
       return (
         <PaperDesk
+          controls={controls}
           workbench={workbench}
           onOpenSavedAnnotation={openSavedAnnotation}
         />
@@ -389,6 +450,7 @@ const WorkbenchShell = ({
 
     return (
       <Atlas
+        controls={controls}
         workbench={workbench}
         lastOutcome={lastOutcome}
         onCreateRepository={createRepository}
@@ -401,32 +463,24 @@ const WorkbenchShell = ({
     );
   })();
 
-  return (
-    <>
-      {workbench.repositoryStatus === "selected" ? (
-        <WorkspaceSwitcher
-          activeWorkspace={workbench.activeWorkspace}
-          hasContext={workbench.context !== undefined}
-          onSwitchWorkspace={switchWorkspace}
-        />
-      ) : null}
-      {workspace}
-    </>
-  );
+  return <div id="workbench-shell">{workspace}</div>;
 };
 
-void Promise.all([
-  window.workbench.openFreshWorkbench(),
-  window.workbench.readAuthoringDraft(),
-  window.workbench.readSynthesisResults(),
-  window.workbench.readProposalReview(),
-]).then(([workbench, authoring, outcome, proposalReview]) => {
+void window.workbench.openFreshWorkbench().then(async (workbench) => {
+  const [authoring, outcome, proposalReview, theme] = await Promise.all([
+    window.workbench.readAuthoringDraft(),
+    window.workbench.readSynthesisResults(),
+    window.workbench.readProposalReview(),
+    window.workbench.readTheme(),
+  ]);
+
   root.render(
     <WorkbenchShell
       initialWorkbench={workbench}
       initialAuthoring={authoring}
       initialSavedSynthesisResults={outcome}
       initialProposalReview={proposalReview}
+      initialTheme={theme}
     />,
   );
 });
