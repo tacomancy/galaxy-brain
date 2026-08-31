@@ -86,6 +86,7 @@ describe("Carry context between workspaces", () => {
     const switcher = await $("#workspace-switcher");
 
     await switcher.waitForDisplayed();
+    assert.equal(await switcher.getAttribute("aria-label"), "Workspaces");
     await $("#workspace-switcher-studio").click();
     await $("#studio-heading").waitForDisplayed();
     assert.equal(await $("#studio-heading").getText(), "Studio");

@@ -6,6 +6,20 @@ prerequisites:
   - A prepared Synthesis preview in Studio.
   - The exact request has been reviewed and is ready for a deliberate decision.
 nav_order: 8
+tracks_main: true
+verified_commit: "59f4cc102f03d3f13406ac4d8a2ab31bcb757d55"
+reviewed_on: "2026-08-31"
+supported_platforms:
+  - macOS arm64
+supported_packages:
+  - source checkout
+  - unsigned local macOS arm64 package
+repository_states:
+  - prepopulated_repository
+  - synthetic_fixture
+adapter_boundary:
+  production: unavailable
+  fixture: used
 ---
 
 # Confirm, decline, or cancel Synthesis

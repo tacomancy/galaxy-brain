@@ -30,6 +30,14 @@ describe("Open the real empty Workbench", () => {
       await emptyStateAction.getText(),
       "Open or create one to begin.",
     );
+    assert.equal(
+      await $("#open-repository").getText(),
+      "Open a Knowledge Repository",
+    );
+    assert.equal(
+      await $("#create-repository").getText(),
+      "Create a Knowledge Repository",
+    );
     assert.doesNotMatch(await page.getText(), /Bayesian statistics/);
   });
 });

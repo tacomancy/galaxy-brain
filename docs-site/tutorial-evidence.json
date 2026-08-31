@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "tutorials": {
+    "docs-site/tutorials/first-run.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/open-empty-workbench.e2e.ts",
+          "story": "Open the real empty Workbench",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": [
+        "Atlas",
+        "Open a Knowledge Repository",
+        "Create a Knowledge Repository"
+      ]
+    },
+    "docs-site/tutorials/create-knowledge-repository.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/create-knowledge-repository-in-empty-directory.e2e.ts",
+          "story": "Create a local Knowledge Repository in an empty directory",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": ["Create a Knowledge Repository"]
+    },
+    "docs-site/tutorials/open-knowledge-repository.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/open-valid-knowledge-repository.e2e.ts",
+          "story": "Open an existing Knowledge Repository",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/reject-invalid-knowledge-repository.e2e.ts",
+          "story": "Reject an invalid Knowledge Repository target",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": ["Open a Knowledge Repository"]
+    },
+    "docs-site/tutorials/resume-workbench-session.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/resume-selected-knowledge-repository.e2e.ts",
+          "story": "Resume the selected Knowledge Repository",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/recover-from-unavailable-remembered-repository.e2e.ts",
+          "story": "Recover from an unavailable remembered Knowledge Repository",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": [
+        "Open a Knowledge Repository",
+        "Create a Knowledge Repository"
+      ]
+    },
+    "docs-site/tutorials/navigate-workspaces.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/select-explicit-workbench-context.e2e.ts",
+          "story": "Select an explicit Workbench context",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/carry-context-between-workspaces.e2e.ts",
+          "story": "Carry context between workspaces",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/promote-atlas-view.e2e.ts",
+          "story": "Promote the Atlas view",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/promote-studio-view.e2e.ts",
+          "story": "Promote the Studio view",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": [
+        "Atlas",
+        "Studio",
+        "Paper Desk",
+        "Select a Workbench context",
+        "Use this context",
+        "Open in Studio",
+        "Open Source Record in Paper Desk",
+        "Workspaces"
+      ]
+    },
+    "docs-site/tutorials/read-source-record.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/promote-paper-desk-view.e2e.ts",
+          "story": "Promote the Paper Desk view",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/promote-studio-view.e2e.ts",
+          "story": "Promote the Studio view",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/reopen-captured-source.e2e.ts",
+          "story": "Reopen a captured source claim",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": [
+        "Studio",
+        "Open Source Record in Paper Desk",
+        "Open saved annotation"
+      ]
+    },
+    "docs-site/tutorials/prepare-synthesis-request.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/review-synthesis-confirmation.e2e.ts",
+          "story": "Review a Synthesis request",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": [
+        "Synthesize into topic",
+        "Include all saved claims for this Source Record",
+        "Review Synthesis request",
+        "Inspect exact payload",
+        "Remove context item"
+      ]
+    },
+    "docs-site/tutorials/confirm-synthesis-request.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/review-synthesis-confirmation.e2e.ts",
+          "story": "Review a Synthesis request",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/v1-provider-free-gate.e2e.ts",
+          "story": "V1 provider-free packaged-app gate",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": ["Confirm and send", "Decline", "Cancel"]
+    },
+    "docs-site/tutorials/understand-synthesis-results.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/review-synthesis-confirmation.e2e.ts",
+          "story": "Review a Synthesis request",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/promote-studio-view.e2e.ts",
+          "story": "Promote the Studio view",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": ["Studio", "Synthesis results", "Working Material"]
+    },
+    "docs-site/tutorials/repository-format-overview.md": {
+      "evidence": [
+        {
+          "kind": "module_contract",
+          "source": "docs/architecture/v1-ui/repository-format.md",
+          "story": "Knowledge Repository format contract",
+          "support_class": "Module-only"
+        }
+      ],
+      "visible_labels": []
+    },
+    "docs-site/tutorials/safety-and-privacy.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/v1-provider-free-gate.e2e.ts",
+          "story": "V1 provider-free packaged-app gate",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/review-synthesis-confirmation.e2e.ts",
+          "story": "Review a Synthesis request",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": []
+    },
+    "docs-site/tutorials/troubleshooting.md": {
+      "evidence": [
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/recover-from-invalid-remembered-repository.e2e.ts",
+          "story": "Recover from an invalid remembered Knowledge Repository",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/reject-unavailable-knowledge-repository.e2e.ts",
+          "story": "Reject an unavailable Knowledge Repository",
+          "support_class": "Desktop-supported"
+        },
+        {
+          "kind": "packaged_workflow",
+          "source": "app/tests/workflows/review-synthesis-confirmation.e2e.ts",
+          "story": "Review a Synthesis request",
+          "support_class": "Desktop-supported"
+        }
+      ],
+      "visible_labels": [
+        "Open a Knowledge Repository",
+        "Create a Knowledge Repository"
+      ]
+    }
+  }
+}

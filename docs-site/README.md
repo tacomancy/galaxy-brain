@@ -26,10 +26,23 @@ architecture landing page is a curated reading path for intended structure; it
 is not a second current-status authority.
 
 The `tutorials` section of the manifest separately lists user-facing tutorial
-pages. Tutorial sources use YAML frontmatter with `title`, `summary`,
-`audience`, `prerequisites`, and `nav_order`, followed by the standard task
-headings: Goal, Prerequisites, Steps, Expected result, and Troubleshooting.
-The tutorial index is the only exception because it is an orientation page.
+pages. Task tutorial sources use YAML frontmatter with `title`, `summary`,
+`audience`, `prerequisites`, and `nav_order`, followed by version and boundary
+metadata: `applies_to_release` or `tracks_main`, `verified_commit` and/or
+`reviewed_on`, `supported_platforms`, `supported_packages`,
+`repository_states`, and an `adapter_boundary` mapping for production and
+fixture Adapters. The metadata says what a reader can reproduce; it does not
+turn a fixture or a Module-only contract into desktop support.
+
+Each task tutorial also has a repository-owned entry in
+`docs-site/tutorial-evidence.json`. Entries point to packaged
+workflow specs, correctly labeled Module/Adapter contracts, or named manual
+acceptance stories. Packaged workflow evidence is deliberately restricted to
+the workflow-test boundary rather than private renderer implementation. A
+reviewed `visible_labels` inventory is checked against both the tutorial and
+its evidence source so a renamed UI label fails with the tutorial and evidence
+source identified. The tutorial index is the only exception because it is an
+orientation page.
 
 The build copies only those sources into a generated staging tree. It rewrites
 links to allowlisted pages and turns links to excluded repository material
