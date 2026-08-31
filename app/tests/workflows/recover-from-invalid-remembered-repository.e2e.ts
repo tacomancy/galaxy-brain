@@ -57,7 +57,11 @@ describe("Recover from an invalid remembered Knowledge Repository", () => {
     );
     assert.equal(await $("#atlas-empty-state").isExisting(), true);
     assert.equal(await $("#repository-status").isExisting(), false);
-    assert.equal(await $("#open-repository").isDisplayed(), true);
-    assert.equal(await $("#create-repository").isDisplayed(), true);
+    const openButton = await $("#open-repository");
+    const createButton = await $("#create-repository");
+    assert.equal(await openButton.isDisplayed(), true);
+    assert.equal(await openButton.getText(), "Open a Knowledge Repository");
+    assert.equal(await createButton.isDisplayed(), true);
+    assert.equal(await createButton.getText(), "Create a Knowledge Repository");
   });
 });

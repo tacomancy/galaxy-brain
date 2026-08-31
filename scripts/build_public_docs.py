@@ -68,6 +68,29 @@ CURRENT_CAPABILITIES_SUPPORT_CLASSES = (
     "Module-only",
     "Planned",
 )
+TUTORIAL_RELEASE_VERSION_PATTERN = re.compile(rf"^{RELEASE_VERSION_PATTERN}$")
+TUTORIAL_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{7,40}$")
+TUTORIAL_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+TUTORIAL_REPOSITORY_STATES = {
+    "empty_starter",
+    "prepopulated_repository",
+    "synthetic_fixture",
+}
+TUTORIAL_ADAPTER_BOUNDARY_KEYS = {"production", "fixture"}
+TUTORIAL_ADAPTER_BOUNDARY_STATES = {
+    "not_applicable",
+    "not_composed",
+    "not_used",
+    "used",
+    "unavailable",
+}
+TUTORIAL_EVIDENCE_PATH = REPOSITORY_ROOT / "docs-site" / "tutorial-evidence.json"
+TUTORIAL_EVIDENCE_KINDS = {
+    "packaged_workflow",
+    "module_contract",
+    "manual_acceptance",
+}
+TUTORIAL_SUPPORT_CLASSES = set(CURRENT_CAPABILITIES_SUPPORT_CLASSES)
 
 
 def validate_release_alignment(
@@ -238,11 +261,108 @@ def read_tutorial_metadata(content: str, source: str) -> dict[str, object]:
     return metadata
 
 
-def validate_tutorial_content(page: dict[str, object], content: str) -> None:
+def validate_task_tutorial_metadata(
+    metadata: dict[str, object], source: str, latest_release: str | None = None
+) -> None:
+    applies_to_release = metadata.get("applies_to_release")
+    tracks_main = metadata.get("tracks_main")
+    if applies_to_release is None and tracks_main is not True:
+        raise ValueError(
+            "Tutorial metadata must declare tracks_main or applies_to_release: "
+            f"{source}"
+        )
+    if applies_to_release is not None and (
+        not isinstance(applies_to_release, str)
+        or not TUTORIAL_RELEASE_VERSION_PATTERN.fullmatch(applies_to_release)
+    ):
+        raise ValueError(
+            "Tutorial metadata field applies_to_release must be a semantic "
+            f"version: {source}"
+        )
+    if latest_release is not None and applies_to_release not in {
+        None,
+        latest_release,
+    }:
+        raise ValueError(
+            "Tutorial applies_to_release must match the latest published "
+            f"release {latest_release}: {source}"
+        )
+    if tracks_main is not None and not isinstance(tracks_main, bool):
+        raise ValueError(
+            f"Tutorial metadata field tracks_main must be boolean: {source}"
+        )
+
+    verified_commit = metadata.get("verified_commit")
+    reviewed_on = metadata.get("reviewed_on")
+    if verified_commit is None and reviewed_on is None:
+        raise ValueError(
+            "Tutorial metadata must include verified_commit and/or reviewed_on: "
+            f"{source}"
+        )
+    if verified_commit is not None and (
+        not isinstance(verified_commit, str)
+        or not TUTORIAL_COMMIT_PATTERN.fullmatch(verified_commit)
+    ):
+        raise ValueError(
+            "Tutorial metadata field verified_commit must be a hexadecimal Git "
+            f"commit: {source}"
+        )
+    if reviewed_on is not None and (
+        not isinstance(reviewed_on, str)
+        or not TUTORIAL_DATE_PATTERN.fullmatch(reviewed_on)
+    ):
+        raise ValueError(
+            f"Tutorial metadata field reviewed_on must be an ISO date: {source}"
+        )
+
+    for field in ("supported_platforms", "supported_packages"):
+        values = metadata.get(field)
+        if not isinstance(values, list) or not values or not all(
+            isinstance(item, str) and item.strip() for item in values
+        ):
+            raise ValueError(
+                f"Tutorial metadata field {field} must be a non-empty list of "
+                f"strings: {source}"
+            )
+
+    repository_states = metadata.get("repository_states")
+    if not isinstance(repository_states, list) or not repository_states or not all(
+        isinstance(item, str) and item in TUTORIAL_REPOSITORY_STATES
+        for item in repository_states
+    ):
+        allowed = ", ".join(sorted(TUTORIAL_REPOSITORY_STATES))
+        raise ValueError(
+            "Tutorial metadata field repository_states must be a non-empty list "
+            f"using {allowed}: {source}"
+        )
+
+    adapter_boundary = metadata.get("adapter_boundary")
+    if not isinstance(adapter_boundary, dict) or set(adapter_boundary) != (
+        TUTORIAL_ADAPTER_BOUNDARY_KEYS
+    ):
+        raise ValueError(
+            "Tutorial metadata field adapter_boundary must classify production "
+            f"and fixture adapters: {source}"
+        )
+    if not all(
+        isinstance(value, str) and value in TUTORIAL_ADAPTER_BOUNDARY_STATES
+        for value in adapter_boundary.values()
+    ):
+        allowed = ", ".join(sorted(TUTORIAL_ADAPTER_BOUNDARY_STATES))
+        raise ValueError(
+            "Tutorial adapter_boundary values must use "
+            f"{allowed}: {source}"
+        )
+
+
+def validate_tutorial_content(
+    page: dict[str, object], content: str, latest_release: str | None = None
+) -> None:
     source = str(page["source"])
     metadata = read_tutorial_metadata(content, source)
     if page["kind"] != "tutorial":
         return
+    validate_task_tutorial_metadata(metadata, source, latest_release)
 
     headings = re.findall(r"^##\s+(.+?)\s*$", content, re.MULTILINE)
     positions: list[int] = []
@@ -270,6 +390,124 @@ def validate_tutorial_index(
         filename = PurePosixPath(source).name
         if f"]({filename})" not in index_content:
             raise ValueError(f"Tutorial index does not link to {source}")
+
+
+def validate_tutorial_evidence(
+    tutorials: list[dict[str, object]],
+    tutorial_contents: dict[str, str],
+    evidence_document: object,
+) -> None:
+    if not isinstance(evidence_document, dict):
+        raise ValueError("Tutorial evidence must be a JSON object.")
+    if evidence_document.get("schema_version") != 1:
+        raise ValueError("Tutorial evidence schema_version must be 1.")
+
+    mappings = evidence_document.get("tutorials")
+    if not isinstance(mappings, dict):
+        raise ValueError("Tutorial evidence must contain a tutorials object.")
+
+    tutorial_sources = {str(tutorial["source"]) for tutorial in tutorials}
+    mapping_sources = set(mappings)
+    missing = sorted(tutorial_sources - mapping_sources)
+    if missing:
+        raise ValueError(
+            "Tutorial evidence mapping is missing " + ", ".join(missing)
+        )
+    unexpected = sorted(mapping_sources - tutorial_sources)
+    if unexpected:
+        raise ValueError(
+            "Tutorial evidence mapping contains unexpected "
+            + ", ".join(unexpected)
+        )
+
+    for source in sorted(tutorial_sources):
+        mapping = mappings[source]
+        if not isinstance(mapping, dict):
+            raise ValueError(f"Tutorial evidence mapping must be an object: {source}")
+        evidence = mapping.get("evidence")
+        if not isinstance(evidence, list) or not evidence:
+            raise ValueError(f"Tutorial evidence is empty: {source}")
+
+        evidence_texts: list[str] = []
+        evidence_sources: list[str] = []
+        for item in evidence:
+            if not isinstance(item, dict):
+                raise ValueError(f"Tutorial evidence entry must be an object: {source}")
+            kind = item.get("kind")
+            evidence_source = item.get("source")
+            story = item.get("story")
+            support_class = item.get("support_class")
+            if kind not in TUTORIAL_EVIDENCE_KINDS:
+                allowed = ", ".join(sorted(TUTORIAL_EVIDENCE_KINDS))
+                raise ValueError(
+                    f"Tutorial evidence kind must use {allowed}: {source}"
+                )
+            if not isinstance(evidence_source, str):
+                raise ValueError(
+                    f"Tutorial evidence source must be a string: {source}"
+                )
+            if not isinstance(story, str) or not story.strip():
+                raise ValueError(
+                    f"Tutorial evidence story must be non-empty: {source}"
+                )
+            if support_class not in TUTORIAL_SUPPORT_CLASSES:
+                raise ValueError(
+                    "Tutorial evidence support_class must be one of "
+                    f"{', '.join(sorted(TUTORIAL_SUPPORT_CLASSES))}: {source}"
+                )
+            if kind == "packaged_workflow" and not (
+                evidence_source.startswith("app/tests/workflows/")
+                and evidence_source.endswith(".e2e.ts")
+            ):
+                raise ValueError(
+                    "Packaged workflow evidence must come from app/tests/workflows: "
+                    f"{source}"
+                )
+            if kind == "module_contract" and support_class == "Desktop-supported":
+                raise ValueError(
+                    "Module-only evidence cannot be classified desktop-supported: "
+                    f"{source}"
+                )
+            if kind == "module_contract" and not (
+                evidence_source.startswith("app/src/modules/")
+                or evidence_source.startswith("app/src/adapters/")
+                or evidence_source.startswith("docs/architecture/")
+            ):
+                raise ValueError(
+                    "Module contract evidence must come from an application "
+                    f"Module/Adapter or architecture contract: {source}"
+                )
+            evidence_path = manifest_path(evidence_source, "tutorial evidence")
+            if not evidence_path.is_file():
+                raise ValueError(
+                    f"Tutorial evidence source does not exist: {evidence_source}"
+                )
+            evidence_texts.append(evidence_path.read_text(encoding="utf-8"))
+            evidence_sources.append(evidence_source)
+
+        visible_labels = mapping.get("visible_labels", [])
+        if not isinstance(visible_labels, list) or not all(
+            isinstance(label, str) and label.strip() for label in visible_labels
+        ):
+            raise ValueError(
+                f"Tutorial visible_labels must be a list of strings: {source}"
+            )
+        tutorial_content = tutorial_contents.get(source)
+        if tutorial_content is None:
+            raise ValueError(f"Tutorial content is missing for evidence: {source}")
+        combined_evidence = "\n".join(evidence_texts)
+        for label in visible_labels:
+            if label not in tutorial_content:
+                raise ValueError(
+                    f"Tutorial has stale visible label {label}: {source}; "
+                    f"evidence: {', '.join(evidence_sources)}"
+                )
+            if label not in combined_evidence:
+                raise ValueError(
+                    f"Tutorial visible label {label} is not grounded in its "
+                    f"evidence: {source}; evidence sources: "
+                    f"{', '.join(evidence_sources)}"
+                )
 
 
 def validate_manifest_entries(
@@ -345,9 +583,18 @@ def load_manifest() -> list[dict[str, object]]:
     for tutorial in task_tutorials:
         source = str(tutorial["source"])
         content = (REPOSITORY_ROOT / source).read_text(encoding="utf-8")
-        validate_tutorial_content(tutorial, content)
+        validate_tutorial_content(tutorial, content, latest_release)
         metadata = read_tutorial_metadata(content, source)
         tutorial_orders.append(int(metadata["nav_order"]))
+
+    tutorial_contents = {
+        str(tutorial["source"]): (REPOSITORY_ROOT / str(tutorial["source"])).read_text(
+            encoding="utf-8"
+        )
+        for tutorial in task_tutorials
+    }
+    evidence_document = json.loads(TUTORIAL_EVIDENCE_PATH.read_text(encoding="utf-8"))
+    validate_tutorial_evidence(task_tutorials, tutorial_contents, evidence_document)
 
     index_content_metadata = index_source.read_text(encoding="utf-8")
     validate_tutorial_content(index_pages[0], index_content_metadata)

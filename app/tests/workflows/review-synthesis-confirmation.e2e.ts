@@ -32,6 +32,18 @@ describe("Review a Synthesis request", () => {
 
       await $("#open-repository").click();
       await $("#atlas-topic-open-studio").click();
+      assert.equal(
+        await $("#studio-synthesis-heading").getText(),
+        "Synthesize into topic",
+      );
+      assert.equal(
+        await $("#studio-synthesis-include-all-context").getText(),
+        "Include all saved claims for this Source Record",
+      );
+      assert.equal(
+        await $("#studio-synthesis-prepare").getText(),
+        "Review Synthesis request",
+      );
       await $("#studio-synthesis-include-all-context").click();
       await $("#studio-synthesis-prepare").click();
       await $("#studio-synthesis-preview").waitForDisplayed();
@@ -48,7 +60,9 @@ describe("Review a Synthesis request", () => {
         await $("#studio-synthesis-model").getText(),
         "fixture-pinned-model",
       );
-      await $("details summary").click();
+      const inspectPayload = await $("details summary");
+      assert.equal(await inspectPayload.getText(), "Inspect exact payload");
+      await inspectPayload.click();
       await $("#studio-synthesis-payload").waitForDisplayed();
       assert.match(
         await $("#studio-synthesis-payload").getText(),
@@ -63,9 +77,11 @@ describe("Review a Synthesis request", () => {
         /Evidence updates confidence\./,
       );
 
-      await $(
+      const removeContextItem = await $(
         "#studio-synthesis-remove-annotation-bayesian-statistics-fixture-source-page-2-55-83",
-      ).click();
+      );
+      assert.equal(await removeContextItem.getText(), "Remove context item");
+      await removeContextItem.click();
       await browser.waitUntil(
         async () =>
           (await $("#studio-synthesis-summary").getText()) ===
@@ -80,7 +96,13 @@ describe("Review a Synthesis request", () => {
         /Evidence updates confidence\./,
       );
 
-      await $("#studio-synthesis-decline").click();
+      const decline = await $("#studio-synthesis-decline");
+      const cancel = await $("#studio-synthesis-cancel");
+      const confirm = await $("#studio-synthesis-confirm");
+      assert.equal(await confirm.getText(), "Confirm and send");
+      assert.equal(await decline.getText(), "Decline");
+      assert.equal(await cancel.getText(), "Cancel");
+      await decline.click();
       await browser.waitUntil(
         async () =>
           (await $("#studio-synthesis-outcome").getAttribute(
@@ -135,6 +157,16 @@ describe("Review a Synthesis request", () => {
       );
 
       await $("#studio-synthesis-results").waitForDisplayed();
+      assert.equal(
+        await $("#studio-synthesis-results-heading").getText(),
+        "Synthesis results",
+      );
+      assert.match(
+        await $(
+          "#studio-synthesis-result-synthesis-result-bayesian-statistics-fixture",
+        ).getText(),
+        /Working Material/,
+      );
       assert.equal(
         await $(
           "#studio-synthesis-result-title-synthesis-result-bayesian-statistics-fixture",

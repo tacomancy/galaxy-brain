@@ -32,6 +32,7 @@ describe("Create a local Knowledge Repository in an empty directory", () => {
     const createButton = await $("#create-repository");
 
     await createButton.waitForDisplayed();
+    assert.equal(await createButton.getText(), "Create a Knowledge Repository");
     await createButton.click();
 
     const repositoryStatus = await $("#repository-status-heading");

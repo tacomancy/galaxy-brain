@@ -59,6 +59,10 @@ type: source
     const selection = await $("#atlas-context-selection");
     await selection.waitForDisplayed();
     assert.equal(
+      await $("#atlas-context-selection-heading").getText(),
+      "Select a Workbench context",
+    );
+    assert.equal(
       await $("#atlas-context-option-bayesian-statistics").isDisplayed(),
       true,
     );
@@ -68,7 +72,9 @@ type: source
     );
     assert.equal(await $("#atlas-continue-surface").isExisting(), false);
 
-    await $("#atlas-context-select-bayesian-statistics").click();
+    const selectContext = await $("#atlas-context-select-bayesian-statistics");
+    assert.equal(await selectContext.getText(), "Use this context");
+    await selectContext.click();
 
     await $("#atlas-continue-surface").waitForDisplayed();
     assert.equal(

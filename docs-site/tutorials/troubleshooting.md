@@ -5,6 +5,21 @@ audience: Knowledge Workbench users recovering from an unexpected state
 prerequisites:
   - Access to the repository location or context you are trying to recover.
 nav_order: 12
+tracks_main: true
+verified_commit: "59f4cc102f03d3f13406ac4d8a2ab31bcb757d55"
+reviewed_on: "2026-08-31"
+supported_platforms:
+  - macOS arm64
+supported_packages:
+  - source checkout
+  - unsigned local macOS arm64 package
+repository_states:
+  - empty_starter
+  - prepopulated_repository
+  - synthetic_fixture
+adapter_boundary:
+  production: not_composed
+  fixture: not_used
 ---
 
 # Troubleshoot common recovery states

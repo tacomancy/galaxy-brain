@@ -16,6 +16,7 @@ sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts.build_public_docs import (  # noqa: E402
     validate_tutorial_content,
+    validate_tutorial_evidence,
     validate_tutorial_index,
     validate_current_capabilities,
     validate_release_alignment,
@@ -98,6 +99,19 @@ summary: An example tutorial.
 audience: Readers
 prerequisites: []
 nav_order: 1
+tracks_main: true
+verified_commit: "59f4cc102f03d3f13406ac4d8a2ab31bcb757d55"
+reviewed_on: "2026-08-31"
+supported_platforms:
+  - macOS arm64
+supported_packages:
+  - source checkout
+  - unsigned local macOS arm64 package
+repository_states:
+  - empty_starter
+adapter_boundary:
+  production: not_composed
+  fixture: not_used
 ---
 
 # Example
@@ -125,6 +139,18 @@ Troubleshooting.
         with self.assertRaisesRegex(ValueError, "one '## Steps' heading"):
             validate_tutorial_content(page, content.replace("## Steps\n", ""))
 
+        with self.assertRaisesRegex(ValueError, "tracks_main or applies_to_release"):
+            validate_tutorial_content(
+                page,
+                content.replace("tracks_main: true\n", ""),
+            )
+
+        with self.assertRaisesRegex(ValueError, "repository_states"):
+            validate_tutorial_content(
+                page,
+                content.replace("repository_states:\n  - empty_starter\n", ""),
+            )
+
     def test_tutorial_index_must_link_to_every_task_page(self) -> None:
         tutorials = [
             {"source": "docs-site/tutorials/first-run.md"},
@@ -133,6 +159,65 @@ Troubleshooting.
 
         with self.assertRaisesRegex(ValueError, "open-knowledge-repository.md"):
             validate_tutorial_index("- [First run](first-run.md)\n", tutorials)
+
+    def test_tutorial_evidence_requires_grounded_mapping_and_labels(self) -> None:
+        source = "docs-site/tutorials/example.md"
+        page = {"source": source, "kind": "tutorial"}
+        content = "Choose **Atlas**."
+        evidence = {
+            "schema_version": 1,
+            "tutorials": {
+                source: {
+                    "evidence": [
+                        {
+                            "kind": "packaged_workflow",
+                            "source": "app/tests/workflows/open-empty-workbench.e2e.ts",
+                            "story": "Open the real empty Workbench",
+                            "support_class": "Desktop-supported",
+                        }
+                    ],
+                    "visible_labels": ["Atlas"],
+                }
+            },
+        }
+
+        validate_tutorial_evidence([page], {source: content}, evidence)
+
+        with self.assertRaisesRegex(ValueError, "evidence mapping is missing"):
+            validate_tutorial_evidence(
+                [page],
+                {source: content},
+                {"schema_version": 1, "tutorials": {}},
+            )
+
+        with self.assertRaisesRegex(ValueError, "stale visible label Atlas"):
+            validate_tutorial_evidence(
+                [page],
+                {source: content.replace("Atlas", "Workbench")},
+                evidence,
+            )
+
+        with self.assertRaisesRegex(ValueError, "Module-only evidence"):
+            validate_tutorial_evidence(
+                [page],
+                {source: content},
+                {
+                    **evidence,
+                    "tutorials": {
+                        source: {
+                            **evidence["tutorials"][source],
+                            "evidence": [
+                                {
+                                    "kind": "module_contract",
+                                    "source": "docs/architecture/v1-ui/repository-format.md",
+                                    "story": "Repository Format contract",
+                                    "support_class": "Desktop-supported",
+                                }
+                            ],
+                        }
+                    },
+                },
+            )
 
     def test_build_emits_only_curated_validated_pages(self) -> None:
         with tempfile.TemporaryDirectory(prefix="galaxy-brain-docs-test-") as temporary:

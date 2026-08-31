@@ -38,6 +38,7 @@ describe("Open an existing Knowledge Repository", () => {
     const openButton = await $("#open-repository");
 
     await openButton.waitForDisplayed();
+    assert.equal(await openButton.getText(), "Open a Knowledge Repository");
     await openButton.click();
 
     const repositoryStatus = await $("#repository-status-heading");
