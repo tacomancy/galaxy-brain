@@ -5,7 +5,6 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -27,21 +26,23 @@ const packagedBinary = join(
 // Keep isolated session-state files for each workflow worker so a reload
 // exercises persistence while parallel specs remain independent.
 const testSessionStateRoot = mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-"));
-const testSourceAssetCoordinatePath = join(
-  tmpdir(),
-  "galaxy-brain-wdio-source-assets-path.txt",
-);
 const isWdioLauncher = process.env.WDIO_WORKER_ID === undefined;
+const sourceAssetRootEnvironmentVariable =
+  "GALAXY_BRAIN_WDIO_SOURCE_ASSET_ROOT";
 const configuredSourcePdfPath = process.env.GALAXY_BRAIN_TEST_SOURCE_PDF;
 const configuredSourceAssetsPath = process.env.GALAXY_BRAIN_TEST_SOURCE_ASSETS;
 const reusesConfiguredSourceAssets =
   configuredSourcePdfPath !== undefined &&
   configuredSourceAssetsPath !== undefined;
 const coordinatedSourceAssetRoot = isWdioLauncher
-  ? mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-source-assets-"))
-  : readFileSync(testSourceAssetCoordinatePath, "utf8");
+  ? (process.env[sourceAssetRootEnvironmentVariable] ??
+    mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-source-assets-")))
+  : process.env[sourceAssetRootEnvironmentVariable];
+if (coordinatedSourceAssetRoot === undefined) {
+  throw new Error("WDIO source-asset root was not provided to the worker.");
+}
 if (isWdioLauncher) {
-  writeFileSync(testSourceAssetCoordinatePath, coordinatedSourceAssetRoot);
+  process.env[sourceAssetRootEnvironmentVariable] = coordinatedSourceAssetRoot;
 }
 const testSourceAssetRoot = reusesConfiguredSourceAssets
   ? dirname(configuredSourcePdfPath)
@@ -244,7 +245,6 @@ export const config: Options.Testrunner &
     rmSync(testSessionStateRoot, { recursive: true, force: true });
     if (isWdioLauncher && !reusesConfiguredSourceAssets) {
       rmSync(testSourceAssetRoot, { recursive: true, force: true });
-      rmSync(testSourceAssetCoordinatePath, { force: true });
     }
   },
   mochaOpts: {

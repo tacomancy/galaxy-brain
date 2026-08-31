@@ -1,6 +1,6 @@
 /** S1 packaged workflow for production linked-PDF status and relink. */
 import { strict as assert } from "node:assert";
-import { cp, lstat, readFile, readdir, rm } from "node:fs/promises";
+import { cp, readFile, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { $ } from "@wdio/globals";
@@ -210,11 +210,20 @@ describe("Production linked PDF status", () => {
     });
     for (const portablePath of portablePaths) {
       const absolutePath = join(fixtureRepositoryPath, portablePath);
-      if (!(await lstat(absolutePath)).isFile()) {
-        continue;
+      let portableBytes: Buffer;
+      try {
+        portableBytes = await readFile(absolutePath);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          "code" in error &&
+          error.code === "EISDIR"
+        ) {
+          continue;
+        }
+        throw error;
       }
 
-      const portableBytes = await readFile(absolutePath);
       assert.equal(portableBytes.includes(Buffer.from(sourcePdfPath)), false);
       assert.equal(
         portableBytes.includes(Buffer.from(replacementPdfPath)),
