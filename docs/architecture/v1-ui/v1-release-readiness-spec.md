@@ -157,6 +157,16 @@ The provider-free gate does not imply that the unsigned development package is
 an end-user distribution. Distribution and operational decisions remain the
 separate checklist items tracked by Issues #25 and #34.
 
+The first remaining packaged source-status item is specified in the dedicated
+[provider-free PDF source-status packaged-gate specification](provider-free-pdf-gate-spec.md).
+That brief extends TB15's accepted S3 behavior to a production linked-file
+Adapter and Paper Desk S1 workflow. It was confirmation-gated until the owner
+confirmed linked-existing-record scope, selected the production PDF
+technology, and recorded that choice in an ADR. Gates 1–6 were confirmed on
+August 31, 2026, and the PDF.js choice is recorded in [ADR 0015](../../adr/0015-use-pdfjs-behind-pdf-adapter.md); implementation is now complete on
+the working branch. Automated packaged acceptance passes, and final human
+review of the artifact remains open.
+
 ## Alternatives considered and discarded
 
 - **Mark the checklist from existing lower-seam tests alone:** discarded
@@ -177,17 +187,19 @@ separate checklist items tracked by Issues #25 and #34.
 ## Acceptance evidence
 
 The selected automated gates now pass: `npm run test:mcdc`,
-`npm run check:mcdc`, the named provider-free packaged workflow (two focused
-spec files, including external-edit and interrupted-journal recovery), and the
-documentation/type/lint checks. The MC/DC evaluator is included in the
-changed-lines coverage surface so new quality logic cannot bypass that PR
-gate. With the repository root aligned to Git paths, changed-lines coverage
-reports `NOT APPLICABLE` on this documentation/test-only branch because there
-are no changed executable lines; the full global coverage gate remains green
-at 82.68% statements, 74.43% branches, 96.86% functions, and 82.57% lines.
-The remaining release work is the packaged production-PDF boundary, explicit
-privacy/non-retention human review, MC/DC evidence for changed registered
-decisions, and final release acceptance.
+`npm run check:mcdc`, the named provider-free packaged workflow, the full
+silent packaged suite, and the documentation/type/lint checks. The provider-
+free workflows cover external-edit preservation, interrupted-journal recovery,
+local governed application, truthful local-save status, saved-result recovery,
+and unavailable-provider behavior. The linked-PDF slice adds production
+`pdfjs-dist@6.3.289` loading, private source-asset identity storage, explicit
+relink verification, and S1/S5 evidence for available, unavailable, changed,
+failed-relink, and successful-relink states. The MC/DC evaluator is included
+in the changed-lines coverage surface so new quality logic cannot bypass that
+PR gate. The remaining release work for this slice is visible human review of
+the packaged artifact and local-only privacy boundary; the broader provider-
+free checklist, distribution, security, and whole-release obligations remain
+open.
 Implementation is complete only when that evidence passes, coverage and
 complexity evidence is current, the code map and release documents are
 current, and the provider-free packaged workflow is ready for a visible human

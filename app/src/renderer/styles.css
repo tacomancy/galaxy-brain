@@ -900,6 +900,40 @@ summary:focus-visible {
   font-size: 11px;
 }
 
+.source-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.source-status-card h2 {
+  margin: 6px 0 0;
+  font:
+    500 20px/1.2 Georgia,
+    serif;
+}
+
+.source-status-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.source-status-card[data-source-status="source-changed"] {
+  border-color: var(--amber);
+}
+
+.source-status-card[data-source-status="source-status-unavailable"] {
+  border-color: #b86b6b;
+}
+
 .paper-desk-sidebar {
   display: grid;
   gap: 14px;

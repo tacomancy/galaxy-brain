@@ -19,7 +19,9 @@ import type {
   ProposalReviewReadOutcome,
 } from "../modules/proposal-review";
 import type {
+  CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
+  RelinkSourceOutcome,
   RestoreSynthesisResultOutcome,
   SynthesisPreview,
   SynthesisResultListReadOutcome,
@@ -52,6 +54,9 @@ const authoringReadFromOperation = (
   outcome.outcome === "updated"
     ? { outcome: "available", draft: outcome.draft }
     : outcome;
+
+type SourceStatusPresentation =
+  CheckSourceAvailabilityOutcome | RelinkSourceOutcome;
 
 const ThemeControl = ({
   theme,
@@ -131,10 +136,30 @@ const WorkbenchShell = ({
   >();
   const [proposalReview, setProposalReview] =
     useState<ProposalReviewReadOutcome>(initialProposalReview);
+  const [sourceStatus, setSourceStatus] = useState<
+    SourceStatusPresentation | undefined
+  >();
   const [isProposalReviewOpen, setIsProposalReviewOpen] = useState(false);
   const [proposalReviewApplyOutcome, setProposalReviewApplyOutcome] = useState<
     ProposalReviewApplyOutcome | undefined
   >();
+
+  useEffect(() => {
+    let isCurrent = true;
+    const sourceContext = workbench.context;
+
+    if (sourceContext !== undefined) {
+      void window.workbench.readSourceAvailability().then((outcome) => {
+        if (isCurrent) {
+          setSourceStatus(outcome);
+        }
+      });
+    }
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [workbench.activeWorkspace, workbench.context]);
 
   useEffect(() => {
     if (!shouldFocusSelectedContextAction.current) {
@@ -312,6 +337,14 @@ const WorkbenchShell = ({
     }
   };
 
+  const relinkSource = async (): Promise<void> => {
+    const outcome = await window.workbench.relinkSource();
+
+    if (outcome.outcome !== "canceled") {
+      setSourceStatus(outcome);
+    }
+  };
+
   const prepareSynthesis = async (
     includeAllContext: boolean,
   ): Promise<void> => {
@@ -443,6 +476,8 @@ const WorkbenchShell = ({
         <PaperDesk
           controls={controls}
           workbench={workbench}
+          sourceStatus={sourceStatus}
+          onRelinkSource={relinkSource}
           onOpenSavedAnnotation={openSavedAnnotation}
         />
       );

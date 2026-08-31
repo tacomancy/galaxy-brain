@@ -52,7 +52,8 @@ Verify the packaged macOS Workbench against a real file-backed Knowledge Reposit
 - [x] Recover from an interrupted transaction without silent data loss; the packaged gate opens an isolated repository with a deliberately interrupted journal and verifies restoration and transaction cleanup.
 - [x] Roll back and recover a prior version or saved result; the packaged gate restores the prior saved-result version without a provider request, while the governed apply retains its prior version.
 - [x] Show truthful local-save status; never imply a commit, backup, or remote sync that did not occur; the packaged gate asserts the exact local-save notice.
-- [ ] Handle an unavailable or changed linked PDF without corrupting the repository. S3/S5 contract evidence covers missing and changed PDF identities, but the packaged Workbench still uses the documented fixture preview while production PDF rendering remains deferred.
+- [x] Implement handling for an unavailable or changed linked PDF without corrupting the repository. The implementation and automated evidence are recorded in [the provider-free PDF source-status packaged-gate specification](provider-free-pdf-gate-spec.md), including the production PDF.js path, private source-asset store, status outcomes, explicit relink, and preservation behavior.
+- [x] Complete human acceptance of the packaged linked-PDF status/relink workflow and confirm that private paths and source payloads remain within the approved main-process boundary.
 - [x] Show a clear unavailable-provider state without blocking provider-free
       workflows; the named packaged gate reports `agent-provider-unavailable`.
 - [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy. This remains an explicit human inspection of packaged logs, session state, repository artifacts, and the confirmation surface.
