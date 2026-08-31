@@ -20,7 +20,7 @@
     "test:docs": "node ../scripts/test-documentation.mjs",
     "test:mcdc": "vitest run tests/tools/mcdc.test.ts",
     "check:mcdc": "tsx tools/check-mcdc.ts",
-    "test:provider-free": "npm run package && wdio run ./wdio.conf.ts --spec ./tests/workflows/v1-provider-free-gate.e2e.ts",
+    "test:provider-free": "npm run package && wdio run ./wdio.conf.ts --spec ./tests/workflows/v1-provider-free*.e2e.ts",
     "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.per-file.config.ts",
     "check:changed-coverage": "tsx tools/check-changed-lines-coverage.ts",
     "test:workflow": "npm run package && wdio run ./wdio.conf.ts",

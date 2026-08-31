@@ -7,7 +7,7 @@
  * provider, Git, GitHub, credentials, or network access.
  */
 import { strict as assert } from "node:assert";
-import { cp, mkdtemp, realpath, rm } from "node:fs/promises";
+import { cp, mkdtemp, realpath, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -80,6 +80,36 @@ describe("V1 provider-free packaged-app gate", () => {
       assert.equal(
         await $("#studio-synthesis-outcome").getText(),
         "Synthesis requires a configured Agent Provider.",
+      );
+      const savedResultPath = join(
+        isolatedFixturePath,
+        "scratch",
+        "synthesis-results",
+        "synthesis-result-bayesian-statistics-fixture.json",
+      );
+      const savedResultBeforeAttempt = await readFile(savedResultPath, "utf8");
+      assert.equal(
+        await readFile(savedResultPath, "utf8"),
+        savedResultBeforeAttempt,
+      );
+
+      await $("#studio-synthesis-results").waitForDisplayed();
+      await $(
+        "#studio-synthesis-restore-synthesis-result-bayesian-statistics-fixture-1",
+      ).click();
+      await browser.waitUntil(
+        async () =>
+          (await $("#studio-synthesis-restore-outcome").getAttribute(
+            "data-synthesis-restore-outcome",
+          )) === "restored",
+        {
+          timeout: 5_000,
+          timeoutMsg: "The provider-free gate did not restore a saved result.",
+        },
+      );
+      assert.equal(
+        await $("#studio-synthesis-restore-outcome").getText(),
+        "Restored version 3.",
       );
     } finally {
       await rm(isolatedFixturePath, { recursive: true, force: true });
