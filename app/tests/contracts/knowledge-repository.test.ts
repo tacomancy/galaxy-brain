@@ -5,6 +5,7 @@ import {
   mkdtemp,
   readdir,
   readFile,
+  rename,
   rename as realRename,
   rm,
   realpath,
@@ -288,6 +289,27 @@ describe("file-backed Knowledge Repository contract", () => {
       {
         outcome: "unsafe-target",
         detail: "The selected target contains unsafe filesystem entries.",
+      },
+    );
+  });
+
+  it("rejects a symlinked starter file without creating a repository", async () => {
+    const customStarterRoot = join(temporaryRoot, "custom-starter");
+    const repositoryPath = join(temporaryRoot, "symlinked-starter-repository");
+    const starterReadme = join(customStarterRoot, "README.md");
+    const externalReadme = join(temporaryRoot, "external-readme.md");
+
+    await cp(starterRoot, customStarterRoot, { recursive: true });
+    await rename(starterReadme, externalReadme);
+    await symlink(externalReadme, starterReadme);
+
+    assert.deepEqual(
+      await createFileBackedKnowledgeRepository(customStarterRoot).createAt(
+        repositoryPath,
+      ),
+      {
+        outcome: "operation-failed",
+        detail: "The Knowledge Repository could not be created.",
       },
     );
   });

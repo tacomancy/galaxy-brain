@@ -1,5 +1,13 @@
 import { strict as assert } from "node:assert";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdtemp,
+  readFile,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -211,6 +219,41 @@ describe("Synthesis result Repository Adapter", () => {
       });
       await assert.rejects(readFile(abandonedTemporaryPath, "utf8"), {
         code: "ENOENT",
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not follow a symlink when reading a saved result", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+    const resultPath = join(
+      repositoryPath,
+      "scratch",
+      "synthesis-results",
+      `${result.id}.json`,
+    );
+    const externalResultPath = join(temporaryRoot, "external-result.json");
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+      await repository.saveResult(result);
+      await rename(resultPath, externalResultPath);
+      await symlink(externalResultPath, resultPath);
+
+      assert.deepEqual(await repository.readResult?.(result.id), {
+        outcome: "unavailable",
+        detail: "The Synthesis result could not be read.",
       });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });

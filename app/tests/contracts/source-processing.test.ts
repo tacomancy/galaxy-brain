@@ -1,5 +1,13 @@
 import { strict as assert } from "node:assert";
-import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  cp,
+  mkdtemp,
+  readFile,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -238,6 +246,42 @@ describe("Source Processing Adapter contracts", () => {
           annotation: { ...expectedAnnotation, text: "an external edit" },
         },
       );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not follow a symlink when reading a saved annotation", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const repositoryPath = join(temporaryRoot, "repository");
+    const annotationPath = join(
+      repositoryPath,
+      "sources",
+      "annotations",
+      `${expectedAnnotation.id}.md`,
+    );
+    const externalAnnotationPath = join(
+      temporaryRoot,
+      "external-annotation.md",
+    );
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedWorkingMaterialRepository(repositoryPath);
+      await repository.saveAnnotation(expectedAnnotation);
+      await rename(annotationPath, externalAnnotationPath);
+      await symlink(externalAnnotationPath, annotationPath);
+
+      assert.deepEqual(await repository.readAnnotation(expectedAnnotation.id), {
+        outcome: "unavailable",
+        detail: "The source annotation could not be read.",
+      });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
