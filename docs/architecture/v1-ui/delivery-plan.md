@@ -4,6 +4,18 @@ Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on Au
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
+## TB12–TB14 V1 scope classification
+
+Decision recorded on August 31, 2026: TB12, TB13, and TB14 are in scope for V1. This is a scope decision only; it does not claim that their implementation, verification, or human acceptance is complete.
+
+| Tracer bullet | V1 scope decision | Required completion evidence | Tracker |
+| --- | --- | --- | --- |
+| TB12 — Separate Search, Ask, and Jump | In scope for V1 | Guidance-compliant implementation brief, S4/S1 behavior evidence, and human acceptance | [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31) |
+| TB13 — Make Atlas actionable | In scope for V1 | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
+| TB14 — Keep learning progress human-owned | In scope for V1 | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
+
+The implementation briefs must be completed before the Red-to-Green cycle begins. Until those records and acceptance evidence exist, the three items remain open V1 work rather than completed checklist gates.
+
 ## TB8–TB10 follow-up reconciliation
 
 The implementation and automated evidence for TB8, TB9, and TB10 are present on this branch or in its merged ancestry. The remaining items below are deliberately separated into human acceptance gates and deferred scope; neither may be silently represented as an implementation failure or as acceptance that the user has not provided.
