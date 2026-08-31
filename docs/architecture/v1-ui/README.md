@@ -28,6 +28,7 @@ navigation or release-status authorities:
 - `starter-inventory.md` records the independent expected contents of the public V1 skeleton.
 - `code-map.md` maps architectural responsibilities to live or explicitly planned source locations.
 - `delivery-plan.md` orders vertical tracer bullets for red-to-green implementation.
+- [V1 victory checklist](v1-victory-checklist.md) records the release gates and final scope decisions required to declare V1 complete.
 - `tracer-bullet-*-spec.md` and `issue-51-explicit-context-selection-spec.md` record scoped implementation briefs and delivery evidence.
 - `stack-research.md` records primary-source evidence for the desktop foundation.
 - `complexity-policy.md` records the production complexity limits and verification evidence.

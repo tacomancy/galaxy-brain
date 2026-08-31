@@ -1,6 +1,6 @@
 # Tracer Bullet 16: Complete the desktop quality contract
 
-Status: specification drafted on August 31, 2026; implementation not started. The user authorized all incremental slices below and will perform one final human acceptance review after the complete TB16 scope is implemented.
+Status: implementation complete on August 31, 2026; automated evidence is green and final human acceptance is pending. The user authorized all incremental slices below and will perform one final human acceptance review after the complete TB16 scope is implemented.
 
 This brief coordinates the TB16 implementation described in the [delivery plan](delivery-plan.md#16-complete-the-desktop-quality-contract). It is an implementation entry point, not a second authority for Product Decisions, Architecture, the Repository Format, testing, or accepted ADR decisions.
 
@@ -172,6 +172,18 @@ Final human acceptance must observe, in the visible review-mode packaged applica
 8. Result-history restoration of version `1` as a new current version while retaining versions `1` and `2` and making no provider request.
 
 The final review must also confirm that no deferred behavior was silently implemented, no machine-local state leaked into repository content, and existing explicit authority/confirmation boundaries remain intact. Only after all eight checks pass should the delivery plan record TB16 as human-accepted.
+
+## Implementation record
+
+The eight approved slices are implemented on `codex/tb16-desktop-quality-contract`:
+
+- TB16.1–TB16.3: the packaged workflow completes the critical authoring path with keyboard actions, visible focus styling, named landmarks, and observable pressed/current/status semantics.
+- TB16.4–TB16.5: reduced-motion CSS disables required animation/transition timing, and the packaged workflow verifies the critical Studio surface at 200% document zoom.
+- TB16.6: the Workbench Session persists explicit `light`/`dark` theme selection through machine-local session state; the renderer applies the selected tokens consistently.
+- TB16.7: Knowledge Authoring provides one-step semantic undo and restores the exact prior rich/source projection without changing Governed Knowledge.
+- TB16.8: the packaged result-history workflow restores version `1` as version `3`; the existing Source Processing path preserves prior versions and does not invoke a provider.
+
+Automated evidence recorded before human review: `npm run check` passed with 20 test files and 88 tests; coverage passed at 81.62% statements and 72.99% branches; complexity lint passed; changed-lines coverage passed against `origin/main`; and the focused packaged Electron workflow passed in silent mode with 3 tests. The complete packaged workflow remains part of the final pre-acceptance gate.
 
 ## Required confirmation
 

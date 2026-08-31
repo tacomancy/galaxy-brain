@@ -6,6 +6,8 @@ import type {
   WorkbenchContextSelection,
   WorkbenchContextSelectionOutcome,
   WorkbenchWorkspace,
+  ThemeOperationOutcome,
+  WorkbenchTheme,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
 import type {
@@ -39,6 +41,7 @@ declare global {
       editAuthoringSemanticText(
         nextText: string,
       ): Promise<AuthoringOperationOutcome>;
+      undoAuthoringSemanticText(): Promise<AuthoringOperationOutcome>;
       setAuthoringMode(mode: AuthoringMode): Promise<AuthoringOperationOutcome>;
       readProposalReview(): Promise<ProposalReviewReadOutcome>;
       openProposalReview(): Promise<ProposalReviewReadOutcome>;
@@ -70,6 +73,8 @@ declare global {
         resultId: string,
         version: number,
       ): Promise<RestoreSynthesisResultOutcome>;
+      readTheme(): Promise<WorkbenchTheme>;
+      setTheme(theme: WorkbenchTheme): Promise<ThemeOperationOutcome>;
     };
   }
 }

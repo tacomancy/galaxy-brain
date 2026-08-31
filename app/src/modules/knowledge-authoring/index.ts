@@ -75,6 +75,8 @@ export interface KnowledgeAuthoring {
   openConstruct(construct: AuthoringConstruct): Promise<AuthoringReadOutcome>;
   /** Changes the text inside the current semantic object. */
   editSemanticText(nextText: string): Promise<AuthoringOperationOutcome>;
+  /** Reverts the most recent semantic edit in the current draft session. */
+  undoLastEdit(): Promise<AuthoringOperationOutcome>;
   /** Changes which equivalent representation the caller displays. */
   setMode(mode: AuthoringMode): Promise<AuthoringOperationOutcome>;
 }
@@ -241,6 +243,7 @@ export const createKnowledgeAuthoring = (
   let parsed: ParsedDraft | undefined;
   let currentSource: string | undefined;
   let mode: AuthoringMode = "rich";
+  let undoState: { parsed: ParsedDraft; source: string } | undefined;
 
   const loadDraft = async (
     requestedConstruct?: AuthoringConstruct,
@@ -268,6 +271,7 @@ export const createKnowledgeAuthoring = (
     parsed = nextParsed;
     currentSource = nextInput.source;
     mode = "rich";
+    undoState = undefined;
 
     return {
       outcome: "available",
@@ -322,8 +326,38 @@ export const createKnowledgeAuthoring = (
       };
     }
 
+    undoState = { parsed, source: currentSource };
     currentSource = serializeDraft(parsed, nextText);
     parsed = { ...parsed, value: nextText };
+
+    return {
+      outcome: "updated",
+      draft: toView(input, parsed, mode, currentSource),
+    };
+  };
+
+  const undoLastEdit = async (): Promise<AuthoringOperationOutcome> => {
+    const current = await readDraft();
+
+    if (current.outcome !== "available") {
+      return current;
+    }
+
+    if (
+      input === undefined ||
+      parsed === undefined ||
+      currentSource === undefined ||
+      undoState === undefined
+    ) {
+      return {
+        outcome: "operation-failed",
+        detail: "There is no semantic edit to undo.",
+      };
+    }
+
+    parsed = undoState.parsed;
+    currentSource = undoState.source;
+    undoState = undefined;
 
     return {
       outcome: "updated",
@@ -344,5 +378,5 @@ export const createKnowledgeAuthoring = (
     return { outcome: "updated", draft: { ...current.draft, mode } };
   };
 
-  return { readDraft, openConstruct, editSemanticText, setMode };
+  return { readDraft, openConstruct, editSemanticText, undoLastEdit, setMode };
 };

@@ -65,6 +65,27 @@ describe("Knowledge Authoring", () => {
     assert.equal(richMode.draft.rich.highlightedText, "posterior belief");
   });
 
+  it("undoes the most recent semantic edit without changing the construct", async () => {
+    const authoring = createKnowledgeAuthoring(
+      createFixtureAuthoringDraftSource(),
+    );
+
+    assert.equal(
+      (await authoring.editSemanticText("posterior belief")).outcome,
+      "updated",
+    );
+    const undone = await authoring.undoLastEdit();
+
+    assert.equal(undone.outcome, "updated");
+    if (undone.outcome !== "updated") {
+      return;
+    }
+
+    assert.equal(undone.draft.rich.semanticText, "prior belief");
+    assert.equal(undone.draft.source.includes("==prior belief=="), true);
+    assert.equal((await authoring.undoLastEdit()).outcome, "operation-failed");
+  });
+
   it("preserves the exact source while editing every approved TB11 construct", async () => {
     const examples: Record<
       Exclude<AuthoringConstruct, "highlight">,

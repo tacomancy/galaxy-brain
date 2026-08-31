@@ -139,5 +139,23 @@ describe("Review a Synthesis request", () => {
       ).isEnabled(),
       true,
     );
+
+    await $(
+      "#studio-synthesis-restore-synthesis-result-bayesian-statistics-fixture-1",
+    ).click();
+    await browser.waitUntil(
+      async () =>
+        (await $("#studio-synthesis-restore-outcome").getAttribute(
+          "data-synthesis-restore-outcome",
+        )) === "restored",
+      {
+        timeout: 5_000,
+        timeoutMsg: "The saved result restore outcome did not appear.",
+      },
+    );
+    assert.equal(
+      await $("#studio-synthesis-restore-outcome").getText(),
+      "Restored version 3.",
+    );
   });
 });

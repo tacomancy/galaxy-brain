@@ -18,11 +18,13 @@ import type {
   WorkbenchContextSelection,
   WorkbenchSessionSnapshot,
   WorkbenchSessionState,
+  WorkbenchTheme,
   WorkbenchWorkspace,
 } from "../../modules/workbench-session";
 
 interface PersistedWorkbenchSession {
   selectedRepositoryPath: string;
+  theme?: WorkbenchTheme;
   activeWorkspace?: WorkbenchWorkspace;
   selectedContext?: WorkbenchContextSelection;
   readingPosition?: ReadingPosition;
@@ -46,6 +48,9 @@ const isWorkbenchWorkspace = (value: unknown): value is WorkbenchWorkspace =>
   value === "atlas" ||
   value === "studio" ||
   value === "paper-desk";
+
+const isWorkbenchTheme = (value: unknown): value is WorkbenchTheme =>
+  value === undefined || value === "light" || value === "dark";
 
 const isReadingPosition = (value: unknown): value is ReadingPosition => {
   if (value === undefined) {
@@ -97,6 +102,7 @@ const isPersistedWorkbenchSession = (
   return (
     typeof value.selectedRepositoryPath === "string" &&
     value.selectedRepositoryPath.length > 0 &&
+    isWorkbenchTheme(value.theme) &&
     isWorkbenchWorkspace(value.activeWorkspace) &&
     isContextSelection(value.selectedContext) &&
     isReadingPosition(value.readingPosition)
@@ -150,6 +156,7 @@ export const createFileBackedWorkbenchSessionState = (
 
       return {
         selectedRepositoryPath: parsed.selectedRepositoryPath,
+        ...(parsed.theme === undefined ? {} : { theme: parsed.theme }),
         ...(parsed.activeWorkspace === undefined
           ? {}
           : { activeWorkspace: parsed.activeWorkspace }),
