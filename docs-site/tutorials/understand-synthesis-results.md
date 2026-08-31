@@ -3,7 +3,7 @@ title: Understand saved Synthesis results
 summary: Read saved Synthesis Working Material and restore an available prior version.
 audience: Knowledge Workbench users reviewing saved agent results
 prerequisites:
-  - A valid Knowledge Repository with a saved Synthesis result.
+  - A valid pre-populated Knowledge Repository or identified synthetic fixture with a saved Synthesis result.
   - A topic context that can be opened in Studio.
 nav_order: 9
 ---
@@ -20,6 +20,10 @@ then restore an available earlier version without contacting the provider.
 - Open the Knowledge Repository containing the saved result.
 - Open its topic in **Studio**.
 - A result with a prior version is required to exercise restoration.
+
+The empty starter has no saved result or prior version. This workflow depends on
+pre-existing fixture-backed or user-saved content; it does not add an authoring
+flow or imply that a provider request can create a result in the current UI.
 
 ## Steps
 

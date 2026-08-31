@@ -3,7 +3,7 @@ title: First launch
 summary: Understand the empty Atlas state and choose how to begin working.
 audience: New Knowledge Workbench users
 prerequisites:
-  - A supported Galaxy Brain build is installed or available for local development.
+  - A Galaxy Brain source checkout or unsigned local macOS arm64 package is available.
 nav_order: 1
 ---
 
@@ -16,10 +16,22 @@ Repository or open one that already exists.
 
 ## Prerequisites
 
-- A supported Galaxy Brain build is installed or available for local development.
+- Use either a source checkout or the unsigned local package produced by the
+  [application build instructions](../../app/README.md#build-and-run). The
+  current build uses Node.js `24.19.0`; from the repository root, `cd app`, run
+  `nvm use`, `npm ci`, and then either `npm start` or `npm run package`.
+- `npm run package` writes an unsigned local `.app` under `app/out/`. The
+  packaged workflow is currently verified on macOS arm64.
 - If you plan to create a repository, identify a new or explicitly empty directory.
 - If you plan to open one, have access to an existing repository that follows the
   [Repository Format](../../docs/architecture/v1-ui/repository-format.md).
+
+This is a source/development and unsigned-package path, not end-user
+distribution. Signing, notarization, DMG or ZIP installers, auto-update, and
+downloadable release artifacts are not available here; those release-work
+boundaries belong to [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25)
+and [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34). See also
+[Current capabilities](../current-capabilities.md).
 
 ## Steps
 

@@ -22,6 +22,11 @@ previously selected a repository.
 - If you are testing recovery, use a safe test repository or an intentionally
   unavailable location rather than changing important user content.
 
+An empty starter can be resumed as a repository, but it still has no
+content-dependent workflow data. Use a pre-populated conforming repository or
+an explicitly identified synthetic fixture when validating reading, context,
+or Synthesis behavior.
+
 ## Steps
 
 1. Close and relaunch the Knowledge Workbench after selecting a repository.
