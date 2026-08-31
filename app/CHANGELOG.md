@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/tacomancy/galaxy-brain/compare/v0.13.0...v0.13.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* finalize TB16 desktop quality contract ([#106](https://github.com/tacomancy/galaxy-brain/issues/106)) ([791762c](https://github.com/tacomancy/galaxy-brain/commit/791762c85f9c6ec335917414973233ab715f5484))
+
 ## [0.13.0](https://github.com/tacomancy/galaxy-brain/compare/v0.12.0...v0.13.0) (2026-08-31)
 
 
