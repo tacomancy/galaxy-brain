@@ -6,6 +6,7 @@
  */
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import { WebpackPlugin } from "@electron-forge/plugin-webpack";
+import { join } from "node:path";
 
 import { mainConfig } from "./webpack.main.config";
 import { rendererConfig } from "./webpack.renderer.config";
@@ -16,7 +17,10 @@ const config: ForgeConfig = {
   // Knowledge Repository remains external to the package.
   packagerConfig: {
     asar: true,
-    extraResource: ["templates/knowledge-repository"],
+    extraResource: [
+      "templates/knowledge-repository",
+      join(__dirname, "node_modules", "pdfjs-dist"),
+    ],
   },
   plugins: [
     new WebpackPlugin({

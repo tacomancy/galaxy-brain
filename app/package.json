@@ -20,7 +20,7 @@
     "test:docs": "node ../scripts/test-documentation.mjs",
     "test:mcdc": "vitest run tests/tools/mcdc.test.ts",
     "check:mcdc": "tsx tools/check-mcdc.ts",
-    "test:provider-free": "npm run package && wdio run ./wdio.conf.ts --spec ./tests/workflows/v1-provider-free*.e2e.ts",
+    "test:provider-free": "npm run package && wdio run ./wdio.conf.ts --spec ./tests/workflows/v1-provider-free-gate.e2e.ts && wdio run ./wdio.conf.ts --spec ./tests/workflows/production-linked-pdf-status.e2e.ts",
     "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.per-file.config.ts",
     "check:changed-coverage": "tsx tools/check-changed-lines-coverage.ts",
     "test:workflow": "npm run package && wdio run ./wdio.conf.ts",
@@ -32,6 +32,7 @@
     "package": "electron-forge package"
   },
   "dependencies": {
+    "pdfjs-dist": "6.3.289",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -48,6 +49,7 @@
     "@wdio/globals": "9.31.3",
     "@wdio/local-runner": "9.31.4",
     "@wdio/mocha-framework": "9.31.2",
+    "ajv": "8.20.0",
     "electron": "44.0.0",
     "eslint": "9.39.2",
     "eslint-plugin-jsx-a11y": "6.10.2",

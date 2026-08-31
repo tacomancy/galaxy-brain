@@ -336,6 +336,8 @@ export type PrepareSynthesisOutcome =
 /** Caller-selected source location for the first TB5 capture behavior. */
 export interface CaptureSourceClaimInput {
   sourceRecord: SourceRecordReference;
+  /** Main-process-only source reference used by a production PDF Adapter. */
+  sourceReference?: string;
   page: number;
   start: number;
   end: number;
@@ -419,6 +421,10 @@ export type RelinkSourceOutcome =
       warning: "source status unavailable";
       detail: string;
     };
+
+/** Main-process operation result when native file selection is canceled. */
+export type RelinkSourceOperationOutcome =
+  RelinkSourceOutcome | { outcome: "canceled" };
 
 /** Result of resolving a caller-selected range through a PDF Adapter. */
 export type PdfSelectionOutcome =
