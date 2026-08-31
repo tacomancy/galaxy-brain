@@ -1,6 +1,6 @@
 # Tracer Bullet 15: Survive a missing or changed PDF
 
-Status: implementation complete; human acceptance pending as of August 28, 2026.
+Status: implementation complete and human-accepted on August 31, 2026.
 
 This brief coordinates the TB15 implementation described in the [delivery plan](delivery-plan.md#15-survive-a-missing-or-changed-pdf). It is an implementation entry point, not a second authority for Product Decisions, Architecture, the Repository Format, testing, or accepted ADR decisions.
 
@@ -238,6 +238,8 @@ Implementation evidence is complete only when the S3 tests show all of the follo
 - no Proposal, Synthesis request, repository-format mutation, or machine-local path leakage occurs.
 
 If an S1 presentation is later added, it requires its own brief and manual review of visible status, explicit relink confirmation, keyboard/focus behavior, and non-mutation on failure. TB15 S3 acceptance does not imply S1 acceptance.
+
+Human acceptance record: On August 31, 2026, the user completed and passed all seven manual S3 review steps, including baseline availability, unavailable-source preservation, changed-source detection, changed-capture refusal, successful verified relinking, failed-relink non-mutation, and boundary/regression review, then explicitly accepted TB15.
 
 ## Required confirmation
 
