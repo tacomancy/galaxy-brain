@@ -1,0 +1,44 @@
+name: Developer-only release candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-and-verify:
+    name: Package and verify macOS arm64 candidate
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pinned Node.js and npm
+        uses: ./.github/actions/setup-node
+
+      - name: Run the repository verification gate
+        run: npm run check
+
+      - name: Build unsigned macOS arm64 application
+        run: npm run package
+
+      - name: Create and verify release metadata
+        run: |
+          npm run release:manifest
+          npm run release:verify
+
+      - name: Upload candidate evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: galaxy-brain-developer-only-${{ github.sha }}
+          path: |
+            app/out/Galaxy Brain-darwin-arm64/
+            app/out/release-manifest.json
+            app/out/release-manifest.json.sha256
+          if-no-files-found: error
+          retention-days: 14

@@ -709,6 +709,28 @@ An explicit restore of an older result must create a new current version derived
 
 Prior result versions remain retained by default. Automatic cleanup is prohibited; future deletion or history pruning requires explicit approval and a warning about lost recovery and provenance.
 
+### Stable distribution and release operations implementation preparation
+
+The next Section D work package is defined in the [V1 stable distribution and
+release operations specification](v1-release-operations-spec.md). It combines
+the macOS packaging boundary from [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25)
+with the lifecycle, supportability, diagnostics, provenance, and incident
+process from [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34)
+without creating a new runtime Release Module.
+
+The implementation brief explicitly requires the governing-document review
+and spec task before implementation. The human owner selected developer-only
+V1 on August 31, 2026; implementation uses the recommended macOS arm64 target
+and the existing latest-published-release/current-main support policy. It
+defines the S1 packaged workflow, S5 file-backed contract, and
+release-artifact/workflow boundaries; the vertical path; independently known
+expected values; lifecycle and privacy evidence; explicit deferrals; discarded
+alternatives; and final human acceptance. Implementation evidence and all
+eight human acceptance results are recorded in the specification; the human
+owner accepted the selected developer-only scope on August 31, 2026. Section D
+is complete for that scope, while the existing unsigned local package must not
+be described as an end-user distribution.
+
 ## Review checkpoints
 
 Pause after slices 4, 10, 13, and 16 for a green-suite review. At each checkpoint:

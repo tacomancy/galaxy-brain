@@ -41,12 +41,12 @@ Repository or open one that already exists.
 - If you plan to open one, have access to an existing repository that follows the
   [Repository Format](../../docs/architecture/v1-ui/repository-format.md).
 
-This is a source/development and unsigned-package path, not end-user
-distribution. Signing, notarization, DMG or ZIP installers, auto-update, and
-downloadable release artifacts are not available here; those release-work
-boundaries belong to [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25)
-and [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34). See also
-[Current capabilities](../current-capabilities.md).
+This is the selected V1 developer-only source/development and unsigned-package
+path, not end-user distribution. Signing, notarization, DMG or ZIP installers,
+auto-update, and downloadable release artifacts are not available here; Issue
+#25 is explicitly deferred and release operations are documented in [Issue
+#34](https://github.com/tacomancy/galaxy-brain/issues/34). See also [Current
+capabilities](../current-capabilities.md).
 
 ## Steps
 

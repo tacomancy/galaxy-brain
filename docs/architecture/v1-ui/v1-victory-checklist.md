@@ -76,18 +76,18 @@ The initial scope is deliberately limited to dense, consequential domain decisio
 
 ## D. Stable distribution and release operations
 
-Resolve the distribution boundary tracked by [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25) and the operational boundary tracked by [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34). Choose exactly one distribution outcome before declaring V1:
+Resolve the distribution boundary tracked by [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25) and the operational boundary tracked by [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34). Before implementation, review the governing documentation and complete the [V1 stable distribution and release operations specification](v1-release-operations-spec.md), including its human-owned distribution, platform, and support-policy gates. Choose exactly one distribution outcome before declaring V1:
 
 - [ ] **Public end-user V1:** signed and notarized macOS DMG/ZIP artifacts install and launch on a clean supported Mac without Node.js or npm; Gatekeeper accepts them; checksums, signing/notarization status, release notes, and supported architectures are published.
-- [ ] **Developer-only V1:** the human owner explicitly approves a source-build/unsigned-package release, Issue #25 is deferred with rationale and owner, and every public page states that no signed downloadable installer is available.
+- [x] **Developer-only V1:** the human owner explicitly approved a source-build/unsigned-package release, Issue #25 is deferred with rationale in the release-operations specification and runbook, and the public support/capability/first-launch pages state that no signed downloadable installer is available.
 
 Whichever distribution outcome is selected, complete or explicitly defer every material release-operations requirement with its residual risk recorded:
 
-- [ ] Installation, upgrade, rollback, uninstall, migration, recovery, and compatibility procedures are documented and tested for the selected distribution.
-- [ ] Reproducible build metadata, artifact checksums, release provenance, and verification instructions are published.
-- [ ] Diagnostic collection is opt-in or explicitly documented and cannot retain repository content, credentials, hidden provider payloads, absolute private paths, or raw sensitive exceptions.
-- [ ] Support channels, severity levels, ownership, response expectations, and incident runbooks are documented.
-- [ ] Issue #34 is complete, or its remaining requirements are explicitly deferred with rationale, owner, and a statement of what “supported V1” means without them.
+- [x] Installation, upgrade, rollback, uninstall, migration, recovery, and compatibility procedures are documented and tested for the selected distribution; all eight human release-candidate checks passed on August 31, 2026.
+- [x] Reproducible build metadata, artifact checksums, release provenance, and verification instructions are published and were verified for commit `175fab6`.
+- [x] Diagnostic collection is opt-in or explicitly documented and cannot retain repository content, credentials, hidden provider payloads, absolute private paths, or raw sensitive exceptions; human privacy review passed on August 31, 2026.
+- [x] Support channels, severity levels, ownership, response expectations, and incident runbooks are documented; human supportability review passed on August 31, 2026.
+- [x] Issue #34's selected V1 scope is complete; remaining post-V1 requirements are explicitly deferred with rationale, owner, and the supported-V1 boundary recorded in the release-operations specification and runbook.
 
 ## E. Post-tracer-bullet hardening and whole-release acceptance
 
@@ -108,7 +108,8 @@ Passing checks on one pull request is not enough unless the repository requires 
 - [x] New commits dismiss stale approvals, the latest push is approved, and unresolved review threads block merge, as specified by [Issue #77](https://github.com/tacomancy/galaxy-brain/issues/77); the active pull-request rule was updated and verified on August 31, 2026.
 - [x] Production dependencies have no high or critical audit findings; known development-alert debt is resolved or explicitly accepted with evidence; dependency review and the production audit are required checks, as specified by [Issue #79](https://github.com/tacomancy/galaxy-brain/issues/79); PR [#118](https://github.com/tacomancy/galaxy-brain/pull/118) passed the audit gates, Dependabot reports no open alerts, and both checks are required by `Main Protections` as of August 31, 2026.
 - [x] GitHub Actions workflows pass syntax/security validation, use immutable SHA-pinned actions with version comments, and run under an approved-action and least-privilege policy, as specified by [Issue #80](https://github.com/tacomancy/galaxy-brain/issues/80); PR [#114](https://github.com/tacomancy/galaxy-brain/pull/114) passed actionlint, zizmor, and pin validation, and the repository Actions policy requires SHA pinning with approved actions as of August 31, 2026.
-- [ ] CodeQL explicitly runs the approved security-extended and security-and-quality suites; every finding is fixed, dismissed with rationale, or tracked, as specified by [Issue #81](https://github.com/tacomancy/galaxy-brain/issues/81).
+- [x] CodeQL explicitly runs the approved `security-extended` and `security-and-quality` suites, as specified by [Issue #81](https://github.com/tacomancy/galaxy-brain/issues/81); merged PR [#112](https://github.com/tacomancy/galaxy-brain/pull/112) added the explicit query configuration.
+- [ ] Current CodeQL findings are fixed, dismissed with rationale, or tracked before the V1 release candidate is declared; this remains a release-candidate evidence check for [Issue #81](https://github.com/tacomancy/galaxy-brain/issues/81).
 - [x] Concise PR diagnostics from [Issue #82](https://github.com/tacomancy/galaxy-brain/issues/82) are available, or their deferral is recorded with an alternative way to investigate failed release gates; PR [#111](https://github.com/tacomancy/galaxy-brain/pull/111) added JUnit, LCOV, and JSON artifacts, job summaries, desktop logs and screenshots, and 14-day retention without changing check semantics.
 
 ## G. TB12–TB14 release-scope decision
@@ -140,7 +141,7 @@ If any of TB12–TB14 is required for V1, review the governing documentation and
 ## Final declaration
 
 - [ ] Provider-free core release gate passed.
-- [ ] TB15 integrated and accepted.
+- [x] TB15 integrated and accepted in PR #104 on August 31, 2026.
 - [x] TB16 integrated and accepted in PR #106 on August 31, 2026.
 - [x] TB12–TB14 are classified as in scope for V1; implementation and acceptance remain open.
 - [ ] Distribution and release-operations outcome recorded.
@@ -166,6 +167,7 @@ Evidence links or notes: __________________________________________________
 - [Delivery Plan](delivery-plan.md)
 - [TB15 specification](tracer-bullet-15-spec.md)
 - [TB16 specification](tracer-bullet-16-spec.md)
+- [V1 release operations specification](v1-release-operations-spec.md)
 - [Open GitHub issues](https://github.com/tacomancy/galaxy-brain/issues?q=is%3Aissue%20state%3Aopen)
 - [Post-TB quality hardening, Issue #21](https://github.com/tacomancy/galaxy-brain/issues/21)
 - [macOS distribution, Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25)

@@ -12,6 +12,7 @@ Galaxy Brain combines a human-owned knowledge base for personal research and con
 - [Public documentation site](https://tacomancy.github.io/galaxy-brain/)
 - [Current capabilities](https://tacomancy.github.io/galaxy-brain/current-capabilities/)
 - [Release notes](https://tacomancy.github.io/galaxy-brain/release-notes/)
+- [Support](SUPPORT.md)
 - [Public tutorials](https://tacomancy.github.io/galaxy-brain/tutorials/)
 - [Public human-agent collaboration guide](https://tacomancy.github.io/galaxy-brain/agent-guidance/)
 - [V1 Knowledge Workbench architecture](docs/architecture/v1-ui/README.md)
