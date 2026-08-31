@@ -9,7 +9,7 @@ if one exists.
 | Version | Supported |
 | --- | --- |
 | `main` | Yes |
-| Latest published release (`0.12.0`) | Yes |
+| Latest published release (`0.13.0`) | Yes |
 | Older versions | No |
 
 ## Reporting a vulnerability
