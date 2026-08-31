@@ -76,7 +76,7 @@ The initial scope is deliberately limited to dense, consequential domain decisio
 
 ## D. Stable distribution and release operations
 
-Resolve the distribution boundary tracked by [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25) and the operational boundary tracked by [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34). Choose exactly one distribution outcome before declaring V1:
+Resolve the distribution boundary tracked by [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25) and the operational boundary tracked by [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34). Before implementation, review the governing documentation and complete the [V1 stable distribution and release operations specification](v1-release-operations-spec.md), including its human-owned distribution, platform, and support-policy gates. Choose exactly one distribution outcome before declaring V1:
 
 - [ ] **Public end-user V1:** signed and notarized macOS DMG/ZIP artifacts install and launch on a clean supported Mac without Node.js or npm; Gatekeeper accepts them; checksums, signing/notarization status, release notes, and supported architectures are published.
 - [ ] **Developer-only V1:** the human owner explicitly approves a source-build/unsigned-package release, Issue #25 is deferred with rationale and owner, and every public page states that no signed downloadable installer is available.
