@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/tacomancy/galaxy-brain/compare/v0.13.1...v0.13.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* close CodeQL filesystem race findings ([#122](https://github.com/tacomancy/galaxy-brain/issues/122)) ([54295ff](https://github.com/tacomancy/galaxy-brain/commit/54295ffcbbd19d72e5e27831e6a307132b52ea3d))
+
 ## [0.13.1](https://github.com/tacomancy/galaxy-brain/compare/v0.13.0...v0.13.1) (2026-08-31)
 
 
