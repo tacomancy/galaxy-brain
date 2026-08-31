@@ -47,6 +47,27 @@
   color: var(--ink);
 }
 
+:root[data-theme="dark"] .source-identity-card,
+:root[data-theme="dark"] .annotation-card {
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .review-queue-card {
+  border-color: #80653c;
+  background: #302a22;
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .review-queue-card .card-kicker {
+  color: #f1c47f;
+}
+
+:root[data-theme="dark"] .review-queue-card > p:not(.topic-display-title) {
+  color: #e3d7c1;
+}
+
 :root[data-theme="dark"] .authoring-rich-view,
 :root[data-theme="dark"] .authoring-source-view,
 :root[data-theme="dark"] .working-material-card blockquote {
@@ -69,8 +90,24 @@
   color: #17231c;
 }
 
+:root[data-theme="dark"] .button-light {
+  border-color: #d9eadf;
+  background: #f1f8f3;
+  color: #17382b;
+}
+
+:root[data-theme="dark"] #workspace-switcher button:hover:not(:disabled),
+:root[data-theme="dark"] #workspace-switcher button[aria-current="page"] {
+  color: var(--moss-deep);
+}
+
 :root[data-theme="dark"] .atlas-continue-card {
   background: #16382d;
+}
+
+:root[data-theme="dark"] #studio-rich-highlight {
+  background: #f3d58c;
+  color: #18201d;
 }
 
 * {
@@ -135,16 +172,22 @@ summary:focus-visible {
   align-items: center;
   justify-content: space-between;
   min-height: 76px;
-  padding: 18px 230px 18px 32px;
+  padding: 18px 32px;
   border-bottom: 1px solid rgba(71, 105, 91, 0.18);
   background: rgba(255, 253, 248, 0.78);
 }
 
+#workbench-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(71, 105, 91, 0.18);
+  background: var(--paper);
+}
+
 #appearance-controls {
-  position: fixed;
-  top: 18px;
-  right: 238px;
-  z-index: 11;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -437,10 +480,6 @@ summary:focus-visible {
 }
 
 #workspace-switcher {
-  position: fixed;
-  top: 18px;
-  right: 24px;
-  z-index: 10;
   display: flex;
   gap: 4px;
   padding: 4px;
@@ -1210,19 +1249,15 @@ summary:focus-visible {
   }
 
   #workspace-switcher {
-    right: 12px;
-    bottom: 12px;
-    top: auto;
+    justify-content: center;
   }
 
   #appearance-controls {
-    top: 12px;
-    right: 12px;
+    margin-inline: auto;
   }
 
   #workspace-switcher {
-    right: 12px;
-    bottom: 12px;
+    margin-inline: auto;
   }
 }
 

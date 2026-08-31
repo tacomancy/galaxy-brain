@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import type { WorkbenchState } from "../../modules/workbench-session";
 
 interface PaperDeskProps {
+  controls: JSX.Element;
   workbench: WorkbenchState;
   onOpenSavedAnnotation: () => Promise<void>;
 }
@@ -14,6 +15,7 @@ interface PaperDeskProps {
  * @throws An error when the renderer receives an invalid workspace context.
  */
 export const PaperDesk = ({
+  controls,
   workbench,
   onOpenSavedAnnotation,
 }: PaperDeskProps): JSX.Element => {
@@ -37,11 +39,12 @@ export const PaperDesk = ({
           </span>
           <span>Galaxy Brain</span>
         </div>
-        <div className="workspace-label">
+        <div id="workspace-label" className="workspace-label">
           <span className="eyebrow">Source workspace</span>
           <strong>Paper Desk</strong>
         </div>
       </header>
+      {controls}
       <div className="workspace-content paper-desk-content">
         <div className="page-intro paper-desk-intro">
           <span className="eyebrow">Source-first reading</span>

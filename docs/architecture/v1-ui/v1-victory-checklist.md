@@ -1,6 +1,6 @@
 # V1 Victory Checklist
 
-Status: draft release checklist. TB15 is merged and accepted; TB16 implementation is complete with final human acceptance pending, while the final V1 scope decision and release-readiness dispositions below remain open.
+Status: draft release checklist. TB15 is merged and accepted; TB16 implementation and human acceptance are complete on its branch, while integration and the final V1 scope decision and release-readiness dispositions below remain open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
@@ -27,7 +27,7 @@ Complete and verify every slice in [the TB16 specification](tracer-bullet-16-spe
 - [x] Result-history recovery for previously saved outcomes.
 - [x] Focused slice tests and lower-seam tests are green.
 - [x] Full checks, coverage, complexity, documentation validation, and packaged workflow checks are green.
-- [ ] One final human acceptance review covers all TB16 behaviors; the date, evidence, and explicit approval are recorded in the TB16 documentation.
+- [x] One final human acceptance review covered all TB16 behaviors on August 31, 2026; the eight passed steps and explicit user approval are recorded in the TB16 documentation.
 
 ## C. Provider-free packaged application gate
 

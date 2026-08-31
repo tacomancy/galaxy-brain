@@ -381,6 +381,19 @@ const WorkbenchShell = ({
     }
   };
 
+  const controls = (
+    <div id="workbench-controls">
+      {workbench.repositoryStatus === "selected" ? (
+        <WorkspaceSwitcher
+          activeWorkspace={workbench.activeWorkspace}
+          hasContext={workbench.context !== undefined}
+          onSwitchWorkspace={switchWorkspace}
+        />
+      ) : null}
+      <ThemeControl theme={theme} onChange={changeTheme} />
+    </div>
+  );
+
   const workspace = (() => {
     if (
       isProposalReviewOpen &&
@@ -389,6 +402,7 @@ const WorkbenchShell = ({
     ) {
       return (
         <ProposalReview
+          controls={controls}
           review={proposalReview.review}
           applyOutcome={proposalReviewApplyOutcome}
           onAcceptAndApply={acceptProposalReview}
@@ -400,6 +414,7 @@ const WorkbenchShell = ({
     if (workbench.activeWorkspace === "studio") {
       return (
         <Studio
+          controls={controls}
           workbench={workbench}
           authoring={authoring}
           isAuthoringOpen={isAuthoringOpen}
@@ -426,6 +441,7 @@ const WorkbenchShell = ({
     if (workbench.activeWorkspace === "paper-desk") {
       return (
         <PaperDesk
+          controls={controls}
           workbench={workbench}
           onOpenSavedAnnotation={openSavedAnnotation}
         />
@@ -434,6 +450,7 @@ const WorkbenchShell = ({
 
     return (
       <Atlas
+        controls={controls}
         workbench={workbench}
         lastOutcome={lastOutcome}
         onCreateRepository={createRepository}
@@ -446,19 +463,7 @@ const WorkbenchShell = ({
     );
   })();
 
-  return (
-    <>
-      {workbench.repositoryStatus === "selected" ? (
-        <WorkspaceSwitcher
-          activeWorkspace={workbench.activeWorkspace}
-          hasContext={workbench.context !== undefined}
-          onSwitchWorkspace={switchWorkspace}
-        />
-      ) : null}
-      <ThemeControl theme={theme} onChange={changeTheme} />
-      {workspace}
-    </>
-  );
+  return <div id="workbench-shell">{workspace}</div>;
 };
 
 void window.workbench.openFreshWorkbench().then(async (workbench) => {

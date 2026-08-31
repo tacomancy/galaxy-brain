@@ -81,6 +81,35 @@ describe("TB16 desktop quality contract", () => {
       { timeout: 5_000, timeoutMsg: "The dark theme was not applied." },
     );
 
+    const highlightContrast = await browser.execute(() => {
+      const highlight = document.querySelector("#studio-rich-highlight");
+      if (!(highlight instanceof Element)) {
+        return 0;
+      }
+      const luminance = (value: string): number => {
+        const channels = (value.match(/\d+(?:\.\d+)?/g) ?? [])
+          .slice(0, 3)
+          .map((channel) => Number(channel) / 255)
+          .map((channel) =>
+            channel <= 0.03928
+              ? channel / 12.92
+              : ((channel + 0.055) / 1.055) ** 2.4,
+          );
+        return (
+          0.2126 * (channels[0] ?? 0) +
+          0.7152 * (channels[1] ?? 0) +
+          0.0722 * (channels[2] ?? 0)
+        );
+      };
+      const foreground = luminance(getComputedStyle(highlight).color);
+      const background = luminance(getComputedStyle(highlight).backgroundColor);
+      return (
+        (Math.max(foreground, background) + 0.05) /
+        (Math.min(foreground, background) + 0.05)
+      );
+    });
+
+    assert.ok(highlightContrast >= 4.5);
     assert.equal(
       await $("#studio-authoring-state").getText(),
       "Working Material",
@@ -99,7 +128,177 @@ describe("TB16 desktop quality contract", () => {
     assert.equal(await $("#workbench-theme").getValue(), "dark");
   });
 
+  it("keeps dark theme contrast and shell controls usable", async () => {
+    await $("#workspace-switcher-atlas").click();
+    await $("#atlas-continue-surface").waitForDisplayed();
+
+    const atlasContrast = await browser.execute(() => {
+      const parseColor = (value: string): [number, number, number] => {
+        const channels = value.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+        return [channels[0] ?? 0, channels[1] ?? 0, channels[2] ?? 0];
+      };
+      const luminance = (value: string): number => {
+        const channels = parseColor(value).map((channel) => channel / 255);
+        const linear = channels.map((channel) =>
+          channel <= 0.03928
+            ? channel / 12.92
+            : ((channel + 0.055) / 1.055) ** 2.4,
+        );
+        return (
+          0.2126 * (linear[0] ?? 0) +
+          0.7152 * (linear[1] ?? 0) +
+          0.0722 * (linear[2] ?? 0)
+        );
+      };
+      const contrast = (selector: string, backgroundSelector: string) => {
+        const element = document.querySelector(selector);
+        const background = document.querySelector(backgroundSelector);
+        if (!(element instanceof Element) || !(background instanceof Element)) {
+          return 0;
+        }
+        const foregroundLuminance = luminance(getComputedStyle(element).color);
+        const backgroundLuminance = luminance(
+          getComputedStyle(background).backgroundColor,
+        );
+        const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+        const darker = Math.min(foregroundLuminance, backgroundLuminance);
+        return (lighter + 0.05) / (darker + 0.05);
+      };
+      const rectangles = [
+        document.querySelector(".workspace-header"),
+        document.querySelector("#workspace-label"),
+        document.querySelector("#appearance-controls"),
+        document.querySelector("#workspace-switcher"),
+      ].map((element) => {
+        if (!(element instanceof HTMLElement)) {
+          return undefined;
+        }
+        const rect = element.getBoundingClientRect();
+        return {
+          bottom: rect.bottom,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+        };
+      });
+      const [header, label, appearance, switcher] = rectangles;
+      const overlaps = (
+        first:
+          | { bottom: number; left: number; right: number; top: number }
+          | undefined,
+        second:
+          | { bottom: number; left: number; right: number; top: number }
+          | undefined,
+      ): boolean =>
+        first !== undefined &&
+        second !== undefined &&
+        first.left < second.right &&
+        first.right > second.left &&
+        first.top < second.bottom &&
+        first.bottom > second.top;
+
+      return {
+        continueButton: contrast(
+          "#atlas-topic-open-studio",
+          "#atlas-topic-open-studio",
+        ),
+        judgmentHeading: contrast(
+          "#atlas-needs-judgment-heading",
+          "#atlas-needs-judgment",
+        ),
+        judgmentKicker: contrast(
+          "#atlas-needs-judgment .card-kicker",
+          "#atlas-needs-judgment",
+        ),
+        selectedNav: contrast(
+          "#workspace-switcher-atlas",
+          "#workspace-switcher-atlas",
+        ),
+        shellControlsOverlap:
+          overlaps(label, appearance) ||
+          overlaps(label, switcher) ||
+          overlaps(appearance, switcher),
+        shellControlsBelowHeader:
+          header !== undefined &&
+          appearance !== undefined &&
+          switcher !== undefined &&
+          appearance.top >= header.bottom &&
+          switcher.top >= header.bottom,
+      };
+    });
+
+    assert.ok(atlasContrast.continueButton >= 4.5);
+    assert.ok(atlasContrast.judgmentHeading >= 4.5);
+    assert.ok(atlasContrast.judgmentKicker >= 4.5);
+    assert.ok(atlasContrast.selectedNav >= 4.5);
+    assert.equal(atlasContrast.shellControlsOverlap, false);
+    assert.equal(atlasContrast.shellControlsBelowHeader, true);
+
+    await $("#workspace-switcher-paper-desk").click();
+    await $("#paper-desk-reading-surface").waitForDisplayed();
+    const paperDeskContrast = await browser.execute(() => {
+      const contrast = (
+        selector: string,
+        backgroundSelector: string,
+      ): number => {
+        const element = document.querySelector(selector);
+        const background = document.querySelector(backgroundSelector);
+        if (!(element instanceof Element) || !(background instanceof Element)) {
+          return 0;
+        }
+        const parse = (value: string): number[] =>
+          value.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [0, 0, 0];
+        const luminance = (value: string): number => {
+          const channels = parse(value)
+            .slice(0, 3)
+            .map((channel) => channel / 255);
+          return channels.reduce(
+            (total, channel, index) =>
+              total +
+              [0.2126, 0.7152, 0.0722][index]! *
+                (channel <= 0.03928
+                  ? channel / 12.92
+                  : ((channel + 0.055) / 1.055) ** 2.4),
+            0,
+          );
+        };
+        const foreground = luminance(getComputedStyle(element).color);
+        const surface = luminance(getComputedStyle(background).backgroundColor);
+        return (
+          (Math.max(foreground, surface) + 0.05) /
+          (Math.min(foreground, surface) + 0.05)
+        );
+      };
+
+      return {
+        sourceRecordHeading: contrast(
+          "#paper-desk-source-record-heading",
+          ".source-identity-card",
+        ),
+        workingMaterialHeading: contrast(
+          "#paper-desk-annotation-heading",
+          ".annotation-card",
+        ),
+        sourceRecordKicker: contrast(
+          ".source-identity-card .card-kicker",
+          ".source-identity-card",
+        ),
+        workingMaterialKicker: contrast(
+          ".annotation-card .card-kicker",
+          ".annotation-card",
+        ),
+      };
+    });
+
+    assert.ok(paperDeskContrast.sourceRecordHeading >= 4.5);
+    assert.ok(paperDeskContrast.workingMaterialHeading >= 4.5);
+    assert.ok(paperDeskContrast.sourceRecordKicker >= 4.5);
+    assert.ok(paperDeskContrast.workingMaterialKicker >= 4.5);
+  });
+
   it("keeps the critical Studio surface usable at narrow and enlarged scales", async () => {
+    await $("#workspace-switcher-studio").click();
+    await $("#studio-authoring-surface").waitForDisplayed();
     await browser.execute(() => {
       document.body.style.zoom = "2";
     });

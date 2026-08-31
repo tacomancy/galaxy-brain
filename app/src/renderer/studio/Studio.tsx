@@ -20,6 +20,7 @@ import type {
 } from "../../modules/workbench-session";
 
 interface StudioProps {
+  controls: JSX.Element;
   workbench: WorkbenchState;
   authoring: AuthoringReadOutcome;
   isAuthoringOpen: boolean;
@@ -54,7 +55,7 @@ const StudioHeader = (): JSX.Element => (
       </span>
       <span>Galaxy Brain</span>
     </div>
-    <div className="workspace-label">
+    <div id="workspace-label" className="workspace-label">
       <span className="eyebrow">Topic workspace</span>
       <strong>Studio</strong>
     </div>
@@ -649,6 +650,7 @@ const SavedSynthesisResultsCard = ({
  * @throws An error when the renderer receives an invalid workspace context.
  */
 export const Studio = ({
+  controls,
   workbench,
   authoring,
   isAuthoringOpen,
@@ -685,6 +687,7 @@ export const Studio = ({
       aria-labelledby="studio-heading"
     >
       <StudioHeader />
+      {controls}
       <div className="workspace-content studio-content">
         <div className="page-intro">
           <span className="eyebrow">Knowledge in motion</span>

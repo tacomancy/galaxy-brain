@@ -1,6 +1,6 @@
 # Tracer Bullet 16: Complete the desktop quality contract
 
-Status: implementation complete on August 31, 2026; automated evidence is green and final human acceptance is pending. The user authorized all incremental slices below and will perform one final human acceptance review after the complete TB16 scope is implemented.
+Status: implementation complete and human-accepted on August 31, 2026; automated evidence is green. The user authorized all incremental slices below and completed the final human acceptance review after the complete TB16 scope was implemented.
 
 This brief coordinates the TB16 implementation described in the [delivery plan](delivery-plan.md#16-complete-the-desktop-quality-contract). It is an implementation entry point, not a second authority for Product Decisions, Architecture, the Repository Format, testing, or accepted ADR decisions.
 
@@ -171,7 +171,7 @@ Final human acceptance must observe, in the visible review-mode packaged applica
 7. One Working Material edit followed by Undo, restoring exact meaning and source without governed mutation.
 8. Result-history restoration of version `1` as a new current version while retaining versions `1` and `2` and making no provider request.
 
-The final review must also confirm that no deferred behavior was silently implemented, no machine-local state leaked into repository content, and existing explicit authority/confirmation boundaries remain intact. Only after all eight checks pass should the delivery plan record TB16 as human-accepted.
+The final review must also confirm that no deferred behavior was silently implemented, no machine-local state leaked into repository content, and existing explicit authority/confirmation boundaries remain intact. On August 31, 2026, the user completed all eight checks in the visible review-mode packaged application and explicitly accepted TB16. The review found and accepted the subsequent dark-theme contrast correction and below-header control placement.
 
 ## Implementation record
 
@@ -179,14 +179,14 @@ The eight approved slices are implemented on `codex/tb16-desktop-quality-contrac
 
 - TB16.1–TB16.3: the packaged workflow completes the critical authoring path with keyboard actions, visible focus styling, named landmarks, and observable pressed/current/status semantics.
 - TB16.4–TB16.5: reduced-motion CSS disables required animation/transition timing, and the packaged workflow verifies the critical Studio surface at 200% document zoom.
-- TB16.6: the Workbench Session persists explicit `light`/`dark` theme selection through machine-local session state; the renderer applies the selected tokens consistently.
+- TB16.6: the Workbench Session persists explicit `light`/`dark` theme selection through machine-local session state; the renderer applies the selected tokens consistently, keeps dark-theme content legible across Atlas, Studio, Paper Desk, and Proposal Review, and renders the theme/workspace controls in a separate bar below each workspace header.
 - TB16.7: Knowledge Authoring provides one-step semantic undo and restores the exact prior rich/source projection without changing Governed Knowledge.
 - TB16.8: the packaged result-history workflow restores version `1` as version `3`; the existing Source Processing path preserves prior versions and does not invoke a provider.
 
-Automated evidence recorded before human review: `npm run check` passed with 20 test files and 89 tests; coverage passed at 82.40% statements and 73.85% branches; complexity lint passed; changed-lines coverage passed against `origin/main`; and the focused packaged Electron workflow passed in silent mode with 3 tests. The complete packaged Electron workflow passed in silent mode with 25 specs and 30 workflow cases.
+Automated evidence recorded before human review: `npm run check` passed with 20 test files and 89 tests; coverage passed at 82.40% statements and 73.85% branches; complexity lint passed; changed-lines coverage passed against `origin/main`; and the focused packaged Electron workflow passed in silent mode with 4 tests, including dark-theme contrast and shell-layout regression coverage. The complete packaged Electron workflow passed in silent mode with 25 specs and 31 workflow cases.
 
 ## Required confirmation
 
-The user authorized implementation plans for all eight TB16 slices on August 31, 2026 and requested a single final human acceptance review after the entire TB16 implementation is complete. This authorization covers the bounded behaviors, fixtures, S1 seam, incremental sequencing, and explicit deferrals written above; it does not authorize silently expanding the scope or treating automated evidence as human acceptance.
+The user authorized implementation plans for all eight TB16 slices on August 31, 2026 and requested a single final human acceptance review after the entire TB16 implementation is complete. This authorization covers the bounded behaviors, fixtures, S1 seam, incremental sequencing, and explicit deferrals written above; it does not authorize silently expanding the scope or treating automated evidence as human acceptance. The user explicitly accepted TB16 on August 31, 2026 after Steps 1–8 passed.
 
 Any new behavior, persistence representation, technology choice, or Test Seam discovered during implementation must be added here with its rationale and deferred alternatives before implementation continues.
