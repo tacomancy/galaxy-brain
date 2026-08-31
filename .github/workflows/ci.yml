@@ -25,8 +25,49 @@ jobs:
       - name: Set up pinned Node.js and npm
         uses: ./.github/actions/setup-node
 
+      - name: Prepare validation diagnostics
+        run: mkdir -p test-results coverage
+
       - name: Run verification gate
-        run: npm run check
+        run: |
+          bash tools/run-ci-command.sh \
+            "$RUNNER_TEMP/galaxy-brain-validation.log" \
+            npm run check
+
+      - name: Generate validation coverage diagnostics
+        if: always()
+        continue-on-error: true
+        run: |
+          bash tools/run-ci-command.sh \
+            "$RUNNER_TEMP/galaxy-brain-validation-coverage.log" \
+            npm run test:coverage
+
+      - name: Summarize validation diagnostics
+        if: always()
+        run: |
+          {
+            echo "## Validation diagnostics"
+            for log in \
+              "$RUNNER_TEMP/galaxy-brain-validation.log" \
+              "$RUNNER_TEMP/galaxy-brain-validation-coverage.log"; do
+              if [ -s "$log" ]; then
+                grep -E "Test Files|Tests|Coverage|threshold|failed|passed" "$log" \
+                  | tail -n 40 || true
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-diagnostics
+          path: |
+            app/test-results/junit.xml
+            app/coverage/lcov.info
+            app/coverage/coverage-final.json
+          if-no-files-found: ignore
+          retention-days: 14
 
   complexity:
     name: Complexity limits
@@ -68,6 +109,8 @@ jobs:
   desktop-workflow:
     name: Run desktop workflow tests
     runs-on: macos-latest
+    env:
+      GALAXY_BRAIN_WDIO_ARTIFACT_DIR: ${{ github.workspace }}/app/.ci-artifacts/desktop-workflow
     defaults:
       run:
         working-directory: app
@@ -79,5 +122,20 @@ jobs:
       - name: Set up pinned Node.js and npm
         uses: ./.github/actions/setup-node
 
+      - name: Prepare desktop diagnostics
+        run: mkdir -p "$GALAXY_BRAIN_WDIO_ARTIFACT_DIR"
+
       - name: Run desktop workflow tests
-        run: npm run test:workflow
+        run: |
+          bash tools/run-ci-command.sh \
+            "$GALAXY_BRAIN_WDIO_ARTIFACT_DIR/runner.log" \
+            npm run test:workflow
+
+      - name: Upload desktop workflow diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-workflow-diagnostics
+          path: app/.ci-artifacts/desktop-workflow/
+          if-no-files-found: ignore
+          retention-days: 14

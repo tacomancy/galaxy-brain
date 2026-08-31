@@ -24,14 +24,54 @@ jobs:
       - name: Set up pinned Node.js and npm
         uses: ./.github/actions/setup-node
 
+      - name: Prepare coverage diagnostics
+        run: mkdir -p test-results
+
       - name: Enforce coverage limits
-        run: npm run test:coverage
+        run: |
+          bash tools/run-ci-command.sh \
+            "$RUNNER_TEMP/galaxy-brain-coverage.log" \
+            npm run test:coverage
 
       - name: Enforce changed-lines coverage
+        if: always()
         run: >-
+          bash tools/run-ci-command.sh
+          "$RUNNER_TEMP/galaxy-brain-changed-lines-coverage.log"
           npm run check:changed-coverage --
           --lcov coverage/lcov.info
           --base-ref "origin/${GITHUB_BASE_REF}"
           --head-ref HEAD
           --repository-root ..
           --coverage-root .
+
+      - name: Summarize coverage diagnostics
+        if: always()
+        run: |
+          {
+            echo "## Coverage diagnostics"
+            if [ -s "$RUNNER_TEMP/galaxy-brain-coverage.log" ]; then
+              grep -E "Test Files|Tests|All files|Coverage|threshold|Threshold|failed|passed" \
+                "$RUNNER_TEMP/galaxy-brain-coverage.log" | tail -n 60 || true
+            else
+              echo "Coverage output was unavailable."
+            fi
+            if [ -s "$RUNNER_TEMP/galaxy-brain-changed-lines-coverage.log" ]; then
+              grep -E "Changed-lines coverage|Status:|Applicable|Covered|Coverage:|Threshold:|Uncovered" \
+                "$RUNNER_TEMP/galaxy-brain-changed-lines-coverage.log" | tail -n 40 || true
+            else
+              echo "Changed-lines coverage output was unavailable."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-diagnostics
+          path: |
+            app/test-results/junit.xml
+            app/coverage/lcov.info
+            app/coverage/coverage-final.json
+          if-no-files-found: ignore
+          retention-days: 14
