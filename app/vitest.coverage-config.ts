@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 const coverageOptions = {
   provider: "v8" as const,
-  include: ["src/**/*.ts", "src/**/*.tsx"],
+  include: ["src/**/*.ts", "src/**/*.tsx", "tools/mcdc.ts"],
   exclude: [
     "src/**/*.d.ts",
     "src/main/**",
