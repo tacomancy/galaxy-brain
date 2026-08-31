@@ -40,6 +40,11 @@ const openFixtureRepository = async (): Promise<void> => {
 
 describe("TB16 desktop quality contract", () => {
   it("completes the critical authoring edit with keyboard actions", async () => {
+    await $("#workbench-theme").selectByAttribute("value", "dark");
+    await browser.refresh();
+    await $("#workbench-theme").waitForDisplayed();
+    assert.equal(await $("#workbench-theme").getValue(), "dark");
+
     await openFixtureRepository();
 
     await tabUntil("atlas-topic-open-studio");
@@ -299,27 +304,99 @@ describe("TB16 desktop quality contract", () => {
   it("keeps the critical Studio surface usable at narrow and enlarged scales", async () => {
     await $("#workspace-switcher-studio").click();
     await $("#studio-authoring-surface").waitForDisplayed();
-    await browser.execute(() => {
-      document.body.style.zoom = "2";
-    });
 
-    assert.equal(await $("#studio-heading").isDisplayed(), true);
-    assert.equal(await $("#studio-rich-edit").isDisplayed(), true);
-    assert.equal(
-      await browser.execute(() =>
-        Array.from(document.styleSheets).some((sheet) => {
-          try {
-            return Array.from(sheet.cssRules).some(
-              (rule) =>
-                rule instanceof CSSMediaRule &&
-                rule.conditionText === "(prefers-reduced-motion: reduce)",
-            );
-          } catch {
-            return false;
+    const puppeteer = await browser.getPuppeteer();
+    const [page] = await puppeteer.pages();
+    assert.ok(page !== undefined);
+
+    await page.emulateMediaFeatures([
+      { name: "prefers-reduced-motion", value: "reduce" },
+    ]);
+    try {
+      assert.equal(
+        await browser.execute(
+          () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        ),
+        true,
+      );
+
+      await $("#workspace-switcher-atlas").click();
+      await $("#atlas-continue-surface").waitForDisplayed();
+      await $("#workspace-switcher-studio").click();
+      await $("#studio-authoring-surface").waitForDisplayed();
+
+      await browser.execute(() => {
+        document.body.style.zoom = "2";
+      });
+
+      const scaleEvidence = await browser.execute(() => {
+        const requiredSelectors = [
+          "#studio-heading",
+          "#studio-rich-edit",
+          "#studio-rich-undo",
+          "#workspace-switcher",
+          "#appearance-controls",
+        ];
+        const rectangles = requiredSelectors.map((selector) => {
+          const element = document.querySelector(selector);
+          if (!(element instanceof HTMLElement)) {
+            return undefined;
           }
-        }),
-      ),
-      true,
-    );
+          const rect = element.getBoundingClientRect();
+          return {
+            bottom: rect.bottom,
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+          };
+        });
+        const visibleRectangles = rectangles.filter(
+          (rectangle): rectangle is NonNullable<typeof rectangle> =>
+            rectangle !== undefined,
+        );
+        const overlaps = (
+          first: NonNullable<(typeof rectangles)[number]>,
+          second: NonNullable<(typeof rectangles)[number]>,
+        ): boolean =>
+          first.left < second.right &&
+          first.right > second.left &&
+          first.top < second.bottom &&
+          first.bottom > second.top;
+        const [heading, edit, undo, switcher, appearance] = rectangles;
+
+        return {
+          allRequiredControlsVisible:
+            visibleRectangles.length === rectangles.length,
+          allRequiredControlsWithinViewport: visibleRectangles.every(
+            (rectangle) =>
+              rectangle.left >= 0 && rectangle.right <= window.innerWidth,
+          ),
+          noHorizontalOverflow:
+            Math.max(
+              document.documentElement.scrollWidth,
+              document.body.scrollWidth,
+            ) <= window.innerWidth,
+          noCriticalOverlap:
+            heading !== undefined &&
+            edit !== undefined &&
+            undo !== undefined &&
+            switcher !== undefined &&
+            appearance !== undefined &&
+            !overlaps(heading, edit) &&
+            !overlaps(edit, undo) &&
+            !overlaps(switcher, appearance),
+        };
+      });
+
+      assert.equal(scaleEvidence.allRequiredControlsVisible, true);
+      assert.equal(scaleEvidence.allRequiredControlsWithinViewport, true);
+      assert.equal(scaleEvidence.noHorizontalOverflow, true);
+      assert.equal(scaleEvidence.noCriticalOverlap, true);
+    } finally {
+      await browser.execute(() => {
+        document.body.style.zoom = "";
+      });
+      await page.emulateMediaFeatures([]);
+    }
   });
 });

@@ -23,7 +23,7 @@ import type {
 } from "../../modules/workbench-session";
 
 interface PersistedWorkbenchSession {
-  selectedRepositoryPath: string;
+  selectedRepositoryPath?: string;
   theme?: WorkbenchTheme;
   activeWorkspace?: WorkbenchWorkspace;
   selectedContext?: WorkbenchContextSelection;
@@ -100,8 +100,9 @@ const isPersistedWorkbenchSession = (
   }
 
   return (
-    typeof value.selectedRepositoryPath === "string" &&
-    value.selectedRepositoryPath.length > 0 &&
+    (value.selectedRepositoryPath === undefined ||
+      (typeof value.selectedRepositoryPath === "string" &&
+        value.selectedRepositoryPath.length > 0)) &&
     isWorkbenchTheme(value.theme) &&
     isWorkbenchWorkspace(value.activeWorkspace) &&
     isContextSelection(value.selectedContext) &&
@@ -155,7 +156,9 @@ export const createFileBackedWorkbenchSessionState = (
       }
 
       return {
-        selectedRepositoryPath: parsed.selectedRepositoryPath,
+        ...(parsed.selectedRepositoryPath === undefined
+          ? {}
+          : { selectedRepositoryPath: parsed.selectedRepositoryPath }),
         ...(parsed.theme === undefined ? {} : { theme: parsed.theme }),
         ...(parsed.activeWorkspace === undefined
           ? {}

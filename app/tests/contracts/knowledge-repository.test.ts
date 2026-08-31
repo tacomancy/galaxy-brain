@@ -551,6 +551,7 @@ type: source
 
 describe("Workbench Session selection contract", () => {
   it("reads and persists the explicit theme without repository content", async () => {
+    let unselectedSnapshot: WorkbenchSessionSnapshot | undefined;
     const unselectedSession = createWorkbenchSession(
       {
         createAt: async () => ({
@@ -570,11 +571,20 @@ describe("Workbench Session selection contract", () => {
           detail: "No annotation.",
         }),
       },
-      { readSession: async () => undefined, writeSession: async () => {} },
+      {
+        readSession: async () => undefined,
+        writeSession: async (snapshot) => {
+          unselectedSnapshot = snapshot;
+        },
+      },
     );
 
     assert.deepEqual(await unselectedSession.setTheme("dark"), {
       outcome: "updated",
+      theme: "dark",
+    });
+    assert.deepEqual(unselectedSnapshot, {
+      activeWorkspace: "atlas",
       theme: "dark",
     });
 

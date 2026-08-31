@@ -4,6 +4,8 @@ Status: draft release checklist. TB15 is merged and accepted; TB16 implementatio
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
+Sections C–H intentionally track release-level follow-up work outside TB16’s bounded implementation scope. They remain here so deferred distribution, security, hardening, scope-classification, and documentation decisions stay visible and cannot be mistaken for completed TB16 behavior; each item requires its own evidence or an explicit human-approved deferral before V1 is declared.
+
 ## Definition of victory
 
 V1 is ready to declare when the accepted work is integrated, TB16 is implemented and human-accepted, the provider-free packaged application gate passes, the distribution and release-operations standard is explicit, post-tracer-bullet hardening and repository-security risks are dispositioned, the documentation is current, every open issue is classified, and TB12–TB14 have each been explicitly classified as either part of V1 or deferred with rationale, ownership, and follow-up.
@@ -45,6 +47,18 @@ Verify the packaged macOS Workbench against a real file-backed Knowledge Reposit
 - [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy.
 
 This gate proves the packaged application behavior. It does not by itself prove that an unsigned development `.app` is a supported end-user distribution.
+
+## C1. Mixed condition/decision coverage
+
+Track MC/DC as an explicit quality work item alongside, rather than folded into, line, branch, and changed-lines coverage:
+
+- [ ] Select the high-risk multi-condition decisions in framework-independent application Modules, starting with Governance and Source Processing, and assign stable decision identifiers.
+- [ ] Add independently known truth-table cases that exercise each condition as both `true` and `false` and provide an independence pair showing that each condition changes the decision outcome.
+- [ ] Add a dedicated `test:mcdc`/`check:mcdc` gate that reports condition coverage, decision coverage, and MC/DC witnesses separately and fails when a registered decision lacks required evidence.
+- [ ] Define and document short-circuit handling, unreachable-condition exemptions, and the boundary between Module MC/DC evidence and renderer/UI workflow coverage.
+- [ ] Require MC/DC evidence for changed registered decisions before declaring the V1 release candidate complete; do not infer MC/DC from LCOV line or branch data.
+
+The initial scope is deliberately limited to dense, consequential domain decisions. Expanding the manifest to every conditional, including presentation-only UI conditions, is deferred until a concrete risk or requirement justifies it.
 
 ## D. Stable distribution and release operations
 

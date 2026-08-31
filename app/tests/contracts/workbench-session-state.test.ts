@@ -265,4 +265,18 @@ describe("file-backed Workbench session-state contract", () => {
 
     assert.deepEqual(await sessionState.readSession(), expected);
   });
+
+  it("round-trips a theme before a repository is selected", async () => {
+    const sessionStatePath = join(temporaryRoot, "workbench.json");
+    const sessionState =
+      createFileBackedWorkbenchSessionState(sessionStatePath);
+    const expected = {
+      activeWorkspace: "atlas" as const,
+      theme: "dark" as const,
+    };
+
+    await sessionState.writeSession(expected);
+
+    assert.deepEqual(await sessionState.readSession(), expected);
+  });
 });

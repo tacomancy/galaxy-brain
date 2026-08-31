@@ -510,7 +510,12 @@ const SynthesisReviewCard = ({
             role={
               synthesisOutcome.outcome === "operation-failed"
                 ? "alert"
-                : undefined
+                : "status"
+            }
+            aria-live={
+              synthesisOutcome.outcome === "operation-failed"
+                ? "assertive"
+                : "polite"
             }
             data-synthesis-outcome={synthesisOutcome.outcome}
           >
@@ -630,7 +635,12 @@ const SavedSynthesisResultsCard = ({
         <p
           id="studio-synthesis-restore-outcome"
           role={
-            restoreOutcome.outcome === "operation-failed" ? "alert" : undefined
+            restoreOutcome.outcome === "operation-failed" ? "alert" : "status"
+          }
+          aria-live={
+            restoreOutcome.outcome === "operation-failed"
+              ? "assertive"
+              : "polite"
           }
           data-synthesis-restore-outcome={restoreOutcome.outcome}
         >

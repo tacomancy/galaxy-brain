@@ -159,7 +159,8 @@ export interface KnowledgeRepository {
  * Implementations must not store this state in the portable repository.
  */
 export interface WorkbenchSessionSnapshot {
-  selectedRepositoryPath: string;
+  /** Omitted when only machine-local appearance state has been selected. */
+  selectedRepositoryPath?: string;
   theme?: WorkbenchTheme;
   activeWorkspace?: WorkbenchWorkspace;
   selectedContext?: WorkbenchContextSelection;
@@ -782,6 +783,19 @@ export const createWorkbenchSession = (
       }
 
       if (selectedRepository === undefined) {
+        try {
+          await sessionState.writeSession({
+            ...persistedTheme(nextTheme),
+            activeWorkspace,
+            ...(readingPosition === undefined ? {} : { readingPosition }),
+          });
+        } catch {
+          return {
+            outcome: "operation-failed",
+            detail: "The Workbench theme could not be saved.",
+          };
+        }
+
         theme = nextTheme;
         return { outcome: "updated", theme };
       }
