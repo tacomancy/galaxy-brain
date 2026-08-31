@@ -161,3 +161,21 @@ npm audit --audit-level=high
 ```
 
 The packaged workflow may require a built application and the repository's documented test-mode setup. Automated accessibility checks support the evidence but do not replace observable workflow assertions or human review.
+
+## Maintainability review gate
+
+Complete this gate against the integrated release candidate after all required tracer bullets are merged. The review should identify concrete change risk and maintenance cost; it is not permission for a broad rewrite, speculative abstraction, or cosmetic code churn. Record each material finding with an owner and classify it as fixed for V1, explicitly accepted for V1 with rationale, or deferred to a focused follow-up issue.
+
+- [ ] Every important state object, business rule, and persistence decision has one authoritative Module or Adapter owner; competing implementations or ambiguous ownership are resolved or tracked.
+- [ ] Common changes remain local to the Module that owns the behavior; a change does not require unrelated UI, domain, persistence, and infrastructure edits merely because boundaries are shallow or duplicated.
+- [ ] Dependency direction remains explicit and inward: domain and application Modules do not depend on renderer frameworks, filesystem implementations, provider SDKs, or other infrastructure details.
+- [ ] External systems—including filesystems, desktop APIs, Agent Providers, and future network services—remain behind narrow application-owned Interfaces that translate external data and failures into project vocabulary.
+- [ ] Public Interfaces are smaller and more stable than the complexity they hide; they do not expose private framework state, arbitrary command channels, storage layouts, or sequencing details.
+- [ ] Expected failures such as cancellation, unavailable resources, invalid input, stale data, and conflicts are represented explicitly, while violated invariants and unexpected defects remain distinguishable.
+- [ ] Persisted representations are validated, versioned or compatibility-bounded, recoverable, and protected against partial writes, external changes, and destructive internal refactors.
+- [ ] Tests observe public behavior at confirmed Test Seams rather than private methods, component internals, implementation call order, or storage side channels.
+- [ ] Every new abstraction has demonstrated variation or leverage; duplicated knowledge is removed without forcing distinct policies into a speculative generic layer.
+- [ ] Complexity hotspots, broad orchestration functions, duplicated policy, and unclear state ownership have been reviewed under Issue #23; accepted complexity is documented rather than hidden by arbitrary metric exceptions.
+- [ ] A maintainer unfamiliar with the implementation can use the code map, Module names, Interfaces, ADRs, and tests to locate where the next related change belongs.
+- [ ] Architecture, code-map, Repository Format, Test Strategy, and ADR documentation reflects every material Module, Interface, dependency-direction, state-ownership, persistence, or Test-Seam decision present in the release candidate.
+- [ ] The maintainability reviewer records the release commit, review date, reviewed surfaces, material findings, dispositions, and explicit approval or rejection.

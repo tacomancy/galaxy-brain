@@ -183,7 +183,7 @@ The eight approved slices are implemented on `codex/tb16-desktop-quality-contrac
 - TB16.7: Knowledge Authoring provides one-step semantic undo and restores the exact prior rich/source projection without changing Governed Knowledge.
 - TB16.8: the packaged result-history workflow restores version `1` as version `3`; the existing Source Processing path preserves prior versions and does not invoke a provider.
 
-Automated evidence recorded before human review: `npm run check` passed with 20 test files and 88 tests; coverage passed at 81.62% statements and 72.99% branches; complexity lint passed; changed-lines coverage passed against `origin/main`; and the focused packaged Electron workflow passed in silent mode with 3 tests. The complete packaged workflow remains part of the final pre-acceptance gate.
+Automated evidence recorded before human review: `npm run check` passed with 20 test files and 89 tests; coverage passed at 82.40% statements and 73.85% branches; complexity lint passed; changed-lines coverage passed against `origin/main`; and the focused packaged Electron workflow passed in silent mode with 3 tests. The complete packaged Electron workflow passed in silent mode with 25 specs and 30 workflow cases.
 
 ## Required confirmation
 
