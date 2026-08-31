@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/tacomancy/galaxy-brain/compare/v0.11.0...v0.12.0) (2026-08-28)
+
+
+### Features
+
+* preserve TB11 rich source meaning ([#102](https://github.com/tacomancy/galaxy-brain/issues/102)) ([3d208a4](https://github.com/tacomancy/galaxy-brain/commit/3d208a45438b5dd4054e0e7b38912898c022f84b))
+
 ## [0.11.0](https://github.com/tacomancy/galaxy-brain/compare/v0.10.0...v0.11.0) (2026-08-28)
 
 
