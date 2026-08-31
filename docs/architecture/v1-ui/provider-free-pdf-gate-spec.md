@@ -399,7 +399,7 @@ and the governing documentation before continuing.
 ### Red-to-green evidence for PR-readiness hardening
 
 - **Red:** `npm test -- --run tests/contracts/source-asset-adapter.test.ts tests/contracts/pdfjs-pdf-adapter.test.ts` initially ran 11 tests with 2 failures. Both new diagnostics assertions observed the sanitized domain outcome but received zero retained causes.
-- **Green:** The same focused command passed all 11 tests after the optional internal diagnostics sinks were added. `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, `npm run test:provider-free`, and `npm run test:workflow` are green for this hardening cycle; changed-lines coverage is rerun against the committed head before push.
+- **Green:** The same focused command passed all 11 tests after the optional internal diagnostics sinks were added. `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, `npm run test:provider-free`, and `npm run test:workflow` are green for this hardening cycle. Changed-lines coverage passes against the committed head at 81.06% (107/132 executable changed lines, 80.00% threshold).
 
 ### Human acceptance record — August 31, 2026
 

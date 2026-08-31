@@ -676,8 +676,8 @@ tests, documentation validation, and both registered MC/DC decisions),
 `npm run test:coverage` (82.58% statements, 74.57% branches, 96.74% functions,
 82.47% lines), `npm run lint:complexity`, `npm run test:provider-free` (both
 named provider-free workflows), and `npm run test:workflow` (27/27 silent
-packaged specs). Changed-lines coverage is rerun against the committed head
-before push.
+packaged specs). Changed-lines coverage passes against the committed head at
+81.06% (107/132 executable changed lines, 80.00% threshold).
 
 Saved agent context must retain its point-in-time snapshot when the current source cannot be checked or lacks a comparable identity. The Workbench reports `source status unavailable` without blocking access or claiming that the snapshot is current. An explicit refresh must create a new snapshot/version while preserving the original and must never silently replace it in place. Refresh updates only the saved context representation; a separate result-regeneration action requires fresh confirmation before any new OpenAI request.
 
