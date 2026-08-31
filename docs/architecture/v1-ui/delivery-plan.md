@@ -678,7 +678,7 @@ tests, documentation validation, and both registered MC/DC decisions),
 82.46% lines), `npm run lint:complexity`, `npm run test:provider-free` (both
 named provider-free workflows), and `npm run test:workflow` (27/27 silent
 packaged specs). Changed-lines coverage passes against the committed head at
-82.03% (105/128 executable changed lines, 80.00% threshold).
+81.08% (120/148 executable changed lines, 80.00% threshold).
 
 The packaged linked-PDF workflow uses valid-but-different PDF bytes for the
 changed-source case, preserves the changed status across failed relink
