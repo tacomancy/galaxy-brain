@@ -1,0 +1,32 @@
+name: Dependency audit
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Node.js and npm
+        uses: ./.github/actions/setup-node
+
+      - name: Audit production dependencies
+        run: npm run audit:production
+        working-directory: app
+
+      - name: Audit all dependencies
+        run: npm run audit:all
+        working-directory: app

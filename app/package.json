@@ -24,6 +24,8 @@
     "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.per-file.config.ts",
     "check:changed-coverage": "tsx tools/check-changed-lines-coverage.ts",
     "test:workflow": "npm run package && wdio run ./wdio.conf.ts",
+    "audit:production": "npm audit --omit=dev --audit-level=high",
+    "audit:all": "npm audit --audit-level=high",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run test:mcdc && npm run check:mcdc && npm run test:docs && npm run docs:check",
     "prepackage": "node -e \"if (process.version !== 'v24.19.0') { throw new Error('Galaxy Brain requires Node 24.19.0. Run nvm use before packaging.') }\"",
     "docs:check": "node ../scripts/check-documentation.mjs",
@@ -66,6 +68,7 @@
     "extract-zip": "npm:@electron-internal/extract-zip@1.0.5",
     "serialize-javascript": "7.1.0",
     "tar": "7.5.22",
-    "tmp": "0.2.7"
+    "tmp": "0.2.7",
+    "webpack-dev-server": "6.0.0"
   }
 }
