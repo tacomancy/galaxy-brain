@@ -29,8 +29,17 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
-      pages-actions:
+      approved-github-actions:
         patterns:
+          - "actions/checkout"
           - "actions/configure-pages"
+          - "actions/dependency-review-action"
           - "actions/deploy-pages"
+          - "actions/setup-node"
+          - "actions/setup-python"
+          - "actions/upload-artifact"
           - "actions/upload-pages-artifact"
+          - "github/codeql-action"
+          - "googleapis/release-please-action"
+          - "raven-actions/actionlint"
+          - "zizmorcore/zizmor-action"
