@@ -156,6 +156,7 @@ export const PaperDesk = ({
           </section>
           <aside className="paper-desk-sidebar">
             <section
+              data-source-record-id={workbench.context.sourceRecord.id}
               className="source-identity-card"
               aria-labelledby="paper-desk-source-record-heading"
             >
@@ -174,6 +175,7 @@ export const PaperDesk = ({
               <section
                 id="paper-desk-saved-annotation"
                 className="annotation-card"
+                data-annotation-id={workbench.sourceAnnotation.id}
                 aria-labelledby="paper-desk-annotation-heading"
               >
                 <div className="annotation-card-heading">

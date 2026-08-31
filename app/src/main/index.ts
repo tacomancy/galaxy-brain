@@ -156,9 +156,16 @@ const createWindow = async (): Promise<void> => {
   const sourceAssetsArgument = process.argv.find((argument) =>
     argument.startsWith("--galaxy-brain-source-assets="),
   );
+  const defaultSourceAssetsPath = join(
+    app.getPath("userData"),
+    "source-assets.json",
+  );
+  // The isolated source-store override is test/review-only; normal launches
+  // always keep linked paths and hashes in Electron's private user-data root.
   const sourceAssetsPath =
-    sourceAssetsArgument?.slice("--galaxy-brain-source-assets=".length) ??
-    join(app.getPath("userData"), "source-assets.json");
+    isFixtureMode && sourceAssetsArgument !== undefined
+      ? sourceAssetsArgument.slice("--galaxy-brain-source-assets=".length)
+      : defaultSourceAssetsPath;
   const productionPdf = createPdfJsAdapter({
     modulePath: pathToFileURL(
       app.isPackaged

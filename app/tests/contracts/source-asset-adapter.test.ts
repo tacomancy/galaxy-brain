@@ -1,4 +1,5 @@
 import { strict as assert } from "node:assert";
+import { createHash } from "node:crypto";
 import {
   lstat,
   mkdir,
@@ -6,6 +7,7 @@ import {
   realpath,
   readFile,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -24,6 +26,9 @@ const contentIdentity =
   "sha256:abdf33ce671408095a1baa7759f1c846cf93194ab879a68856b6cb43fd2aca1c";
 const replacementContentIdentity =
   "sha256:e73236b90122d0b74d7091ff32aba2878a325a2e777fea2ccd6e05c287353c7b";
+
+const contentIdentityFor = (content: string) =>
+  `sha256:${createHash("sha256").update(content).digest("hex")}`;
 
 describe("production Source Asset Adapter contract", () => {
   it("reads a valid private link and computes the current SHA-256 identity", async () => {
@@ -102,6 +107,7 @@ describe("production Source Asset Adapter contract", () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
     const originalPath = join(temporaryRoot, "original.pdf");
     const replacementPath = join(temporaryRoot, "replacement.pdf");
+    const replacementAliasPath = join(temporaryRoot, "replacement-alias.pdf");
     const configurationPath = join(temporaryRoot, "source-assets.json");
     try {
       await writeFile(originalPath, "%PDF-1.4\noriginal PDF\n", "utf8");
@@ -110,6 +116,7 @@ describe("production Source Asset Adapter contract", () => {
         "%PDF-1.4\nverified replacement PDF\n",
         "utf8",
       );
+      await symlink(replacementPath, replacementAliasPath);
       await writeFile(
         configurationPath,
         JSON.stringify({
@@ -149,7 +156,7 @@ describe("production Source Asset Adapter contract", () => {
             id: sourceRecordId,
             title: "Bayesian statistics fixture source",
           },
-          replacementReference: replacementPath,
+          replacementReference: replacementAliasPath,
           expectedReplacementSourceIdentity: replacementSourceIdentity,
           expectedReplacementContentIdentity: replacementContentIdentity,
           verificationLocator: { page: 2, start: 0, end: 16 },
@@ -166,11 +173,136 @@ describe("production Source Asset Adapter contract", () => {
           },
         },
       );
-      assert.equal(verifiedReference, replacementPath);
+      assert.equal(verifiedReference, await realpath(replacementPath));
       assert.match(
         await readFile(configurationPath, "utf8"),
         /replacement\.pdf/,
       );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a mismatched replacement without changing the prior link", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const originalPath = join(temporaryRoot, "original.pdf");
+    const replacementPath = join(temporaryRoot, "replacement.pdf");
+    const configurationPath = join(temporaryRoot, "source-assets.json");
+    const originalStore = JSON.stringify({
+      format: "galaxy-brain-source-assets",
+      format_version: 1,
+      links: {
+        [sourceRecordId]: {
+          mode: "linked-local",
+          path: originalPath,
+          source_identity: "file:original",
+          content_identity: "sha256:original",
+        },
+      },
+    });
+
+    try {
+      await writeFile(originalPath, "%PDF-1.4\noriginal PDF\n", "utf8");
+      const replacementBytes = "%PDF-1.4\nreplacement\n";
+      await writeFile(replacementPath, replacementBytes, "utf8");
+      await writeFile(configurationPath, originalStore, "utf8");
+      const replacementStats = await lstat(replacementPath);
+      const actualReplacementContentIdentity =
+        contentIdentityFor(replacementBytes);
+
+      const adapter = createFileBackedSourceAssetAdapter({
+        configurationPath,
+        pdf: {
+          readSelection: async () => ({
+            outcome: "located" as const,
+            text: "verified passage",
+          }),
+        },
+      });
+
+      assert.deepEqual(
+        await adapter.relink({
+          sourceRecord: {
+            id: sourceRecordId,
+            title: "Bayesian statistics fixture source",
+          },
+          replacementReference: replacementPath,
+          expectedReplacementSourceIdentity: `file:${replacementStats.dev}:${replacementStats.ino}`,
+          expectedReplacementContentIdentity: "sha256:wrong",
+          verificationLocator: { page: 2, start: 0, end: 16 },
+        }),
+        {
+          outcome: "changed",
+          recorded: {
+            sourceIdentity: "file:original",
+            contentIdentity: "sha256:original",
+          },
+          current: {
+            sourceIdentity: `file:${replacementStats.dev}:${replacementStats.ino}`,
+            contentIdentity: actualReplacementContentIdentity,
+          },
+        },
+      );
+      assert.equal(await readFile(configurationPath, "utf8"), originalStore);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects an invalid replacement locator without changing the prior link", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const originalPath = join(temporaryRoot, "original.pdf");
+    const replacementPath = join(temporaryRoot, "replacement.pdf");
+    const configurationPath = join(temporaryRoot, "source-assets.json");
+    const originalStore = JSON.stringify({
+      format: "galaxy-brain-source-assets",
+      format_version: 1,
+      links: {
+        [sourceRecordId]: {
+          mode: "linked-local",
+          path: originalPath,
+          source_identity: "file:original",
+          content_identity: "sha256:original",
+        },
+      },
+    });
+
+    try {
+      await writeFile(originalPath, "%PDF-1.4\noriginal PDF\n", "utf8");
+      const replacementBytes = "%PDF-1.4\nreplacement\n";
+      await writeFile(replacementPath, replacementBytes, "utf8");
+      await writeFile(configurationPath, originalStore, "utf8");
+      const replacementStats = await lstat(replacementPath);
+      const actualReplacementContentIdentity =
+        contentIdentityFor(replacementBytes);
+
+      const adapter = createFileBackedSourceAssetAdapter({
+        configurationPath,
+        pdf: {
+          readSelection: async () => ({
+            outcome: "located" as const,
+            text: "too short",
+          }),
+        },
+      });
+
+      assert.deepEqual(
+        await adapter.relink({
+          sourceRecord: {
+            id: sourceRecordId,
+            title: "Bayesian statistics fixture source",
+          },
+          replacementReference: replacementPath,
+          expectedReplacementSourceIdentity: `file:${replacementStats.dev}:${replacementStats.ino}`,
+          expectedReplacementContentIdentity: actualReplacementContentIdentity,
+          verificationLocator: { page: 2, start: 0, end: 16 },
+        }),
+        {
+          outcome: "unavailable",
+          detail: "The replacement Source Asset could not be verified.",
+        },
+      );
+      assert.equal(await readFile(configurationPath, "utf8"), originalStore);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

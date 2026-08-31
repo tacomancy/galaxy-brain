@@ -110,7 +110,12 @@ export const createPdfJsAdapter = (
         detail: "The requested source locator could not be resolved.",
       };
     } finally {
-      await document.cleanup();
+      try {
+        await document.cleanup();
+      } catch {
+        // Cleanup is best effort after the domain outcome is determined; a
+        // vendor cleanup failure must not escape the Adapter boundary.
+      }
     }
   };
 

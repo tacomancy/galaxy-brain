@@ -247,11 +247,19 @@ export const createFileBackedSourceAssetAdapter = (
       return unavailable("The linked Source Asset is unavailable.");
     }
 
-    const replacementPath = isAbsolute(input.replacementReference)
+    const replacementPathCandidate = isAbsolute(input.replacementReference)
       ? resolve(input.replacementReference)
       : "";
 
-    if (replacementPath.length === 0) {
+    if (replacementPathCandidate.length === 0) {
+      return unavailable("The replacement Source Asset is unavailable.");
+    }
+
+    let replacementPath: string;
+
+    try {
+      replacementPath = await filesystem.realpath(replacementPathCandidate);
+    } catch {
       return unavailable("The replacement Source Asset is unavailable.");
     }
 

@@ -1,6 +1,6 @@
 /** S1 packaged workflow for production linked-PDF status and relink. */
 import { strict as assert } from "node:assert";
-import { cp, rm, writeFile } from "node:fs/promises";
+import { cp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { $ } from "@wdio/globals";
@@ -10,6 +10,12 @@ describe("Production linked PDF status", () => {
   it("preserves the portable claim while reporting changed and verified states", async () => {
     const sourcePdfPath = process.env.GALAXY_BRAIN_TEST_SOURCE_PDF;
     assert.ok(sourcePdfPath, "The packaged test PDF path must be configured.");
+    const invalidReplacementPdfPath =
+      process.env.GALAXY_BRAIN_TEST_INVALID_REPLACEMENT_PDF;
+    assert.ok(
+      invalidReplacementPdfPath,
+      "The invalid replacement PDF path must be configured.",
+    );
     const replacementPdfPath = sourcePdfPath.replace(
       ".pdf",
       "-replacement.pdf",
@@ -38,6 +44,28 @@ describe("Production linked PDF status", () => {
       await $("#paper-desk-source-status-heading").getText(),
       "Source available",
     );
+    assert.equal(
+      await $(".source-identity-card").getAttribute("data-source-record-id"),
+      "bayesian-statistics-fixture-source",
+    );
+    assert.equal(
+      await $("#paper-desk-saved-annotation").getAttribute(
+        "data-annotation-id",
+      ),
+      "annotation-bayesian-statistics-fixture-source-page-2-0-54",
+    );
+    assert.equal(
+      await $("#paper-desk-source-locator").getText(),
+      "page:2#chars=0-54",
+    );
+    assert.equal(
+      await $("#paper-desk-annotation-attribution").getText(),
+      "Attribution: source-claim",
+    );
+    assert.equal(
+      await $("#paper-desk-annotation-classification").getText(),
+      "Classification: source-claim",
+    );
 
     await writeFile(sourcePdfPath, "changed source bytes", "utf8");
     await $("#workspace-switcher-atlas").click();
@@ -55,6 +83,30 @@ describe("Production linked PDF status", () => {
     assert.equal(
       await $("#paper-desk-source-status-heading").getText(),
       "Source status changed",
+    );
+    assert.equal(
+      await $("#paper-desk-annotation-text").getText(),
+      "Bayesian inference updates prior belief with evidence.",
+    );
+
+    await dialog.mockResolvedValue({
+      canceled: false,
+      filePaths: [invalidReplacementPdfPath],
+    });
+    await $("#paper-desk-relink-source").click();
+    await browser.waitUntil(
+      async () =>
+        (await $("#paper-desk-source-status-heading").getText()) ===
+        "Source status unavailable",
+      {
+        timeout: 5_000,
+        timeoutMsg:
+          "The invalid-locator relink outcome did not become visible.",
+      },
+    );
+    assert.equal(
+      await $("#paper-desk-source-locator").getText(),
+      "page:2#chars=0-54",
     );
     assert.equal(
       await $("#paper-desk-annotation-text").getText(),
@@ -132,5 +184,17 @@ describe("Production linked PDF status", () => {
       await $("#paper-desk-annotation-text").getText(),
       "Bayesian inference updates prior belief with evidence.",
     );
+
+    const portableAnnotation = await readFile(
+      join(
+        fixtureRepositoryPath,
+        "sources",
+        "annotations",
+        "annotation-bayesian-statistics-fixture-source-page-2-0-54.md",
+      ),
+      "utf8",
+    );
+    assert.equal(portableAnnotation.includes(sourcePdfPath), false);
+    assert.equal(portableAnnotation.includes("changed source bytes"), false);
   });
 });

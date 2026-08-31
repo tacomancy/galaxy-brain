@@ -39,8 +39,19 @@ const testSourcePdf = createTwoPagePdf(
     "base64",
   ),
 );
+const testInvalidReplacementPdfPath = join(
+  testSourceAssetRoot,
+  "bayesian-statistics-invalid-replacement.pdf",
+);
+const testInvalidReplacementPdf = createTwoPagePdf(
+  Buffer.from("invalid replacement"),
+  "A replacement passage with an invalid locator.",
+);
 
-function createTwoPagePdf(seed: Buffer): Buffer {
+function createTwoPagePdf(
+  seed: Buffer,
+  pageTwoText = "Bayesian inference updates prior belief with evidence.",
+): Buffer {
   const newline = String.fromCharCode(10);
   const pageOne = [
     "BT",
@@ -54,7 +65,7 @@ function createTwoPagePdf(seed: Buffer): Buffer {
     "BT",
     "/F1 12 Tf",
     "72 720 Td",
-    "(Bayesian inference updates prior belief with evidence.) Tj",
+    `(${pageTwoText}) Tj`,
     "ET",
     "",
   ].join(newline);
@@ -84,6 +95,7 @@ function createTwoPagePdf(seed: Buffer): Buffer {
   return Buffer.from(pdf);
 }
 writeFileSync(testSourcePdfPath, testSourcePdf);
+writeFileSync(testInvalidReplacementPdfPath, testInvalidReplacementPdf);
 const testSourceStats = lstatSync(testSourcePdfPath);
 writeFileSync(
   testSourceAssetsPath,
@@ -105,6 +117,8 @@ writeFileSync(
   )}\n`,
 );
 process.env.GALAXY_BRAIN_TEST_SOURCE_PDF = testSourcePdfPath;
+process.env.GALAXY_BRAIN_TEST_INVALID_REPLACEMENT_PDF =
+  testInvalidReplacementPdfPath;
 const sessionStateArgumentPrefix = "--galaxy-brain-session-state=";
 const sourceAssetsArgumentPrefix = "--galaxy-brain-source-assets=";
 const silentTestModeArgument = "--galaxy-brain-test-mode=silent";

@@ -381,8 +381,13 @@ and the governing documentation before continuing.
   bytes through `pdfjs-dist@6.3.289`.
 - The silent packaged S1 workflow uses the real unsigned Electron package and
   production PDF.js path. It covers available, changed, unavailable, failed
-  relink, successful relink, annotation preservation, and post-relink status
-  persistence.
+  relink (including identity-mismatched and locator-invalid replacements),
+  successful relink, Source Record/annotation metadata preservation, canonical
+  replacement-path persistence, and post-relink status persistence. Its
+  isolated fixture also verifies that absolute paths and replacement bytes do
+  not enter the selected portable repository. The source-store path override
+  is restricted to the silent/review harness; normal launches use the
+  application-private configuration root.
 - Focused S5 and PDF.js contracts pass; the full silent packaged suite passes
   27/27 workflow specs. Human acceptance of the packaged artifact is still
   required before this release checklist item is marked complete.
