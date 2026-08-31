@@ -3,7 +3,7 @@ title: Prepare a Synthesis request
 summary: Inspect selected source claims and the exact request before confirmation.
 audience: Knowledge Workbench users reviewing an Agentic Capability
 prerequisites:
-  - A valid Knowledge Repository with a selected topic and saved source claim.
+  - A valid pre-populated Knowledge Repository or identified synthetic fixture with a selected topic and saved source claim.
   - An understanding that Synthesis is an explicit action, not an automatic consequence of capture.
 nav_order: 7
 ---
@@ -21,6 +21,11 @@ Provider request is considered.
 - Open that topic in **Studio**.
 - Read the [safety and privacy guidance](safety-and-privacy.md) before sending
   any agentic request.
+
+The empty starter cannot satisfy this prerequisite because it contains no
+saved source claim. A fixture-backed source claim is suitable for deterministic
+review, but it does not represent production authoring, PDF capture, or a live
+provider.
 
 ## Steps
 

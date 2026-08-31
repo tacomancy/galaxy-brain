@@ -21,6 +21,11 @@ request.
 - Confirm that the displayed destination, model, context, and payload are the
   request you intend to review.
 
+This tutorial requires pre-existing content from a prepared preview; an empty
+starter cannot reach it. The current composition has no production Model
+Adapter, so a confirmation attempt reports the explicit provider-unavailable
+outcome rather than creating a live result.
+
 ## Steps
 
 1. Choose **Confirm and send** only when you intend to authorize the displayed

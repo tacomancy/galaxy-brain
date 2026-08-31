@@ -3,7 +3,7 @@ title: Create a Knowledge Repository
 summary: Create a new repository from the bundled starter skeleton.
 audience: Knowledge Workbench users starting a new repository
 prerequisites:
-  - A new or explicitly empty directory where the repository can be created.
+  - A new or explicitly empty directory where the empty starter can be created.
 nav_order: 2
 ---
 
@@ -21,6 +21,10 @@ open it in the Workbench.
 - You understand that the repository is independent of the Workbench
   application; see the [Repository Format](../../docs/architecture/v1-ui/repository-format.md).
 
+This creates the empty starter only. It does not provide the pre-populated
+knowledge, Source Records, annotations, or saved Synthesis results required by
+the later content-dependent tutorials.
+
 ## Steps
 
 1. In Atlas, choose **Create a Knowledge Repository**.
@@ -36,6 +40,11 @@ The Workbench copies the empty starter skeleton into the selected location,
 validates it, and selects that repository for local work. The repository
 contains the portable roots and format declaration described by the
 [Repository Format](../../docs/architecture/v1-ui/repository-format.md).
+
+The starter is intentionally empty of subject-matter knowledge. To follow the
+reading or Synthesis tutorials after creation, open a separate pre-populated
+conforming repository or the explicitly identified public synthetic fixture;
+do not treat the fixture as production knowledge.
 
 Creation does not initialize Git, contact GitHub, create a backup, or imply
 that the repository has been synchronized. Git and other external tooling

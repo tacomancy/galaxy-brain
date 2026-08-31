@@ -3,7 +3,7 @@ title: Open a Knowledge Repository
 summary: Select and validate an existing portable repository.
 audience: Knowledge Workbench users with an existing repository
 prerequisites:
-  - An existing Knowledge Repository you are authorized to open.
+  - An existing pre-populated or empty Knowledge Repository you are authorized to open.
   - The repository follows the documented Repository Format.
 nav_order: 3
 ---
@@ -21,6 +21,11 @@ substituting a different location.
 - You have the repository’s location available through the directory chooser.
 - Review the [Repository Format](../../docs/architecture/v1-ui/repository-format.md) if you
   need to check its required format declaration and roots.
+
+An existing repository may be a user-owned pre-populated conforming repository,
+the empty starter, or the public project’s synthetic fixture. A synthetic
+fixture is suitable for deterministic demonstration and test-backed review;
+it is not a private repository or a production import source.
 
 ## Steps
 

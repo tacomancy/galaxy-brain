@@ -31,7 +31,12 @@ to the Knowledge Workbench application.
 4. Keep Governed Knowledge distinct from Working Material. Saved source claims,
    drafts, and saved agent results remain Working Material until normal human
    Governance applies them.
-5. Remember that the starter skeleton is empty of subject-matter knowledge and
+5. During a Proposal application, recognize the transient transaction journal
+   and staged files under `proposals/applied/.transactions/`, which support
+   recovery from an interrupted application. After a successful application,
+   recognize the portable artifacts under `proposals/applied/`: immutable
+   applied-audit JSON and exact targeted rollback bytes.
+6. Remember that the starter skeleton is empty of subject-matter knowledge and
    that the synthetic fixture in the public project is not a private repository.
 
 ## Expected result
@@ -39,7 +44,13 @@ to the Knowledge Workbench application.
 You can explain which files and roots are portable, which state is machine-local,
 and why opening or creating a repository does not require Git. The Workbench
 preserves the repository’s application-independent boundary while applying its
-own local safety checks.
+own local safety checks. Applied audit and rollback files are portable,
+application-readable history and recovery data: the ordinary target file
+remains the current-content authority, and these artifacts are not casual
+cleanup targets. Transaction staging is cleaned only after the target, rollback,
+and audit record are coherent. The Repository Format does not imply a desktop
+Proposal Review or rollback UI; TB8 is currently module-only in the public
+capability status.
 
 ## Troubleshooting
 

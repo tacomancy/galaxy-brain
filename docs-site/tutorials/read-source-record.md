@@ -3,7 +3,7 @@ title: Read a Source Record
 summary: Read source-first context and reopen a saved source annotation in Paper Desk.
 audience: Knowledge Workbench users reading a source
 prerequisites:
-  - A valid Knowledge Repository with a complete topic and Source Record context.
+  - A valid pre-populated Knowledge Repository or identified synthetic fixture with a complete topic and Source Record context.
 nav_order: 6
 ---
 
@@ -20,6 +20,10 @@ reading position together.
 - Atlas can show a complete topic and Source Record context.
 - If you want to reopen a saved annotation, the selected Source Record must
   have one available.
+
+The empty starter has no Source Record or saved annotation to read. The current
+source preview is supplied by a deterministic fixture Adapter; it is not a
+production Adapter, PDF import, rendering, or capture.
 
 ## Steps
 
