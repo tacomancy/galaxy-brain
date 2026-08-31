@@ -1,10 +1,10 @@
 # V1 Victory Checklist
 
-Status: draft release checklist. TB15 and TB16 are merged and accepted; the
+Status: draft release checklist. TB15 and TB16 are merged and accepted, and the
 provider-free release gate now has focused packaged-workflow evidence for its
 local governance and recovery behaviors, while the linked-PDF packaging
-boundary, privacy review, MC/DC release-candidate rule, final V1 scope
-decision, and release-readiness dispositions below remain open.
+boundary, privacy review, MC/DC release-candidate rule, TB12–TB14 implementation
+and acceptance, and release-readiness dispositions below remain open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
@@ -112,14 +112,12 @@ Passing checks on one pull request is not enough unless the repository requires 
 
 ## G. TB12–TB14 release-scope decision
 
-These remaining planned bullets must not remain ambiguous. For each one, choose exactly one outcome and record the decision in the delivery plan and relevant spec or product decision:
+These remaining planned bullets must not remain ambiguous. The scope decision below records whether each item belongs in V1; implementation, verification, and human acceptance remain separate release gates. Record the decision in the delivery plan and relevant spec or product decision.
 
-- [ ] TB12, “Separate Search, Ask, and Jump,” is implemented, verified, and human-accepted for V1, closing or updating [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31).
-- [ ] TB12 is explicitly deferred post-V1 with rationale, owner, and follow-up recorded in [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31).
-- [ ] TB13, “Make Atlas actionable,” is implemented, verified, and human-accepted for V1, closing or updating [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
-- [ ] TB13 is explicitly deferred post-V1 with rationale, owner, and follow-up recorded in [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
-- [ ] TB14, “Keep learning progress human-owned,” is implemented, verified, and human-accepted for V1, closing or updating [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
-- [ ] TB14 is explicitly deferred post-V1 with rationale, owner, and follow-up recorded in [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
+- [x] TB12, “Separate Search, Ask, and Jump,” is in scope for V1; implementation, verification, and human acceptance remain required in [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31).
+- [x] TB13, “Make Atlas actionable,” is in scope for V1; implementation, verification, and human acceptance remain required in [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
+- [x] TB14, “Keep learning progress human-owned,” is in scope for V1; implementation, verification, and human acceptance remain required in [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
+- [ ] TB12–TB14 implementation, verification, and human acceptance are complete for V1.
 
 If any of TB12–TB14 is required for V1, review the governing documentation and create a guidance-compliant implementation spec before implementation begins. If deferred, document the boundary clearly rather than leaving an unimplemented tracer bullet implied by the release label.
 
@@ -127,8 +125,8 @@ If any of TB12–TB14 is required for V1, review the governing documentation and
 
 - [ ] Current Capabilities distinguishes the latest published release, reviewed `main`, and planned work.
 - [ ] Product Decisions, Architecture, Repository Format, Test Strategy, Delivery Plan, and TB16 documentation agree about scope and status.
-- [ ] The first-release public journey in [Issue #89](https://github.com/tacomancy/galaxy-brain/issues/89) accurately documents how to run/install the selected distribution, explicit context selection, empty-starter versus pre-populated/fixture boundaries, and portable TB8 audit/rollback/staging artifacts.
-- [ ] Tutorial version/evidence metadata and visible-label drift protection in [Issue #90](https://github.com/tacomancy/galaxy-brain/issues/90) are complete, or explicitly deferred with rationale, owner, and a manual release-review substitute.
+- [x] The first-release public journey in [Issue #89](https://github.com/tacomancy/galaxy-brain/issues/89) accurately documents how to run/install the selected distribution, explicit context selection, empty-starter versus pre-populated/fixture boundaries, and portable TB8 audit/rollback/staging artifacts; completed in merged and closed [PR #109](https://github.com/tacomancy/galaxy-brain/pull/109).
+- [x] Tutorial version/evidence metadata and visible-label drift protection in [Issue #90](https://github.com/tacomancy/galaxy-brain/issues/90) are complete; completed in merged and closed [PR #113](https://github.com/tacomancy/galaxy-brain/pull/113).
 - [ ] Every deferred behavior, discarded alternative, and unresolved follow-up has an owner or an explicit decision to revisit it.
 - [ ] Code-map pointers and public/internal documentation links resolve.
 - [ ] Every open GitHub issue has a dated disposition: required for V1, explicitly deferred post-V1 with rationale and owner, or superseded/completed and closed.
@@ -143,7 +141,7 @@ If any of TB12–TB14 is required for V1, review the governing documentation and
 - [ ] Provider-free core release gate passed.
 - [ ] TB15 integrated and accepted.
 - [x] TB16 integrated and accepted in PR #106 on August 31, 2026.
-- [ ] TB12–TB14 scope classification recorded.
+- [x] TB12–TB14 are classified as in scope for V1; implementation and acceptance remain open.
 - [ ] Distribution and release-operations outcome recorded.
 - [ ] Post-TB hardening and whole-release human acceptance complete or explicitly deferred with residual risks accepted.
 - [ ] Security, supply-chain, and repository-control gates passed.
