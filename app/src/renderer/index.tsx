@@ -19,7 +19,9 @@ import type {
   ProposalReviewReadOutcome,
 } from "../modules/proposal-review";
 import type {
+  CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
+  RelinkSourceOutcome,
   RestoreSynthesisResultOutcome,
   SynthesisPreview,
   SynthesisResultListReadOutcome,
@@ -52,6 +54,9 @@ const authoringReadFromOperation = (
   outcome.outcome === "updated"
     ? { outcome: "available", draft: outcome.draft }
     : outcome;
+
+type SourceStatusPresentation =
+  CheckSourceAvailabilityOutcome | RelinkSourceOutcome;
 
 const ThemeControl = ({
   theme,
@@ -131,10 +136,25 @@ const WorkbenchShell = ({
   >();
   const [proposalReview, setProposalReview] =
     useState<ProposalReviewReadOutcome>(initialProposalReview);
+  const [sourceStatus, setSourceStatus] = useState<
+    SourceStatusPresentation | undefined
+  >();
+  const [relinkOutcome, setRelinkOutcome] = useState<
+    RelinkSourceOutcome | undefined
+  >();
   const [isProposalReviewOpen, setIsProposalReviewOpen] = useState(false);
   const [proposalReviewApplyOutcome, setProposalReviewApplyOutcome] = useState<
     ProposalReviewApplyOutcome | undefined
   >();
+
+  const clearSourceStatus = (): void => {
+    setSourceStatus(undefined);
+    setRelinkOutcome(undefined);
+  };
+
+  const refreshSourceStatus = async (): Promise<void> => {
+    setSourceStatus(await window.workbench.readSourceAvailability());
+  };
 
   useEffect(() => {
     if (!shouldFocusSelectedContextAction.current) {
@@ -153,6 +173,7 @@ const WorkbenchShell = ({
   ): void => {
     if (outcome.outcome === "transitioned") {
       setLastOutcome(undefined);
+      clearSourceStatus();
       setWorkbench(outcome.workbench);
       return;
     }
@@ -163,6 +184,7 @@ const WorkbenchShell = ({
   const refreshWorkbench = async (): Promise<void> => {
     // React owns only this presentation projection; the main-process Session
     // remains the authority for repository selection and access.
+    clearSourceStatus();
     setWorkbench(await window.workbench.openFreshWorkbench());
     const authoringOutcome = await window.workbench.readAuthoringDraft();
     setAuthoring(authoringOutcome);
@@ -243,6 +265,7 @@ const WorkbenchShell = ({
 
     if (outcome.outcome === "selected") {
       setLastOutcome(undefined);
+      clearSourceStatus();
       setWorkbench(outcome.workbench);
       shouldFocusSelectedContextAction.current = true;
       return;
@@ -286,6 +309,10 @@ const WorkbenchShell = ({
     const outcome =
       await window.workbench.openSourceRecordInPaperDesk(sourceRecordId);
     applyWorkspaceTransition(outcome);
+
+    if (outcome.outcome === "transitioned" && outcome.workbench.context) {
+      await refreshSourceStatus();
+    }
   };
 
   const switchWorkspace = async (
@@ -293,6 +320,14 @@ const WorkbenchShell = ({
   ): Promise<void> => {
     const outcome = await window.workbench.switchWorkspace(workspace);
     applyWorkspaceTransition(outcome);
+
+    if (
+      outcome.outcome === "transitioned" &&
+      outcome.workbench.activeWorkspace === "paper-desk" &&
+      outcome.workbench.context
+    ) {
+      await refreshSourceStatus();
+    }
   };
 
   const openSavedAnnotation = async (): Promise<void> => {
@@ -300,7 +335,9 @@ const WorkbenchShell = ({
 
     if (outcome.outcome === "position-restored") {
       setLastOutcome(undefined);
+      clearSourceStatus();
       setWorkbench(outcome.workbench);
+      void refreshSourceStatus();
       return;
     }
 
@@ -309,6 +346,17 @@ const WorkbenchShell = ({
       outcome.outcome === "operation-failed"
     ) {
       setLastOutcome(outcome);
+    }
+  };
+
+  const relinkSource = async (): Promise<void> => {
+    const outcome = await window.workbench.relinkSource();
+
+    if (outcome.outcome !== "canceled") {
+      setRelinkOutcome(outcome.outcome === "relinked" ? undefined : outcome);
+      if (outcome.outcome === "relinked") {
+        setSourceStatus(outcome);
+      }
     }
   };
 
@@ -443,6 +491,9 @@ const WorkbenchShell = ({
         <PaperDesk
           controls={controls}
           workbench={workbench}
+          sourceStatus={sourceStatus}
+          relinkOutcome={relinkOutcome}
+          onRelinkSource={relinkSource}
           onOpenSavedAnnotation={openSavedAnnotation}
         />
       );

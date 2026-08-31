@@ -11,8 +11,10 @@ import type {
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
 import type {
+  CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
   PrepareSynthesisOutcome,
+  RelinkSourceOperationOutcome,
   SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
 } from "../modules/source-processing";
@@ -33,6 +35,10 @@ declare global {
       // Keep renderer callers typed to the same public result as the preload
       // bridge and Workbench Session Module.
       openFreshWorkbench(): Promise<FreshWorkbench>;
+      readSourceAvailability(): Promise<
+        CheckSourceAvailabilityOutcome | undefined
+      >;
+      relinkSource(): Promise<RelinkSourceOperationOutcome>;
       readAuthoringDraft(): Promise<AuthoringReadOutcome>;
       openAuthoringDraft(): Promise<AuthoringReadOutcome>;
       openAuthoringConstruct(

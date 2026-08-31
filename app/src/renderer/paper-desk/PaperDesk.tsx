@@ -1,12 +1,102 @@
 import type { JSX } from "react";
 
 import type { WorkbenchState } from "../../modules/workbench-session";
+import type {
+  CheckSourceAvailabilityOutcome,
+  RelinkSourceOutcome,
+} from "../../modules/source-processing";
+
+type SourceStatusPresentation =
+  CheckSourceAvailabilityOutcome | RelinkSourceOutcome;
+
+const sourceStatusLabel = (
+  status: SourceStatusPresentation | undefined,
+): string => {
+  if (status === undefined) {
+    return "Checking source status…";
+  }
+
+  return {
+    available: "Source available",
+    "source-changed": "Source status changed",
+    "source-status-unavailable": "Source status unavailable",
+    relinked: "Source available",
+  }[status.outcome];
+};
+
+const relinkOutcomeMessage = (
+  outcome: RelinkSourceOutcome | undefined,
+): string | undefined => {
+  if (outcome === undefined || outcome.outcome === "relinked") {
+    return undefined;
+  }
+
+  return outcome.outcome === "source-changed"
+    ? "The replacement Source Asset changed during verification."
+    : outcome.detail;
+};
 
 interface PaperDeskProps {
   controls: JSX.Element;
   workbench: WorkbenchState;
+  sourceStatus: SourceStatusPresentation | undefined;
+  relinkOutcome: RelinkSourceOutcome | undefined;
+  onRelinkSource: () => Promise<void>;
   onOpenSavedAnnotation: () => Promise<void>;
 }
+
+const SourceStatusCard = ({
+  sourceStatus,
+  relinkOutcome,
+  onRelinkSource,
+}: {
+  sourceStatus: SourceStatusPresentation | undefined;
+  relinkOutcome: RelinkSourceOutcome | undefined;
+  onRelinkSource: () => Promise<void>;
+}): JSX.Element => {
+  const failureMessage = relinkOutcomeMessage(relinkOutcome);
+
+  return (
+    <section
+      id="paper-desk-source-status"
+      className="source-status-card"
+      data-source-status={sourceStatus?.outcome ?? "checking"}
+      aria-labelledby="paper-desk-source-status-heading"
+    >
+      <div>
+        <span className="card-kicker">Linked source</span>
+        <h2 id="paper-desk-source-status-heading">
+          {sourceStatusLabel(sourceStatus)}
+        </h2>
+        {sourceStatus?.outcome === "source-changed" ? (
+          <p>The linked file differs from the recorded Source Asset.</p>
+        ) : null}
+        {sourceStatus?.outcome === "source-status-unavailable" ? (
+          <p>{sourceStatus.detail}</p>
+        ) : null}
+        {sourceStatus?.outcome === "relinked" ? (
+          <p id="paper-desk-relink-confirmation">
+            Source relinked and verified.
+          </p>
+        ) : null}
+        {failureMessage !== undefined ? (
+          <p id="paper-desk-relink-outcome">{failureMessage}</p>
+        ) : null}
+      </div>
+      {sourceStatus?.outcome === "source-changed" ||
+      sourceStatus?.outcome === "source-status-unavailable" ? (
+        <button
+          id="paper-desk-relink-source"
+          className="button button-secondary"
+          type="button"
+          onClick={onRelinkSource}
+        >
+          Verify replacement PDF
+        </button>
+      ) : null}
+    </section>
+  );
+};
 
 /**
  * Paper Desk presents a Source Record, captured claim, and reading position.
@@ -17,6 +107,9 @@ interface PaperDeskProps {
 export const PaperDesk = ({
   controls,
   workbench,
+  sourceStatus,
+  relinkOutcome,
+  onRelinkSource,
   onOpenSavedAnnotation,
 }: PaperDeskProps): JSX.Element => {
   if (workbench.activeWorkspace !== "paper-desk") {
@@ -54,6 +147,11 @@ export const PaperDesk = ({
             reading together.
           </p>
         </div>
+        <SourceStatusCard
+          sourceStatus={sourceStatus}
+          relinkOutcome={relinkOutcome}
+          onRelinkSource={onRelinkSource}
+        />
         <div id="paper-desk-reading-surface" className="paper-desk-layout">
           <section
             id="paper-desk-source-preview"
@@ -81,12 +179,10 @@ export const PaperDesk = ({
                 </p>
               )}
             </article>
-            <p className="source-preview-note">
-              Fixture preview · production PDF rendering remains deferred.
-            </p>
           </section>
           <aside className="paper-desk-sidebar">
             <section
+              data-source-record-id={workbench.context.sourceRecord.id}
               className="source-identity-card"
               aria-labelledby="paper-desk-source-record-heading"
             >
@@ -105,6 +201,7 @@ export const PaperDesk = ({
               <section
                 id="paper-desk-saved-annotation"
                 className="annotation-card"
+                data-annotation-id={workbench.sourceAnnotation.id}
                 aria-labelledby="paper-desk-annotation-heading"
               >
                 <div className="annotation-card-heading">

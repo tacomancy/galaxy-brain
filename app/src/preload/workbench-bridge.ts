@@ -18,8 +18,10 @@ import type {
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
 import type {
+  CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
   PrepareSynthesisOutcome,
+  RelinkSourceOperationOutcome,
   SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
 } from "../modules/source-processing";
@@ -39,6 +41,11 @@ contextBridge.exposeInMainWorld("workbench", {
   // serializable state needed to render the current workspace.
   openFreshWorkbench: (): Promise<FreshWorkbench> =>
     ipcRenderer.invoke("workbench:open-fresh"),
+  readSourceAvailability: (): Promise<
+    CheckSourceAvailabilityOutcome | undefined
+  > => ipcRenderer.invoke("workbench:read-source-availability"),
+  relinkSource: (): Promise<RelinkSourceOperationOutcome> =>
+    ipcRenderer.invoke("workbench:relink-source"),
   readAuthoringDraft: (): Promise<AuthoringReadOutcome> =>
     ipcRenderer.invoke("workbench:read-authoring-draft"),
   openAuthoringDraft: (): Promise<AuthoringReadOutcome> =>

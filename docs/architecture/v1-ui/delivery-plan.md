@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -652,15 +652,52 @@ Current evidence as of August 31, 2026: the named provider-free package gate
 passes, the MC/DC evaluator and manifest gate pass for the initial two
 registered decisions, the full silent packaged suite passes 27/27 specs, and
 the repository check, coverage, complexity, documentation, and changed-lines
-gates pass. The provider-free gate now includes isolated packaged workflows
-for external-edit preservation, interrupted-journal restoration, local
-governed application, truthful local-save status, saved-result recovery, and
-unavailable-provider non-retention. On this documentation/test-only branch,
-changed-lines coverage is `NOT APPLICABLE` because there are no changed
-executable lines. The remaining release work is the production-PDF packaging
-boundary, explicit privacy/non-retention human review, MC/DC evidence for
-changed registered decisions, and human acceptance of the real packaged
-application.
+gates pass. The provider-free gate includes isolated packaged workflows for
+external-edit preservation, interrupted-journal restoration, local governed
+application, truthful local-save status, saved-result recovery, and
+unavailable-provider non-retention. The linked-PDF release slice adds
+production PDF.js loading, private source-asset identity storage, explicit
+relink verification, and packaged available/unavailable/changed/relink
+evidence. On this branch, changed-lines coverage is `NOT APPLICABLE` for the
+documentation/test-only portion. The remaining release work is the broader
+provider-free evidence checklist, security/privacy obligations outside this
+slice, MC/DC evidence for changed registered decisions, and human acceptance
+of other release behaviors. The linked-PDF slice's six-gate human acceptance
+was completed on August 31, 2026.
+
+### Provider-free linked-PDF release gate completion record — August 31, 2026
+
+The production PDF.js path, private source-asset identity store, explicit
+verified relink, changed/unavailable status projection, preservation behavior,
+and silent packaged workflow were implemented and verified. The full silent
+packaged suite passed 27/27 specs, and the human owner passed all six final
+packaged-artifact gates: baseline availability, changed-source detection,
+invalid replacement rejection, successful relinking, unavailable-source
+recovery, and relaunch/privacy boundaries. The owner explicitly accepted this
+bounded release-gate scope; Add/Import, managed-copy, OCR, remapping, automatic
+relinking, distribution, and whole-release obligations remain deferred as
+documented in the governing specification.
+
+The PR-readiness hardening cycle also has explicit red-to-green evidence:
+`npm test -- --run tests/contracts/source-asset-adapter.test.ts
+tests/contracts/pdfjs-pdf-adapter.test.ts` first ran 11 tests with two failures
+because the new diagnostics assertions received no diagnostic records. After the
+internal diagnostics sinks were implemented, the same focused command passed
+all 13 tests, including malformed-PDF, TOCTOU, and sanitized-diagnostics
+regressions. The final hardening verification passed `npm run check` (115
+tests, documentation validation, and both registered MC/DC decisions),
+`npm run test:coverage` (82.57% statements, 74.51% branches, 96.74% functions,
+82.46% lines), `npm run lint:complexity`, `npm run test:provider-free` (both
+named provider-free workflows), and `npm run test:workflow` (27/27 silent
+packaged specs). Changed-lines coverage passes against the committed head at
+81.08% (120/148 executable changed lines, 80.00% threshold).
+
+The packaged linked-PDF workflow uses valid-but-different PDF bytes for the
+changed-source case, preserves the changed status across failed relink
+attempts, and scans all portable repository files for machine-local paths and
+replacement bytes. The WDIO launcher and worker coordinate one isolated
+temporary source-asset root so the test mutates the exact file watched by the
+packaged application.
 
 Saved agent context must retain its point-in-time snapshot when the current source cannot be checked or lacks a comparable identity. The Workbench reports `source status unavailable` without blocking access or claiming that the snapshot is current. An explicit refresh must create a new snapshot/version while preserving the original and must never silently replace it in place. Refresh updates only the saved context representation; a separate result-regeneration action requires fresh confirmation before any new OpenAI request.
 

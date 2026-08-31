@@ -1,0 +1,506 @@
+/**
+ * Machine-local linked Source Asset persistence Adapter. It keeps absolute
+ * paths and PDF bytes outside the portable repository, verifies replacement
+ * content before commit, and atomically preserves the previous link on save
+ * failure.
+ */
+import { createHash } from "node:crypto";
+import {
+  lstat,
+  mkdir,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+
+import type {
+  RelinkSourceInput,
+  PdfAdapter,
+  SourceAssetAdapter,
+  SourceAssetIdentityOutcome,
+  SourceAssetRelinkOutcome,
+} from "../../modules/source-processing";
+
+const STORE_FORMAT = "galaxy-brain-source-assets";
+const STORE_VERSION = 1;
+
+interface SourceAssetLinkRecord {
+  mode: "linked-local";
+  path: string;
+  source_identity: string;
+  content_identity: string;
+}
+
+interface SourceAssetStore {
+  format: typeof STORE_FORMAT;
+  format_version: typeof STORE_VERSION;
+  links: Record<string, SourceAssetLinkRecord>;
+}
+
+/** Filesystem boundary used by the production linked-file Adapter. */
+export interface SourceAssetFileSystem {
+  lstat: typeof lstat;
+  mkdir: typeof mkdir;
+  readFile: typeof readFile;
+  realpath: typeof realpath;
+  rename: typeof rename;
+  rm: typeof rm;
+  writeFile: typeof writeFile;
+}
+
+const defaultFileSystem: SourceAssetFileSystem = {
+  lstat,
+  mkdir,
+  readFile,
+  realpath,
+  rename,
+  rm,
+  writeFile,
+};
+
+/** Options for the machine-local source-asset link Adapter. */
+export interface FileBackedSourceAssetAdapterOptions {
+  configurationPath: string;
+  pdf?: PdfAdapter;
+  filesystem?: SourceAssetFileSystem;
+  diagnostics?: SourceAssetDiagnostics;
+}
+
+/** Internal sink for sanitized infrastructure diagnostics. */
+export interface SourceAssetDiagnostics {
+  record(diagnostic: SourceAssetDiagnostic): void;
+}
+
+/** Sanitized filesystem operation metadata retained for internal diagnostics. */
+export interface SourceAssetDiagnostic {
+  category: "filesystem";
+  operation:
+    | "read-store"
+    | "read-source"
+    | "resolve-replacement"
+    | "verify-replacement"
+    | "save-replacement"
+    | "cleanup";
+}
+
+/**
+ * Production Adapter surface used by the main process before relink. It keeps
+ * machine-local paths behind the main-process boundary and translates storage
+ * failures into Source Processing outcomes.
+ */
+export interface FileBackedSourceAssetAdapter extends SourceAssetAdapter {
+  readReferenceIdentity(reference: string): Promise<SourceAssetIdentityOutcome>;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === "string" && value.length > 0;
+
+const parseStore = (value: unknown): SourceAssetStore | undefined => {
+  if (
+    !isRecord(value) ||
+    value.format !== STORE_FORMAT ||
+    value.format_version !== STORE_VERSION ||
+    !isRecord(value.links)
+  ) {
+    return undefined;
+  }
+
+  const links: Record<string, SourceAssetLinkRecord> = {};
+
+  for (const [sourceRecordId, rawLink] of Object.entries(value.links)) {
+    if (
+      !isRecord(rawLink) ||
+      rawLink.mode !== "linked-local" ||
+      !isNonEmptyString(rawLink.path) ||
+      !isNonEmptyString(rawLink.source_identity) ||
+      !isNonEmptyString(rawLink.content_identity)
+    ) {
+      return undefined;
+    }
+
+    links[sourceRecordId] = {
+      mode: "linked-local",
+      path: rawLink.path,
+      source_identity: rawLink.source_identity,
+      content_identity: rawLink.content_identity,
+    };
+  }
+
+  return {
+    format: STORE_FORMAT,
+    format_version: STORE_VERSION,
+    links,
+  };
+};
+
+const unavailable = (detail: string): SourceAssetIdentityOutcome => ({
+  outcome: "unavailable",
+  detail,
+});
+
+const identityFor = async (
+  path: string,
+  filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
+): Promise<SourceAssetIdentityOutcome> => {
+  try {
+    const canonicalPath = await filesystem.realpath(path);
+    const stats = await filesystem.lstat(canonicalPath);
+
+    if (!stats.isFile() || stats.isSymbolicLink()) {
+      return unavailable("The linked Source Asset is not a regular PDF file.");
+    }
+
+    const content = await filesystem.readFile(canonicalPath);
+    if (content.subarray(0, 5).toString("ascii") !== "%PDF-") {
+      return unavailable("The linked Source Asset is not a regular PDF file.");
+    }
+
+    const digest = createHash("sha256").update(content).digest("hex");
+
+    return {
+      outcome: "available",
+      recorded: {
+        sourceIdentity: `file:${stats.dev}:${stats.ino}`,
+        contentIdentity: `sha256:${digest}`,
+      },
+      current: {
+        sourceIdentity: `file:${stats.dev}:${stats.ino}`,
+        contentIdentity: `sha256:${digest}`,
+      },
+    };
+  } catch {
+    diagnostics?.record({ category: "filesystem", operation: "read-source" });
+    return unavailable("The linked Source Asset is unavailable.");
+  }
+};
+
+const readStore = async (
+  configurationPath: string,
+  filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
+): Promise<SourceAssetStore | undefined> => {
+  try {
+    const raw = JSON.parse(
+      await filesystem.readFile(configurationPath, "utf8"),
+    ) as unknown;
+    return parseStore(raw);
+  } catch {
+    diagnostics?.record({ category: "filesystem", operation: "read-store" });
+    return undefined;
+  }
+};
+
+const writeStore = async (
+  configurationPath: string,
+  store: SourceAssetStore,
+  filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
+): Promise<void> => {
+  const temporaryPath = join(
+    dirname(configurationPath),
+    `.galaxy-brain-atomic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+  );
+
+  await filesystem.mkdir(dirname(configurationPath), { recursive: true });
+
+  let operationError: unknown;
+  let committed = false;
+
+  try {
+    await filesystem.writeFile(
+      temporaryPath,
+      `${JSON.stringify(store, null, 2)}\n`,
+      "utf8",
+    );
+    await filesystem.rename(temporaryPath, configurationPath);
+    committed = true;
+  } catch (cause: unknown) {
+    operationError = cause;
+  }
+
+  try {
+    await filesystem.rm(temporaryPath, { force: true });
+  } catch (cause: unknown) {
+    diagnostics?.record({ category: "filesystem", operation: "cleanup" });
+    if (!committed && operationError === undefined) {
+      operationError = cause;
+    }
+  }
+
+  if (operationError !== undefined) {
+    throw operationError;
+  }
+};
+
+const identitiesMatch = (
+  current: { sourceIdentity: string; contentIdentity: string },
+  expectedSourceIdentity: string,
+  expectedContentIdentity: string,
+): boolean =>
+  current.sourceIdentity === expectedSourceIdentity &&
+  current.contentIdentity === expectedContentIdentity;
+
+const replacementPathFor = async (
+  reference: string,
+  filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
+): Promise<string | SourceAssetIdentityOutcome> => {
+  if (!isAbsolute(reference)) {
+    return unavailable("The replacement Source Asset is unavailable.");
+  }
+
+  try {
+    return await filesystem.realpath(resolve(reference));
+  } catch {
+    diagnostics?.record({
+      category: "filesystem",
+      operation: "resolve-replacement",
+    });
+    return unavailable("The replacement Source Asset is unavailable.");
+  }
+};
+
+type ReplacementVerificationOutcome =
+  { outcome: "verified" } | { outcome: "unavailable"; detail: string };
+
+const verifyReplacement = async (
+  pdf: PdfAdapter | undefined,
+  input: RelinkSourceInput,
+  replacementPath: string,
+  diagnostics?: SourceAssetDiagnostics,
+): Promise<ReplacementVerificationOutcome> => {
+  if (pdf === undefined) {
+    return {
+      outcome: "unavailable",
+      detail: "The replacement Source Asset could not be verified.",
+    };
+  }
+
+  let selection: Awaited<ReturnType<PdfAdapter["readSelection"]>>;
+
+  try {
+    selection = await pdf.readSelection({
+      sourceRecord: input.sourceRecord,
+      sourceReference: replacementPath,
+      ...input.verificationLocator,
+    });
+  } catch {
+    diagnostics?.record({
+      category: "filesystem",
+      operation: "verify-replacement",
+    });
+    return {
+      outcome: "unavailable",
+      detail: "The replacement Source Asset could not be verified.",
+    };
+  }
+
+  if (selection.outcome === "source-unavailable") {
+    return { outcome: "unavailable", detail: selection.detail };
+  }
+
+  if (
+    selection.text.length !==
+    input.verificationLocator.end - input.verificationLocator.start
+  ) {
+    return {
+      outcome: "unavailable",
+      detail: "The replacement Source Asset could not be verified.",
+    };
+  }
+
+  return { outcome: "verified" };
+};
+
+/**
+ * Creates the production machine-local linked Source Asset Adapter.
+ * Filesystem paths and PDF bytes remain inside this main-process boundary.
+ * @param options Configuration for the private store and verification PDF Adapter.
+ * @returns A file-backed Adapter that translates filesystem failures into domain outcomes.
+ */
+export const createFileBackedSourceAssetAdapter = (
+  options: FileBackedSourceAssetAdapterOptions,
+): FileBackedSourceAssetAdapter => {
+  const filesystem = options.filesystem ?? defaultFileSystem;
+
+  const readIdentity = async (
+    sourceRecordId: string,
+  ): Promise<SourceAssetIdentityOutcome> => {
+    const store = await readStore(
+      options.configurationPath,
+      filesystem,
+      options.diagnostics,
+    );
+    const link = store?.links[sourceRecordId];
+
+    if (link === undefined || !isAbsolute(link.path)) {
+      return unavailable("The linked Source Asset is unavailable.");
+    }
+
+    const current = await identityFor(
+      link.path,
+      filesystem,
+      options.diagnostics,
+    );
+
+    if (current.outcome === "unavailable") {
+      return current;
+    }
+
+    return {
+      outcome: "available",
+      recorded: {
+        sourceIdentity: link.source_identity,
+        contentIdentity: link.content_identity,
+      },
+      current: current.current,
+    };
+  };
+
+  const relink = async (
+    input: RelinkSourceInput,
+  ): Promise<SourceAssetRelinkOutcome> => {
+    const store = await readStore(
+      options.configurationPath,
+      filesystem,
+      options.diagnostics,
+    );
+    const previousLink = store?.links[input.sourceRecord.id];
+
+    if (store === undefined || previousLink === undefined) {
+      return unavailable("The linked Source Asset is unavailable.");
+    }
+
+    const replacementPathOrOutcome = await replacementPathFor(
+      input.replacementReference,
+      filesystem,
+      options.diagnostics,
+    );
+
+    if (typeof replacementPathOrOutcome !== "string") {
+      return replacementPathOrOutcome;
+    }
+
+    const replacementPath = replacementPathOrOutcome;
+
+    const replacementIdentity = await identityFor(
+      replacementPath,
+      filesystem,
+      options.diagnostics,
+    );
+
+    if (replacementIdentity.outcome === "unavailable") {
+      return replacementIdentity;
+    }
+
+    const current = replacementIdentity.current;
+
+    if (
+      !identitiesMatch(
+        current,
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+      )
+    ) {
+      return {
+        outcome: "changed",
+        recorded: {
+          sourceIdentity: previousLink.source_identity,
+          contentIdentity: previousLink.content_identity,
+        },
+        current,
+      };
+    }
+
+    const verification = await verifyReplacement(
+      options.pdf,
+      input,
+      replacementPath,
+      options.diagnostics,
+    );
+
+    if (verification.outcome === "unavailable") {
+      return verification;
+    }
+
+    const verifiedIdentity = await identityFor(
+      replacementPath,
+      filesystem,
+      options.diagnostics,
+    );
+
+    if (verifiedIdentity.outcome === "unavailable") {
+      return verifiedIdentity;
+    }
+
+    if (
+      !identitiesMatch(
+        verifiedIdentity.current,
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+      )
+    ) {
+      return {
+        outcome: "changed",
+        recorded: {
+          sourceIdentity: previousLink.source_identity,
+          contentIdentity: previousLink.content_identity,
+        },
+        current: verifiedIdentity.current,
+      };
+    }
+
+    const nextStore: SourceAssetStore = {
+      ...store,
+      links: {
+        ...store.links,
+        [input.sourceRecord.id]: {
+          mode: "linked-local",
+          path: replacementPath,
+          source_identity: verifiedIdentity.current.sourceIdentity,
+          content_identity: verifiedIdentity.current.contentIdentity,
+        },
+      },
+    };
+
+    try {
+      await writeStore(
+        options.configurationPath,
+        nextStore,
+        filesystem,
+        options.diagnostics,
+      );
+    } catch {
+      options.diagnostics?.record({
+        category: "filesystem",
+        operation: "save-replacement",
+      });
+      return unavailable("The replacement Source Asset could not be saved.");
+    }
+
+    return {
+      outcome: "available",
+      recorded: verifiedIdentity.current,
+      current: verifiedIdentity.current,
+    };
+  };
+
+  const readReferenceIdentity = async (
+    reference: string,
+  ): Promise<SourceAssetIdentityOutcome> => {
+    if (!isAbsolute(reference)) {
+      return unavailable("The replacement Source Asset is unavailable.");
+    }
+
+    return identityFor(resolve(reference), filesystem, options.diagnostics);
+  };
+
+  return { readIdentity, readReferenceIdentity, relink };
+};

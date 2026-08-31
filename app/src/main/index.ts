@@ -10,7 +10,7 @@
 import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, join, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { createFileBackedKnowledgeRepository } from "../adapters/knowledge-repository/file-backed-knowledge-repository";
 import {
@@ -25,6 +25,8 @@ import {
 import { createFileBackedGovernanceStore } from "../adapters/governance/file-backed-governance-store";
 import { createFileBackedWorkbenchSessionState } from "../adapters/session-state/file-backed-workbench-session-state";
 import { createFixturePdfAdapter } from "../adapters/pdf/fixture-pdf-adapter";
+import { createFileBackedSourceAssetAdapter } from "../adapters/pdf/file-backed-source-asset-adapter";
+import { createPdfJsAdapter } from "../adapters/pdf/pdfjs-pdf-adapter";
 import { createFileBackedSynthesisResultRepository } from "../adapters/working-material/file-backed-synthesis-result-repository";
 import { createFileBackedWorkingMaterialRepository } from "../adapters/working-material/file-backed-working-material-repository";
 import { createGovernance } from "../modules/governance";
@@ -46,7 +48,9 @@ import {
 } from "../modules/proposal-review";
 import type {
   ConfirmSynthesisOutcome,
+  CheckSourceAvailabilityOutcome,
   PrepareSynthesisOutcome,
+  RelinkSourceOperationOutcome,
   SynthesisPreview,
   SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
@@ -149,6 +153,40 @@ const createWindow = async (): Promise<void> => {
   const sessionStatePath =
     sessionStateArgument?.slice("--galaxy-brain-session-state=".length) ??
     join(app.getPath("userData"), "workbench-session.json");
+  const sourceAssetsArgument = process.argv.find((argument) =>
+    argument.startsWith("--galaxy-brain-source-assets="),
+  );
+  const defaultSourceAssetsPath = join(
+    app.getPath("userData"),
+    "source-assets.json",
+  );
+  // The isolated source-store override is test/review-only; normal launches
+  // always keep linked paths and hashes in Electron's private user-data root.
+  const sourceAssetsPath =
+    isFixtureMode && sourceAssetsArgument !== undefined
+      ? sourceAssetsArgument.slice("--galaxy-brain-source-assets=".length)
+      : defaultSourceAssetsPath;
+  const pdfjsRoot = app.isPackaged
+    ? join(process.resourcesPath, "pdfjs-dist")
+    : join(app.getAppPath(), "node_modules", "pdfjs-dist");
+  const productionPdf = createPdfJsAdapter({
+    modulePath: pathToFileURL(join(pdfjsRoot, "legacy", "build", "pdf.mjs"))
+      .href,
+    standardFontDataUrl: pathToFileURL(
+      `${join(pdfjsRoot, "standard_fonts")}${sep}`,
+    ).href,
+  });
+  const sourceAsset = createFileBackedSourceAssetAdapter({
+    configurationPath: sourceAssetsPath,
+    pdf: productionPdf,
+  });
+  const sourceProcessingFor = (repositoryPath: string) =>
+    createSourceProcessing({
+      pdf: productionPdf,
+      sourceAsset,
+      workingMaterial:
+        createFileBackedWorkingMaterialRepository(repositoryPath),
+    });
   const workbenchSession = createWorkbenchSession(
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
@@ -251,6 +289,77 @@ const createWindow = async (): Promise<void> => {
       outcome: "operation-failed",
       detail: "A read-write Knowledge Repository is required for review.",
     };
+  const readSourceAvailability = async (): Promise<
+    CheckSourceAvailabilityOutcome | undefined
+  > => {
+    const workbench = await workbenchSession.openFreshWorkbench();
+
+    if (
+      workbench.repositoryPath === undefined ||
+      workbench.context === undefined
+    ) {
+      return undefined;
+    }
+
+    return sourceProcessingFor(
+      workbench.repositoryPath,
+    ).checkSourceAvailability({
+      sourceRecord: workbench.context.sourceRecord,
+    });
+  };
+  const relinkSource = async (): Promise<RelinkSourceOperationOutcome> => {
+    const workbench = await workbenchSession.openFreshWorkbench();
+
+    if (
+      workbench.repositoryPath === undefined ||
+      workbench.context === undefined ||
+      workbench.sourceAnnotation === undefined
+    ) {
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord: workbench.context?.sourceRecord ?? {
+          id: "unknown-source",
+          title: "Current Source Record",
+        },
+        warning: "source status unavailable",
+        detail: "A Source Record with a known locator is required to relink.",
+      };
+    }
+
+    const selection = await dialog.showOpenDialog(mainWindow, {
+      buttonLabel: "Verify and Relink PDF",
+      message: "Choose the replacement PDF for this Source Record.",
+      properties: ["openFile"],
+      filters: [{ name: "PDF documents", extensions: ["pdf"] }],
+    });
+
+    if (selection.canceled || selection.filePaths[0] === undefined) {
+      return { outcome: "canceled" };
+    }
+
+    const replacementReference = selection.filePaths[0];
+    const replacementIdentity =
+      await sourceAsset.readReferenceIdentity(replacementReference);
+
+    if (replacementIdentity.outcome === "unavailable") {
+      return {
+        outcome: "source-status-unavailable",
+        sourceRecord: { ...workbench.context.sourceRecord },
+        warning: "source status unavailable",
+        detail: replacementIdentity.detail,
+      };
+    }
+
+    return sourceProcessingFor(workbench.repositoryPath).relinkSource({
+      sourceRecord: workbench.context.sourceRecord,
+      replacementReference,
+      expectedReplacementSourceIdentity:
+        replacementIdentity.current.sourceIdentity,
+      expectedReplacementContentIdentity:
+        replacementIdentity.current.contentIdentity,
+      verificationLocator: workbench.sourceAnnotation.sourceLocator,
+    });
+  };
   let pendingSynthesis:
     { repositoryPath: string; preview: SynthesisPreview } | undefined;
   const prepareSynthesisPreview = async (
@@ -351,6 +460,22 @@ const createWindow = async (): Promise<void> => {
     }
 
     return workbenchSession.openFreshWorkbench();
+  });
+
+  ipcMain.handle("workbench:read-source-availability", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return readSourceAvailability();
+  });
+
+  ipcMain.handle("workbench:relink-source", async (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return relinkSource();
   });
 
   ipcMain.handle("workbench:read-theme", (event) => {
@@ -765,6 +890,8 @@ const createWindow = async (): Promise<void> => {
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
+    ipcMain.removeHandler("workbench:read-source-availability");
+    ipcMain.removeHandler("workbench:relink-source");
     ipcMain.removeHandler("workbench:read-theme");
     ipcMain.removeHandler("workbench:set-theme");
     ipcMain.removeHandler("workbench:read-authoring-draft");
