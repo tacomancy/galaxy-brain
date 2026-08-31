@@ -37,14 +37,14 @@
     "@electron-forge/cli": "7.11.2",
     "@electron-forge/plugin-webpack": "7.11.2",
     "@types/mocha": "10.0.10",
-    "@types/node": "26.3.0",
+    "@types/node": "26.4.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "@vitest/coverage-v8": "4.1.11",
-    "@wdio/cli": "9.31.3",
+    "@wdio/cli": "9.31.4",
     "@wdio/electron-service": "10.2.0",
     "@wdio/globals": "9.31.3",
-    "@wdio/local-runner": "9.31.3",
+    "@wdio/local-runner": "9.31.4",
     "@wdio/mocha-framework": "9.31.2",
     "electron": "44.0.0",
     "eslint": "9.39.2",
@@ -58,7 +58,7 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.68.0",
     "vitest": "4.1.11",
-    "webpack": "5.109.2"
+    "webpack": "5.110.1"
   },
   "overrides": {
     "@puppeteer/browsers": "3.2.1",
