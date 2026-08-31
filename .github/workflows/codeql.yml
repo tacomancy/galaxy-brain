@@ -28,6 +28,9 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
+          # Keep the release gate explicit: security-and-quality includes the
+          # security-extended suite plus maintainability and reliability queries.
+          queries: security-extended,security-and-quality
 
       - name: Analyze code
         uses: github/codeql-action/analyze@v4
