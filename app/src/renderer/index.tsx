@@ -139,6 +139,9 @@ const WorkbenchShell = ({
   const [sourceStatus, setSourceStatus] = useState<
     SourceStatusPresentation | undefined
   >();
+  const [relinkOutcome, setRelinkOutcome] = useState<
+    RelinkSourceOutcome | undefined
+  >();
   const [isProposalReviewOpen, setIsProposalReviewOpen] = useState(false);
   const [proposalReviewApplyOutcome, setProposalReviewApplyOutcome] = useState<
     ProposalReviewApplyOutcome | undefined
@@ -146,6 +149,7 @@ const WorkbenchShell = ({
 
   const clearSourceStatus = (): void => {
     setSourceStatus(undefined);
+    setRelinkOutcome(undefined);
   };
 
   const refreshSourceStatus = async (): Promise<void> => {
@@ -349,7 +353,10 @@ const WorkbenchShell = ({
     const outcome = await window.workbench.relinkSource();
 
     if (outcome.outcome !== "canceled") {
-      setSourceStatus(outcome);
+      setRelinkOutcome(outcome.outcome === "relinked" ? undefined : outcome);
+      if (outcome.outcome === "relinked") {
+        setSourceStatus(outcome);
+      }
     }
   };
 
@@ -485,6 +492,7 @@ const WorkbenchShell = ({
           controls={controls}
           workbench={workbench}
           sourceStatus={sourceStatus}
+          relinkOutcome={relinkOutcome}
           onRelinkSource={relinkSource}
           onOpenSavedAnnotation={openSavedAnnotation}
         />

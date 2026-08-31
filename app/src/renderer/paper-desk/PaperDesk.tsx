@@ -24,55 +24,79 @@ const sourceStatusLabel = (
   }[status.outcome];
 };
 
+const relinkOutcomeMessage = (
+  outcome: RelinkSourceOutcome | undefined,
+): string | undefined => {
+  if (outcome === undefined || outcome.outcome === "relinked") {
+    return undefined;
+  }
+
+  return outcome.outcome === "source-changed"
+    ? "The replacement Source Asset changed during verification."
+    : outcome.detail;
+};
+
 interface PaperDeskProps {
   controls: JSX.Element;
   workbench: WorkbenchState;
   sourceStatus: SourceStatusPresentation | undefined;
+  relinkOutcome: RelinkSourceOutcome | undefined;
   onRelinkSource: () => Promise<void>;
   onOpenSavedAnnotation: () => Promise<void>;
 }
 
 const SourceStatusCard = ({
   sourceStatus,
+  relinkOutcome,
   onRelinkSource,
 }: {
   sourceStatus: SourceStatusPresentation | undefined;
+  relinkOutcome: RelinkSourceOutcome | undefined;
   onRelinkSource: () => Promise<void>;
-}): JSX.Element => (
-  <section
-    id="paper-desk-source-status"
-    className="source-status-card"
-    data-source-status={sourceStatus?.outcome ?? "checking"}
-    aria-labelledby="paper-desk-source-status-heading"
-  >
-    <div>
-      <span className="card-kicker">Linked source</span>
-      <h2 id="paper-desk-source-status-heading">
-        {sourceStatusLabel(sourceStatus)}
-      </h2>
-      {sourceStatus?.outcome === "source-changed" ? (
-        <p>The linked file differs from the recorded Source Asset.</p>
+}): JSX.Element => {
+  const failureMessage = relinkOutcomeMessage(relinkOutcome);
+
+  return (
+    <section
+      id="paper-desk-source-status"
+      className="source-status-card"
+      data-source-status={sourceStatus?.outcome ?? "checking"}
+      aria-labelledby="paper-desk-source-status-heading"
+    >
+      <div>
+        <span className="card-kicker">Linked source</span>
+        <h2 id="paper-desk-source-status-heading">
+          {sourceStatusLabel(sourceStatus)}
+        </h2>
+        {sourceStatus?.outcome === "source-changed" ? (
+          <p>The linked file differs from the recorded Source Asset.</p>
+        ) : null}
+        {sourceStatus?.outcome === "source-status-unavailable" ? (
+          <p>{sourceStatus.detail}</p>
+        ) : null}
+        {sourceStatus?.outcome === "relinked" ? (
+          <p id="paper-desk-relink-confirmation">
+            Source relinked and verified.
+          </p>
+        ) : null}
+        {failureMessage !== undefined ? (
+          <p id="paper-desk-relink-outcome">{failureMessage}</p>
+        ) : null}
+      </div>
+      {sourceStatus?.outcome === "source-changed" ||
+      sourceStatus?.outcome === "source-status-unavailable" ? (
+        <button
+          id="paper-desk-relink-source"
+          className="button button-secondary"
+          type="button"
+          onClick={onRelinkSource}
+        >
+          Verify replacement PDF
+        </button>
       ) : null}
-      {sourceStatus?.outcome === "source-status-unavailable" ? (
-        <p>{sourceStatus.detail}</p>
-      ) : null}
-      {sourceStatus?.outcome === "relinked" ? (
-        <p id="paper-desk-relink-confirmation">Source relinked and verified.</p>
-      ) : null}
-    </div>
-    {sourceStatus?.outcome === "source-changed" ||
-    sourceStatus?.outcome === "source-status-unavailable" ? (
-      <button
-        id="paper-desk-relink-source"
-        className="button button-secondary"
-        type="button"
-        onClick={onRelinkSource}
-      >
-        Verify replacement PDF
-      </button>
-    ) : null}
-  </section>
-);
+    </section>
+  );
+};
 
 /**
  * Paper Desk presents a Source Record, captured claim, and reading position.
@@ -84,6 +108,7 @@ export const PaperDesk = ({
   controls,
   workbench,
   sourceStatus,
+  relinkOutcome,
   onRelinkSource,
   onOpenSavedAnnotation,
 }: PaperDeskProps): JSX.Element => {
@@ -124,6 +149,7 @@ export const PaperDesk = ({
         </div>
         <SourceStatusCard
           sourceStatus={sourceStatus}
+          relinkOutcome={relinkOutcome}
           onRelinkSource={onRelinkSource}
         />
         <div id="paper-desk-reading-surface" className="paper-desk-layout">

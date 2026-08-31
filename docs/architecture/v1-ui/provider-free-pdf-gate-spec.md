@@ -376,7 +376,8 @@ and the governing documentation before continuing.
 - The production linked-file Adapter stores versioned machine-local JSON,
   compares file identity and SHA-256 content identity, verifies the known
   page/range before relink, and atomically preserves the prior record on
-  failed writes.
+  failed writes. A failed relink preserves the prior source-status projection
+  and renders only a sanitized operation outcome alongside it.
 - The production PDF.js Adapter contract resolves real one-page, static
   two-page, generated workflow, and explicitly configured local-resource PDF
   bytes through `pdfjs-dist@6.3.289`.
@@ -387,8 +388,9 @@ and the governing documentation before continuing.
   the focused S5 suite. It also covers Source Record/
   annotation metadata preservation, canonical replacement-path persistence,
   and post-relink status persistence. Its
-  isolated fixture also verifies that absolute paths and replacement bytes do
-  not enter the selected portable repository. The source-store path override
+  isolated fixture scans every portable repository file and verifies that
+  absolute paths and replacement bytes do not enter the selected repository.
+  The source-store path override
   is restricted to the silent/review harness; normal launches use the
   application-private configuration root.
 - Focused S5 and PDF.js contracts pass; `npm run test:provider-free` passes

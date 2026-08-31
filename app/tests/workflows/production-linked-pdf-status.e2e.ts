@@ -1,6 +1,6 @@
 /** S1 packaged workflow for production linked-PDF status and relink. */
 import { strict as assert } from "node:assert";
-import { cp, readFile, rm } from "node:fs/promises";
+import { cp, lstat, readFile, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { $ } from "@wdio/globals";
@@ -98,13 +98,14 @@ describe("Production linked PDF status", () => {
     await browser.waitUntil(
       async () =>
         (await $("#paper-desk-source-status-heading").getText()) ===
-        "Source status unavailable",
+        "Source status changed",
       {
         timeout: 5_000,
         timeoutMsg:
           "The invalid-locator relink outcome did not become visible.",
       },
     );
+    await $("#paper-desk-relink-outcome").waitForDisplayed();
     assert.equal(
       await $("#paper-desk-source-locator").getText(),
       "page:2#chars=0-54",
@@ -126,12 +127,13 @@ describe("Production linked PDF status", () => {
     await browser.waitUntil(
       async () =>
         (await $("#paper-desk-source-status-heading").getText()) ===
-        "Source status unavailable",
+        "Source status changed",
       {
         timeout: 5_000,
         timeoutMsg: "The failed relink outcome did not become visible.",
       },
     );
+    await $("#paper-desk-relink-outcome").waitForDisplayed();
     assert.equal(
       await $("#paper-desk-annotation-text").getText(),
       "Bayesian inference updates prior belief with evidence.",
@@ -174,6 +176,7 @@ describe("Production linked PDF status", () => {
       "Source available",
     );
 
+    const replacementBytes = await readFile(replacementPdfPath);
     await rm(replacementPdfPath);
     await $("#workspace-switcher-atlas").click();
     await $("#workspace-switcher-paper-desk").click();
@@ -201,5 +204,23 @@ describe("Production linked PDF status", () => {
       "utf8",
     );
     assert.equal(portableAnnotation.includes(sourcePdfPath), false);
+
+    const portablePaths = await readdir(fixtureRepositoryPath, {
+      recursive: true,
+    });
+    for (const portablePath of portablePaths) {
+      const absolutePath = join(fixtureRepositoryPath, portablePath);
+      if (!(await lstat(absolutePath)).isFile()) {
+        continue;
+      }
+
+      const portableBytes = await readFile(absolutePath);
+      assert.equal(portableBytes.includes(Buffer.from(sourcePdfPath)), false);
+      assert.equal(
+        portableBytes.includes(Buffer.from(replacementPdfPath)),
+        false,
+      );
+      assert.equal(portableBytes.includes(replacementBytes), false);
+    }
   });
 });

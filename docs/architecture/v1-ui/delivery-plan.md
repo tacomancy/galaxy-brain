@@ -680,6 +680,13 @@ named provider-free workflows), and `npm run test:workflow` (27/27 silent
 packaged specs). Changed-lines coverage passes against the committed head at
 82.03% (105/128 executable changed lines, 80.00% threshold).
 
+The packaged linked-PDF workflow uses valid-but-different PDF bytes for the
+changed-source case, preserves the changed status across failed relink
+attempts, and scans all portable repository files for machine-local paths and
+replacement bytes. The WDIO launcher and worker coordinate one isolated
+temporary source-asset root so the test mutates the exact file watched by the
+packaged application.
+
 Saved agent context must retain its point-in-time snapshot when the current source cannot be checked or lacks a comparable identity. The Workbench reports `source status unavailable` without blocking access or claiming that the snapshot is current. An explicit refresh must create a new snapshot/version while preserving the original and must never silently replace it in place. Refresh updates only the saved context representation; a separate result-regeneration action requires fresh confirmation before any new OpenAI request.
 
 Result regeneration must create a new result version and preserve the previous result rather than silently overwriting it.
