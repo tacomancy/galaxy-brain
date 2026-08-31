@@ -14,6 +14,10 @@ import { fileURLToPath } from "node:url";
 
 import { createFileBackedKnowledgeRepository } from "../adapters/knowledge-repository/file-backed-knowledge-repository";
 import {
+  createEmptyAuthoringDraftSource,
+  createFixtureAuthoringDraftSource,
+} from "../adapters/knowledge-authoring/fixture-authoring-draft";
+import {
   createEmptyProposalReviewSource,
   createFixtureProposalReviewSource,
   fixtureGovernedTarget,
@@ -25,6 +29,14 @@ import { createFileBackedSynthesisResultRepository } from "../adapters/working-m
 import { createFileBackedWorkingMaterialRepository } from "../adapters/working-material/file-backed-working-material-repository";
 import { createGovernance } from "../modules/governance";
 import { contentTypeFor } from "./renderer-asset-content-type";
+import {
+  createKnowledgeAuthoring,
+  type AuthoringConstruct,
+  type AuthoringMode,
+  type AuthoringOperationOutcome,
+  type AuthoringReadOutcome,
+  type KnowledgeAuthoring,
+} from "../modules/knowledge-authoring";
 import { createSourceProcessing } from "../modules/source-processing";
 import {
   createProposalReview,
@@ -124,6 +136,10 @@ const createWindow = async (): Promise<void> => {
   const isSilentTestMode = process.argv.includes(
     "--galaxy-brain-test-mode=silent",
   );
+  const isHumanReviewMode = process.argv.includes(
+    "--galaxy-brain-test-mode=review",
+  );
+  const isFixtureMode = isSilentTestMode || isHumanReviewMode;
   const starterRoot = app.isPackaged
     ? join(process.resourcesPath, "knowledge-repository")
     : join(app.getAppPath(), "templates", "knowledge-repository");
@@ -137,6 +153,56 @@ const createWindow = async (): Promise<void> => {
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
   );
+  let authoringRepositoryPath: string | undefined;
+  let authoring: KnowledgeAuthoring | undefined;
+  const getAuthoring = async (): Promise<KnowledgeAuthoring | undefined> => {
+    const workbench = await workbenchSession.openFreshWorkbench();
+
+    if (workbench.repositoryPath === undefined) {
+      return undefined;
+    }
+
+    if (
+      authoring !== undefined &&
+      authoringRepositoryPath === workbench.repositoryPath
+    ) {
+      return authoring;
+    }
+
+    authoringRepositoryPath = workbench.repositoryPath;
+    authoring = createKnowledgeAuthoring(
+      isFixtureMode
+        ? createFixtureAuthoringDraftSource()
+        : createEmptyAuthoringDraftSource(),
+    );
+    return authoring;
+  };
+  const readAuthoringDraft = async (): Promise<AuthoringReadOutcome> =>
+    (await getAuthoring())?.readDraft() ?? {
+      outcome: "not-available",
+      detail: "A Knowledge Repository must be selected first.",
+    };
+  const editAuthoringSemanticText = async (
+    nextText: string,
+  ): Promise<AuthoringOperationOutcome> =>
+    (await getAuthoring())?.editSemanticText(nextText) ?? {
+      outcome: "not-available",
+      detail: "A Knowledge Repository must be selected first.",
+    };
+  const setAuthoringMode = async (
+    mode: AuthoringMode,
+  ): Promise<AuthoringOperationOutcome> =>
+    (await getAuthoring())?.setMode(mode) ?? {
+      outcome: "not-available",
+      detail: "A Knowledge Repository must be selected first.",
+    };
+  const openAuthoringConstruct = async (
+    construct: AuthoringConstruct,
+  ): Promise<AuthoringReadOutcome> =>
+    (await getAuthoring())?.openConstruct(construct) ?? {
+      outcome: "not-available",
+      detail: "A Knowledge Repository must be selected first.",
+    };
   let proposalReviewRepositoryPath: string | undefined;
   let proposalReview: ProposalReview | undefined;
   const getProposalReview = async (): Promise<ProposalReview | undefined> => {
@@ -166,7 +232,7 @@ const createWindow = async (): Promise<void> => {
           nextVersionId: "bayesian-statistics-v2",
         }),
       }),
-      source: isSilentTestMode
+      source: isFixtureMode
         ? createFixtureProposalReviewSource()
         : createEmptyProposalReviewSource(),
     });
@@ -279,6 +345,71 @@ const createWindow = async (): Promise<void> => {
     }
 
     return workbenchSession.openFreshWorkbench();
+  });
+
+  ipcMain.handle("workbench:read-authoring-draft", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return readAuthoringDraft();
+  });
+
+  ipcMain.handle("workbench:open-authoring-draft", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    return readAuthoringDraft();
+  });
+
+  ipcMain.handle(
+    "workbench:edit-authoring-semantic-text",
+    (event, nextText: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (typeof nextText !== "string") {
+        throw new Error("Invalid authoring semantic text.");
+      }
+
+      return editAuthoringSemanticText(nextText);
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:open-authoring-construct",
+    (event, construct: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (
+        construct !== "highlight" &&
+        construct !== "link" &&
+        construct !== "embed" &&
+        construct !== "callout" &&
+        construct !== "equation" &&
+        construct !== "citation"
+      ) {
+        throw new Error("Invalid authoring construct.");
+      }
+
+      return openAuthoringConstruct(construct);
+    },
+  );
+
+  ipcMain.handle("workbench:set-authoring-mode", (event, mode: unknown) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+
+    if (mode !== "rich" && mode !== "source") {
+      throw new Error("Invalid authoring representation.");
+    }
+
+    return setAuthoringMode(mode);
   });
 
   ipcMain.handle("workbench:read-proposal-review", (event) => {
@@ -600,6 +731,11 @@ const createWindow = async (): Promise<void> => {
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
     ipcMain.removeHandler("workbench:open-fresh");
+    ipcMain.removeHandler("workbench:read-authoring-draft");
+    ipcMain.removeHandler("workbench:open-authoring-draft");
+    ipcMain.removeHandler("workbench:edit-authoring-semantic-text");
+    ipcMain.removeHandler("workbench:open-authoring-construct");
+    ipcMain.removeHandler("workbench:set-authoring-mode");
     ipcMain.removeHandler("workbench:read-proposal-review");
     ipcMain.removeHandler("workbench:open-proposal-review");
     ipcMain.removeHandler("workbench:accept-proposal-review");

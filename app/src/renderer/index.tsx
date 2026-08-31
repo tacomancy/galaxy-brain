@@ -9,6 +9,12 @@ import { ProposalReview } from "./proposal-review/ProposalReview";
 import { Studio } from "./studio/Studio";
 import { WorkspaceSwitcher } from "./workspace-switcher/WorkspaceSwitcher";
 import type {
+  AuthoringConstruct,
+  AuthoringMode,
+  AuthoringOperationOutcome,
+  AuthoringReadOutcome,
+} from "../modules/knowledge-authoring";
+import type {
   ProposalReviewApplyOutcome,
   ProposalReviewReadOutcome,
 } from "../modules/proposal-review";
@@ -39,18 +45,32 @@ if (rootElement === null) {
 
 const root = createRoot(rootElement);
 
+const authoringReadFromOperation = (
+  outcome: AuthoringOperationOutcome,
+): AuthoringReadOutcome =>
+  outcome.outcome === "updated"
+    ? { outcome: "available", draft: outcome.draft }
+    : outcome;
+
 // Request session state through the typed preload bridge, then render the
 // workspace selected by the application Module.
 const WorkbenchShell = ({
   initialWorkbench,
   initialSavedSynthesisResults,
   initialProposalReview,
+  initialAuthoring,
 }: {
   initialWorkbench: FreshWorkbench;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
   initialProposalReview: ProposalReviewReadOutcome;
+  initialAuthoring: AuthoringReadOutcome;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
+  const [authoring, setAuthoring] =
+    useState<AuthoringReadOutcome>(initialAuthoring);
+  const [isAuthoringOpen, setIsAuthoringOpen] = useState(
+    initialAuthoring.outcome === "available",
+  );
   const shouldFocusSelectedContextAction = useRef(false);
   const [lastOutcome, setLastOutcome] = useState<
     | RepositoryOperationOutcome
@@ -115,6 +135,9 @@ const WorkbenchShell = ({
     // React owns only this presentation projection; the main-process Session
     // remains the authority for repository selection and access.
     setWorkbench(await window.workbench.openFreshWorkbench());
+    const authoringOutcome = await window.workbench.readAuthoringDraft();
+    setAuthoring(authoringOutcome);
+    setIsAuthoringOpen(authoringOutcome.outcome === "available");
     const outcome = await window.workbench.readSynthesisResults();
     if (outcome.outcome === "found") {
       setSavedSynthesisResults(outcome.results);
@@ -123,6 +146,38 @@ const WorkbenchShell = ({
       setSavedSynthesisResultsReadError(outcome.detail);
     }
     setProposalReview(await window.workbench.readProposalReview());
+  };
+
+  const openAuthoringDraft = async (): Promise<void> => {
+    const outcome = await window.workbench.openAuthoringDraft();
+    setAuthoring(outcome);
+    setIsAuthoringOpen(outcome.outcome === "available");
+  };
+
+  const openAuthoringConstruct = async (
+    construct: AuthoringConstruct,
+  ): Promise<void> => {
+    const outcome = await window.workbench.openAuthoringConstruct(construct);
+    setAuthoring(outcome);
+    setIsAuthoringOpen(outcome.outcome === "available");
+  };
+
+  const editAuthoringSemanticText = async (nextText: string): Promise<void> => {
+    setAuthoring(
+      authoringReadFromOperation(
+        await window.workbench.editAuthoringSemanticText(nextText),
+      ),
+    );
+  };
+
+  const setAuthoringMode = async (mode: AuthoringMode): Promise<void> => {
+    setAuthoring(
+      authoringReadFromOperation(await window.workbench.setAuthoringMode(mode)),
+    );
+  };
+
+  const closeAuthoringDraft = (): void => {
+    setIsAuthoringOpen(false);
   };
 
   const createRepository = async (): Promise<void> => {
@@ -302,6 +357,13 @@ const WorkbenchShell = ({
       return (
         <Studio
           workbench={workbench}
+          authoring={authoring}
+          isAuthoringOpen={isAuthoringOpen}
+          onOpenAuthoringDraft={openAuthoringDraft}
+          onOpenAuthoringConstruct={openAuthoringConstruct}
+          onEditAuthoringSemanticText={editAuthoringSemanticText}
+          onSetAuthoringMode={setAuthoringMode}
+          onCloseAuthoringDraft={closeAuthoringDraft}
           onOpenSourceRecordInPaperDesk={openSourceRecordInPaperDesk}
           onPrepareSynthesis={prepareSynthesis}
           onConfirmSynthesis={confirmSynthesis}
@@ -355,12 +417,14 @@ const WorkbenchShell = ({
 
 void Promise.all([
   window.workbench.openFreshWorkbench(),
+  window.workbench.readAuthoringDraft(),
   window.workbench.readSynthesisResults(),
   window.workbench.readProposalReview(),
-]).then(([workbench, outcome, proposalReview]) => {
+]).then(([workbench, authoring, outcome, proposalReview]) => {
   root.render(
     <WorkbenchShell
       initialWorkbench={workbench}
+      initialAuthoring={authoring}
       initialSavedSynthesisResults={outcome}
       initialProposalReview={proposalReview}
     />,

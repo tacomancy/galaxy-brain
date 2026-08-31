@@ -18,6 +18,12 @@ import type {
   ProposalReviewApplyOutcome,
   ProposalReviewReadOutcome,
 } from "../modules/proposal-review";
+import type {
+  AuthoringConstruct,
+  AuthoringMode,
+  AuthoringOperationOutcome,
+  AuthoringReadOutcome,
+} from "../modules/knowledge-authoring";
 
 declare global {
   interface Window {
@@ -25,6 +31,15 @@ declare global {
       // Keep renderer callers typed to the same public result as the preload
       // bridge and Workbench Session Module.
       openFreshWorkbench(): Promise<FreshWorkbench>;
+      readAuthoringDraft(): Promise<AuthoringReadOutcome>;
+      openAuthoringDraft(): Promise<AuthoringReadOutcome>;
+      openAuthoringConstruct(
+        construct: AuthoringConstruct,
+      ): Promise<AuthoringReadOutcome>;
+      editAuthoringSemanticText(
+        nextText: string,
+      ): Promise<AuthoringOperationOutcome>;
+      setAuthoringMode(mode: AuthoringMode): Promise<AuthoringOperationOutcome>;
       readProposalReview(): Promise<ProposalReviewReadOutcome>;
       openProposalReview(): Promise<ProposalReviewReadOutcome>;
       acceptProposalReview(): Promise<ProposalReviewApplyOutcome>;

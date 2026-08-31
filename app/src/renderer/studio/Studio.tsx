@@ -1,6 +1,13 @@
 import { useState, type JSX } from "react";
 
 import type {
+  AuthoringConstruct,
+  AuthoringDraftView,
+  AuthoringMode,
+  AuthoringReadOutcome,
+} from "../../modules/knowledge-authoring";
+import { authoringConstructs } from "../../modules/knowledge-authoring";
+import type {
   ConfirmSynthesisOutcome,
   StructuredAnnotation,
   SynthesisPreview,
@@ -14,6 +21,13 @@ import type {
 
 interface StudioProps {
   workbench: WorkbenchState;
+  authoring: AuthoringReadOutcome;
+  isAuthoringOpen: boolean;
+  onOpenAuthoringDraft: () => Promise<void>;
+  onOpenAuthoringConstruct: (construct: AuthoringConstruct) => Promise<void>;
+  onEditAuthoringSemanticText: (nextText: string) => Promise<void>;
+  onSetAuthoringMode: (mode: AuthoringMode) => Promise<void>;
+  onCloseAuthoringDraft: () => void;
   onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
   onPrepareSynthesis: (includeAllContext: boolean) => Promise<void>;
   onRemoveSynthesisContextItem: (annotationId: string) => Promise<void>;
@@ -113,6 +127,215 @@ const WorkingMaterialCard = ({
     </p>
   </aside>
 );
+
+interface AuthoringSurfaceProps {
+  draft: AuthoringDraftView;
+  onEdit: (nextText: string) => Promise<void>;
+  onOpenConstruct: (construct: AuthoringConstruct) => Promise<void>;
+  onSetMode: (mode: AuthoringMode) => Promise<void>;
+  onClose: () => void;
+}
+
+const AuthoringSurface = ({
+  draft,
+  onEdit,
+  onOpenConstruct,
+  onSetMode,
+  onClose,
+}: AuthoringSurfaceProps): JSX.Element => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [nextText, setNextText] = useState(draft.rich.semanticText);
+
+  const applyEdit = async (): Promise<void> => {
+    await onEdit(nextText);
+    setIsEditing(false);
+  };
+
+  return (
+    <section
+      id="studio-authoring-surface"
+      className="working-material-card authoring-card"
+      aria-labelledby="studio-authoring-heading"
+    >
+      <div className="card-header-row">
+        <div>
+          <span className="card-kicker">Knowledge Authoring</span>
+          <h2 id="studio-authoring-heading">Authoring draft</h2>
+        </div>
+        <span id="studio-authoring-state" className="status-pill">
+          Working Material
+        </span>
+      </div>
+      <p id="studio-authoring-title" className="authoring-title">
+        {draft.title}
+      </p>
+      <div
+        className="authoring-construct-row"
+        aria-label="Supported authoring constructs"
+      >
+        <span className="card-kicker">Examples</span>
+        {authoringConstructs.map((construct) => (
+          <button
+            key={construct}
+            id={`studio-authoring-construct-${construct}`}
+            className="button button-quiet"
+            type="button"
+            aria-pressed={draft.construct === construct}
+            onClick={() => onOpenConstruct(construct)}
+          >
+            {construct}
+          </button>
+        ))}
+      </div>
+      <div className="authoring-mode-row" aria-label="Authoring representation">
+        <button
+          id="studio-rich-mode"
+          className="button button-secondary"
+          type="button"
+          aria-pressed={draft.mode === "rich"}
+          onClick={() => onSetMode("rich")}
+        >
+          Rich view
+        </button>
+        <button
+          id="studio-source-mode"
+          className="button button-secondary"
+          type="button"
+          aria-pressed={draft.mode === "source"}
+          onClick={() => onSetMode("source")}
+        >
+          Source view
+        </button>
+      </div>
+      {draft.mode === "rich" ? (
+        <div id="studio-rich-view" className="authoring-rich-view">
+          <span
+            id={
+              draft.construct === "highlight"
+                ? "studio-rich-highlight"
+                : "studio-rich-semantic-object"
+            }
+            data-construct={draft.construct}
+            data-highlighted={draft.rich.highlighted}
+          >
+            {draft.rich.semanticText}
+          </span>
+        </div>
+      ) : (
+        <pre id="studio-authoring-source" className="authoring-source-view">
+          {draft.source}
+        </pre>
+      )}
+      {draft.mode === "rich" ? (
+        <div className="authoring-edit-panel">
+          <button
+            id="studio-rich-edit"
+            className="button button-secondary"
+            type="button"
+            onClick={() => {
+              setNextText(draft.rich.semanticText);
+              setIsEditing(true);
+            }}
+          >
+            Edit semantic object
+          </button>
+          {isEditing ? (
+            <div className="authoring-edit-controls">
+              <label htmlFor="studio-rich-edit-input">
+                Semantic object text
+              </label>
+              <input
+                id="studio-rich-edit-input"
+                value={nextText}
+                onChange={(event) => setNextText(event.currentTarget.value)}
+              />
+              <button
+                id="studio-rich-edit-apply"
+                className="button button-primary"
+                type="button"
+                onClick={applyEdit}
+              >
+                Apply edit
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="authoring-governed-status">
+        <span className="card-kicker">Governed Knowledge</span>
+        <p id="studio-governed-topic">
+          This fixture topic gives the S1 workflow a stable item to carry
+          between workspaces.
+        </p>
+        <span>Unchanged by this Working Material edit</span>
+      </div>
+      <div className="action-row">
+        <button
+          id="studio-authoring-close"
+          className="button button-quiet"
+          type="button"
+          onClick={onClose}
+        >
+          Close draft
+        </button>
+      </div>
+    </section>
+  );
+};
+
+const AuthoringDraftCard = ({
+  authoring,
+  isOpen,
+  onOpen,
+  onEdit,
+  onOpenConstruct,
+  onSetMode,
+  onClose,
+}: {
+  authoring: AuthoringReadOutcome;
+  isOpen: boolean;
+  onOpen: () => Promise<void>;
+  onEdit: (nextText: string) => Promise<void>;
+  onOpenConstruct: (construct: AuthoringConstruct) => Promise<void>;
+  onSetMode: (mode: AuthoringMode) => Promise<void>;
+  onClose: () => void;
+}): JSX.Element | null => {
+  if (authoring.outcome !== "available") {
+    return null;
+  }
+
+  if (isOpen) {
+    return (
+      <AuthoringSurface
+        key={authoring.draft.id}
+        draft={authoring.draft}
+        onEdit={onEdit}
+        onOpenConstruct={onOpenConstruct}
+        onSetMode={onSetMode}
+        onClose={onClose}
+      />
+    );
+  }
+
+  return (
+    <section
+      id="studio-authoring-closed"
+      className="working-material-card authoring-card"
+      aria-labelledby="studio-authoring-closed-heading"
+    >
+      <span className="card-kicker">Knowledge Authoring</span>
+      <h2 id="studio-authoring-closed-heading">Authoring draft closed</h2>
+      <button
+        id="studio-authoring-open"
+        className="button button-secondary"
+        type="button"
+        onClick={onOpen}
+      >
+        Reopen draft
+      </button>
+    </section>
+  );
+};
 
 interface SynthesisReviewCardProps {
   includeAllContext: boolean;
@@ -401,6 +624,13 @@ const SavedSynthesisResultsCard = ({
  */
 export const Studio = ({
   workbench,
+  authoring,
+  isAuthoringOpen,
+  onOpenAuthoringDraft,
+  onOpenAuthoringConstruct,
+  onEditAuthoringSemanticText,
+  onSetAuthoringMode,
+  onCloseAuthoringDraft,
   onOpenSourceRecordInPaperDesk,
   onPrepareSynthesis,
   onRemoveSynthesisContextItem,
@@ -441,6 +671,15 @@ export const Studio = ({
           <StudioTopicSurface
             context={workbench.context}
             onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
+          />
+          <AuthoringDraftCard
+            authoring={authoring}
+            isOpen={isAuthoringOpen}
+            onOpen={onOpenAuthoringDraft}
+            onEdit={onEditAuthoringSemanticText}
+            onOpenConstruct={onOpenAuthoringConstruct}
+            onSetMode={onSetAuthoringMode}
+            onClose={onCloseAuthoringDraft}
           />
           {workbench.sourceAnnotation === undefined ? null : (
             <WorkingMaterialCard annotation={workbench.sourceAnnotation} />
