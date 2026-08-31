@@ -26,6 +26,7 @@ const importFromRuntime = new Function(
 export interface PdfJsAdapterOptions {
   modulePath?: string;
   standardFontDataUrl?: string;
+  loadPdfJs?: () => Promise<PdfJsModule>;
   diagnostics?: PdfJsDiagnostics;
 }
 
@@ -42,10 +43,12 @@ export interface PdfJsDiagnostic {
 
 const loadPdfJs = async (
   modulePath: string | undefined,
+  loader: (() => Promise<PdfJsModule>) | undefined,
 ): Promise<PdfJsModule> =>
-  modulePath === undefined
-    ? import("pdfjs-dist/legacy/build/pdf.mjs")
-    : importFromRuntime(modulePath);
+  loader?.() ??
+  (modulePath === undefined
+    ? Promise.reject(new Error("PDF.js module path is not configured."))
+    : importFromRuntime(modulePath));
 
 /**
  * Creates the production PDF Adapter. PDF.js stays behind this boundary and
@@ -84,7 +87,10 @@ export const createPdfJsAdapter = (
     let document: Awaited<ReturnType<PdfJsModule["getDocument"]>["promise"]>;
 
     try {
-      const { getDocument } = await loadPdfJs(options.modulePath);
+      const { getDocument } = await loadPdfJs(
+        options.modulePath,
+        options.loadPdfJs,
+      );
       document = await getDocument({
         data: new Uint8Array(bytes),
         disableFontFace: true,

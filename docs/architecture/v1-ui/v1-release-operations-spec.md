@@ -1,8 +1,8 @@
 # V1 stable distribution and release operations specification
 
-Status: draft implementation specification. The documentation review is
-complete, but implementation is blocked on the human-owned distribution
-decision and the related architecture choices recorded below. This brief
+Status: implementation complete for the selected developer-only V1 path;
+human release-candidate acceptance remains pending. The documentation review
+and implementation gates are complete. This brief
 covers the stable-distribution and release-operations work in [Section D of
 the V1 victory checklist](v1-victory-checklist.md#d-stable-distribution-and-release-operations),
 tracked by [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25)
@@ -68,9 +68,9 @@ Select exactly one:
   defer Issue #25, name the owner and revisit condition, and update public
   documentation so it does not describe an installer or downloadable release.
 
-The current status is **unselected**. No workflow, release note, or public
-capability page may claim a public end-user distribution until this gate is
-confirmed and its acceptance evidence exists.
+The human owner selected **developer-only V1** on August 31, 2026. No
+workflow, release note, or public capability page claims a public end-user
+distribution. Issue #25 remains deferred.
 
 ### Gate 2 — supported platform and architecture
 
@@ -86,9 +86,9 @@ The owner must confirm:
 - whether unsupported architectures receive a clear refusal or are simply
   outside the published support boundary.
 
-The current status is **arm64-only recommended, not confirmed**. A target
-architecture is part of the release contract, not an incidental packager
-flag.
+This implementation uses the recommended **macOS arm64-only** target. x64 and
+universal artifacts remain deferred. A target architecture is part of the
+release contract, not an incidental packager flag.
 
 ### Gate 3 — version and compatibility policy
 
@@ -102,7 +102,7 @@ The release policy must define:
 - how long deprecation notices remain visible; and
 - who owns each support and security decision.
 
-The proposed starting policy is to support the latest published application
+The selected starting policy is to support the latest published application
 release and the current `main` development line for security reports, and to
 keep Knowledge Repositories application-independent with explicit format
 compatibility checks. The owner must confirm that policy or provide a
@@ -133,8 +133,10 @@ Before implementation or behavior tests, complete these explicit tasks:
 6. Only after these confirmations, begin the first Red-to-Green slice and
    record its evidence in this brief and the delivery plan.
 
-This documentation prerequisite is complete for drafting purposes on this
-branch. Implementation readiness remains pending the three human gates.
+This documentation prerequisite was completed before implementation. Gate 1
+was confirmed by the human owner; the recommended arm64 target and proposed
+support policy were used for the implementation. Final release acceptance is
+still a separate human gate.
 
 ## Public behaviors
 
@@ -147,38 +149,34 @@ The completed work must make these behaviors true and inspectable:
    include no user Knowledge Repository or fixture content, and contain the
    bundled starter skeleton only where the current application contract
    requires it.
-3. In the public end-user path, a person can download the published DMG or
-   ZIP, verify its checksum and provenance, install it on a clean supported
-   Mac, pass Gatekeeper, and launch without Node.js, npm, Git, a repository,
-   credentials, or network access.
-4. In the developer-only path, every public installation instruction clearly
+3. In the developer-only path, every public installation instruction clearly
    identifies the source-build/unsigned boundary and does not suggest that
    Gatekeeper-accepted or signed downloads exist.
-5. A first launch starts without selecting or scanning for a repository. A
+4. A first launch starts without selecting or scanning for a repository. A
    person can create or open a repository explicitly, and the package does
    not initialize Git or create commits on the person's behalf.
-6. An upgrade preserves a valid repository and machine-local session state
+5. An upgrade preserves a valid repository and machine-local session state
    according to the confirmed compatibility policy, or reports a clear
    recoverable incompatibility without mutating the repository.
-7. A rollback procedure returns to the prior application version or clearly
+6. A rollback procedure returns to the prior application version or clearly
    identifies the supported recovery action without destroying repository
    content, audit records, or retained result history.
-8. Uninstall removes application-owned package files according to the selected
+7. Uninstall removes application-owned package files according to the selected
    platform procedure while leaving the user's Knowledge Repository intact;
    any machine-local session or link data is described as a separate cleanup
    choice.
-9. Migration and recovery procedures identify what is backed up externally,
+8. Migration and recovery procedures identify what is backed up externally,
    what Galaxy Brain can validate or restore locally, and what must be
    recovered by the user. The Workbench never claims that an application
    rollback is a repository backup.
-10. Release metadata identifies the source revision, application version,
+9. Release metadata identifies the source revision, application version,
     target platform/architecture, pinned toolchain, artifact hashes, build
     workflow, and signing/notarization status where applicable.
-11. Diagnostic collection is opt-in or explicitly limited to safe automatic
+10. Diagnostic collection is opt-in or explicitly limited to safe automatic
     metadata. It excludes repository content, source excerpts, prompts,
     provider request/response payloads, credentials, absolute private paths,
     and raw sensitive exception data.
-12. A person can report a security or product issue through documented
+11. A person can report a security or product issue through documented
     channels, understand severity and response expectations, and follow an
     incident runbook without being asked to disclose private Knowledge
     Repository content or secrets.
@@ -197,10 +195,8 @@ from the artifact being tested:
 - Portable-content rule: the selected repository remains outside the
   application package, and the bundled starter skeleton is distinct from
   synthetic fixtures.
-- Public package outcome, if selected: signed/notarized DMG and ZIP, with
-  checksum, provenance, supported-platform, and signing-status records.
-- Developer-only outcome, if selected: unsigned/source-build instructions
-  with an explicit no-downloadable-installer statement.
+- Selected package outcome: unsigned/source-build instructions with an
+  explicit no-downloadable-installer statement.
 - Verification outcome: a checksum mismatch, unsupported platform, failed
   signature/notarization check, or incompatible repository must fail visibly
   and must not be reported as a successful release.
@@ -253,24 +249,9 @@ runtime behavior continues to use the existing application boundaries.
 
 ### Signing and notarization for the public outcome
 
-If Gate 1 selects public end-user V1:
-
-- Use Developer ID signing, hardened runtime, and the minimum reviewed
-  entitlements required by the application.
-- Keep certificates, notarization credentials, and signing configuration in
-  protected CI secrets or the platform's approved secret store. Never commit,
-  echo, log, or place them in a Knowledge Repository.
-- Sign and notarize the exact release artifacts, staple the notarization ticket
-  where supported, and verify the result independently with macOS tooling in
-  CI and during human acceptance.
-- Publish signing/notarization status, supported architectures, checksums,
-  release notes, and verification instructions with the GitHub release.
-- Make signing failures fail the release; do not silently fall back to an
-  unsigned public artifact.
-
-If Gate 1 selects developer-only V1, these mechanics remain explicitly
-deferred and the public documentation must state that no signed downloadable
-installer is available.
+Developer-only V1 does not add signing, notarization, DMG/ZIP makers, or
+signing credentials. These mechanics remain explicitly deferred and public
+documentation states that no signed downloadable installer is available.
 
 ### Release process and version policy
 
@@ -414,6 +395,36 @@ evidence for the selected outcome:
 Passing these checks accepts the selected release-operations scope. It does
 not accept deferred platforms, auto-update, or later post-V1 hardening.
 
+## Implementation evidence — August 31, 2026
+
+The selected developer-only path has been implemented and exercised against
+the current release candidate. The focused red-to-green cycle found and fixed
+two artifact-boundary defects: a valid relative Electron framework symlink was
+initially rejected, and a static PDF.js import embedded this checkout's
+absolute path in `app.asar`. The verifier now permits only in-artifact relative
+symlinks, scans application-owned payloads for sensitive markers, and keeps
+vendor framework binaries in the complete artifact hash without treating their
+own macOS path literals as application leakage.
+
+Recorded green evidence:
+
+- `npm run check`: 26 Vitest files / 127 tests, MC/DC, and 29 documentation
+  files passed;
+- `npm run test:coverage`: 82.77% statements, 74.64% branches, 96.51%
+  functions, and 82.67% lines;
+- `npm run lint:complexity` passed;
+- the pinned Python 3.11 public-docs test passed (7 tests);
+- `npm run test:workflow` passed all 28 silent packaged-app specs;
+- `npm run release:manifest` and `npm run release:verify` passed for the
+  rebuilt `0.13.1` macOS arm64 artifact; and
+- production and full dependency audit commands remain required release gates
+  and are recorded with the final candidate evidence.
+
+These results establish implementation evidence, not clean-machine human
+acceptance. The eight human checks above remain open, as do the explicitly
+deferred signed/notarized installer, x64/universal packaging, updater, and
+other post-V1 work.
+
 ## Explicit deferrals
 
 The following are outside this specification unless the owner explicitly
@@ -470,8 +481,8 @@ issue tracker before Section D can be declared complete.
 
 ## Completion record
 
-This section is intentionally blank until implementation and human
-acceptance. The final record must include:
+This section remains open until the human release-candidate acceptance. The
+final record must include:
 
 - selected distribution outcome and the confirming owner/date;
 - confirmed platform and architecture scope;

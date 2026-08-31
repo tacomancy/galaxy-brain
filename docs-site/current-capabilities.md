@@ -80,7 +80,7 @@ brief, or future issue exists.
 | Richer Proposal Review, exact Proposal editing, selective Judgment, and rollback controls             | Planned       | The bounded TB10 review/apply route is present on current `main`; selective decisions, pending-Proposal persistence, Judgment revision, and rollback UI remain deferred. |
 | Search, Ask, Jump, Generated Relationships, and authority-aware discovery                            | Planned       | Discovery is a later tracer bullet and is not part of the current desktop surface.                                                                          |
 | Learning Routes, learning goals, and human-confirmed progress suggestions                            | Planned       | Learning remains a later capability and has no current Workbench workflow.                                                                                  |
-| Signed/notarized installers, downloadable releases, auto-update, and supported end-user distribution | Planned       | `npm run package` creates an unsigned local macOS package for development verification; it is not an end-user distribution channel.                         |
+| Signed/notarized installers, downloadable releases, auto-update, and supported end-user distribution | Planned       | V1 is explicitly developer-only: `npm run package` creates an unsigned local macOS arm64 package for controlled development/review; it is not a signed installer or end-user distribution channel. |
 
 For task instructions, use the [public tutorials](tutorials/index.md). For
 intended product scope and architecture, use the [V1 architecture

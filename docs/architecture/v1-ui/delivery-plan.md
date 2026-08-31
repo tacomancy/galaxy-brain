@@ -719,14 +719,16 @@ process from [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34)
 without creating a new runtime Release Module.
 
 The implementation brief explicitly requires the governing-document review
-and spec task before implementation. It leaves the public end-user versus
-developer-only outcome, supported architecture, and version/support policy
-unselected for human confirmation. It defines the S1 packaged workflow, S5
-file-backed contract, and release-artifact/workflow boundaries; the vertical
-path; independently known expected values; lifecycle and privacy evidence;
-explicit deferrals; discarded alternatives; and final human acceptance.
-Until those gates are confirmed, Section D remains open and the existing
-unsigned local package must not be described as an end-user distribution.
+and spec task before implementation. The human owner selected developer-only
+V1 on August 31, 2026; implementation uses the recommended macOS arm64 target
+and the existing latest-published-release/current-main support policy. It
+defines the S1 packaged workflow, S5 file-backed contract, and
+release-artifact/workflow boundaries; the vertical path; independently known
+expected values; lifecycle and privacy evidence; explicit deferrals; discarded
+alternatives; and final human acceptance. Implementation evidence is recorded
+in the specification; Section D remains open only for the eight human release-
+candidate checks, and the existing unsigned local package must not be
+described as an end-user distribution.
 
 ## Review checkpoints
 

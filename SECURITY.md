@@ -6,6 +6,12 @@ Galaxy Brain is in active early development. Security fixes are currently
 made against the latest version on `main` and the latest published release,
 if one exists.
 
+The V1 distribution is developer-only: the supported paths are the source
+checkout and the unsigned local macOS arm64 package built from the pinned
+toolchain. There is no signed downloadable installer or public Gatekeeper-
+accepted package. Product support expectations and safe diagnostic guidance
+are documented in [SUPPORT.md](SUPPORT.md).
+
 | Version | Supported |
 | --- | --- |
 | `main` | Yes |

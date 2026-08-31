@@ -23,6 +23,8 @@
     "test:provider-free": "npm run package && wdio run ./wdio.conf.ts --spec ./tests/workflows/v1-provider-free-gate.e2e.ts && wdio run ./wdio.conf.ts --spec ./tests/workflows/production-linked-pdf-status.e2e.ts",
     "test:coverage": "vitest run --coverage && vitest run --coverage --config vitest.per-file.config.ts",
     "check:changed-coverage": "tsx tools/check-changed-lines-coverage.ts",
+    "release:manifest": "tsx tools/create-release-manifest.ts",
+    "release:verify": "tsx tools/check-release-artifacts.ts",
     "test:workflow": "npm run package && wdio run ./wdio.conf.ts",
     "audit:production": "npm audit --omit=dev --audit-level=high",
     "audit:all": "npm audit --audit-level=high",

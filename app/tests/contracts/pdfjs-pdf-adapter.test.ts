@@ -61,6 +61,8 @@ const createWorkflowPdf = (): Buffer => {
   return Buffer.from(pdf);
 };
 
+const loadTestPdfJs = () => import("pdfjs-dist/legacy/build/pdf.mjs");
+
 describe("production PDF.js Adapter contract", () => {
   it("retains PDF.js loading failures for diagnostics without exposing the cause", async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
@@ -106,7 +108,7 @@ describe("production PDF.js Adapter contract", () => {
       await writeFile(pdfPath, knownPdf);
 
       assert.deepEqual(
-        await createPdfJsAdapter().readSelection({
+        await createPdfJsAdapter({ loadPdfJs: loadTestPdfJs }).readSelection({
           sourceRecord: {
             id: "bayesian-statistics-fixture-source",
             title: "Bayesian statistics fixture source",
@@ -134,7 +136,7 @@ describe("production PDF.js Adapter contract", () => {
       await writeFile(pdfPath, knownTwoPagePdf);
 
       assert.deepEqual(
-        await createPdfJsAdapter().readSelection({
+        await createPdfJsAdapter({ loadPdfJs: loadTestPdfJs }).readSelection({
           sourceRecord: {
             id: "bayesian-statistics-fixture-source",
             title: "Bayesian statistics fixture source",
@@ -162,7 +164,7 @@ describe("production PDF.js Adapter contract", () => {
       await writeFile(pdfPath, createWorkflowPdf());
 
       assert.deepEqual(
-        await createPdfJsAdapter().readSelection({
+        await createPdfJsAdapter({ loadPdfJs: loadTestPdfJs }).readSelection({
           sourceRecord: {
             id: "bayesian-statistics-fixture-source",
             title: "Bayesian statistics fixture source",

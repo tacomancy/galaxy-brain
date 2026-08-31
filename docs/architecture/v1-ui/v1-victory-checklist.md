@@ -79,7 +79,7 @@ The initial scope is deliberately limited to dense, consequential domain decisio
 Resolve the distribution boundary tracked by [Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25) and the operational boundary tracked by [Issue #34](https://github.com/tacomancy/galaxy-brain/issues/34). Before implementation, review the governing documentation and complete the [V1 stable distribution and release operations specification](v1-release-operations-spec.md), including its human-owned distribution, platform, and support-policy gates. Choose exactly one distribution outcome before declaring V1:
 
 - [ ] **Public end-user V1:** signed and notarized macOS DMG/ZIP artifacts install and launch on a clean supported Mac without Node.js or npm; Gatekeeper accepts them; checksums, signing/notarization status, release notes, and supported architectures are published.
-- [ ] **Developer-only V1:** the human owner explicitly approves a source-build/unsigned-package release, Issue #25 is deferred with rationale and owner, and every public page states that no signed downloadable installer is available.
+- [x] **Developer-only V1:** the human owner explicitly approved a source-build/unsigned-package release, Issue #25 is deferred with rationale in the release-operations specification and runbook, and the public support/capability/first-launch pages state that no signed downloadable installer is available.
 
 Whichever distribution outcome is selected, complete or explicitly defer every material release-operations requirement with its residual risk recorded:
 
@@ -167,6 +167,7 @@ Evidence links or notes: __________________________________________________
 - [Delivery Plan](delivery-plan.md)
 - [TB15 specification](tracer-bullet-15-spec.md)
 - [TB16 specification](tracer-bullet-16-spec.md)
+- [V1 release operations specification](v1-release-operations-spec.md)
 - [Open GitHub issues](https://github.com/tacomancy/galaxy-brain/issues?q=is%3Aissue%20state%3Aopen)
 - [Post-TB quality hardening, Issue #21](https://github.com/tacomancy/galaxy-brain/issues/21)
 - [macOS distribution, Issue #25](https://github.com/tacomancy/galaxy-brain/issues/25)

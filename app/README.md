@@ -42,6 +42,20 @@ The packaged application is written under `app/out/`. Run the repository verific
 npm run check
 ```
 
+For the selected developer-only V1 release path, generate and verify exact
+artifact metadata after packaging:
+
+```bash
+npm run release:manifest
+npm run release:verify
+```
+
+These commands record the application version, source revision, pinned
+toolchain, lockfile hash, macOS arm64 target, unsigned status, and packaged
+application hash. They do not publish a download or claim Gatekeeper
+acceptance. The operator procedure is documented in the [release operations
+runbook](../docs/release-operations.md).
+
 Run the local coverage command for [Issue #47](https://github.com/tacomancy/galaxy-brain/issues/47) with:
 
 ```bash
