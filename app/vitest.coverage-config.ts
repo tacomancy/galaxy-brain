@@ -13,6 +13,16 @@ const coverageOptions = {
   reportsDirectory: "./coverage",
 };
 
+const testReporting =
+  process.env.CI === "true"
+    ? {
+        reporters: ["default", "junit"],
+        outputFile: { junit: "test-results/junit.xml" },
+      }
+    : {
+        reporters: ["default"],
+      };
+
 export const createCoverageConfig = (thresholds: {
   lines: number;
   functions: number;
@@ -22,6 +32,7 @@ export const createCoverageConfig = (thresholds: {
 }) =>
   defineConfig({
     test: {
+      ...testReporting,
       coverage: {
         ...coverageOptions,
         thresholds,
