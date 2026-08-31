@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "decisions": [
+    {
+      "id": "governance.target-identity-match",
+      "owner": "Governance Module",
+      "description": "A governed target matches the current target only when its stable id, title, and path each match.",
+      "conditions": [
+        "target id matches",
+        "target title matches",
+        "target path matches"
+      ],
+      "cases": [
+        {
+          "id": "all-valid",
+          "conditions": [true, true, true],
+          "outcome": true
+        },
+        {
+          "id": "id-mismatch",
+          "conditions": [false, true, true],
+          "outcome": false
+        },
+        {
+          "id": "title-mismatch",
+          "conditions": [true, false, true],
+          "outcome": false
+        },
+        {
+          "id": "path-mismatch",
+          "conditions": [true, true, false],
+          "outcome": false
+        }
+      ],
+      "witnesses": [
+        {
+          "conditionIndex": 0,
+          "falseCaseId": "id-mismatch",
+          "trueCaseId": "all-valid"
+        },
+        {
+          "conditionIndex": 1,
+          "falseCaseId": "title-mismatch",
+          "trueCaseId": "all-valid"
+        },
+        {
+          "conditionIndex": 2,
+          "falseCaseId": "path-mismatch",
+          "trueCaseId": "all-valid"
+        }
+      ]
+    },
+    {
+      "id": "source-processing.locator-valid",
+      "owner": "Source Processing Module",
+      "description": "A source locator is valid only when page, start, and end are integer values within a non-empty ordered range.",
+      "conditions": [
+        "page is an integer",
+        "page is positive",
+        "start is an integer",
+        "start is non-negative",
+        "end is an integer",
+        "end is after start"
+      ],
+      "cases": [
+        {
+          "id": "all-valid",
+          "conditions": [true, true, true, true, true, true],
+          "outcome": true
+        },
+        {
+          "id": "page-not-integer",
+          "conditions": [false, true, true, true, true, true],
+          "outcome": false
+        },
+        {
+          "id": "page-not-positive",
+          "conditions": [true, false, true, true, true, true],
+          "outcome": false
+        },
+        {
+          "id": "start-not-integer",
+          "conditions": [true, true, false, true, true, true],
+          "outcome": false
+        },
+        {
+          "id": "start-negative",
+          "conditions": [true, true, true, false, true, true],
+          "outcome": false
+        },
+        {
+          "id": "end-not-integer",
+          "conditions": [true, true, true, true, false, true],
+          "outcome": false
+        },
+        {
+          "id": "end-not-after-start",
+          "conditions": [true, true, true, true, true, false],
+          "outcome": false
+        }
+      ],
+      "witnesses": [
+        {
+          "conditionIndex": 0,
+          "falseCaseId": "page-not-integer",
+          "trueCaseId": "all-valid"
+        },
+        {
+          "conditionIndex": 1,
+          "falseCaseId": "page-not-positive",
+          "trueCaseId": "all-valid"
+        },
+        {
+          "conditionIndex": 2,
+          "falseCaseId": "start-not-integer",
+          "trueCaseId": "all-valid"
+        },
+        {
+          "conditionIndex": 3,
+          "falseCaseId": "start-negative",
+          "trueCaseId": "all-valid"
+        },
+        {
+          "conditionIndex": 4,
+          "falseCaseId": "end-not-integer",
+          "trueCaseId": "all-valid"
+        },
+        {
+          "conditionIndex": 5,
+          "falseCaseId": "end-not-after-start",
+          "trueCaseId": "all-valid"
+        }
+      ]
+    }
+  ]
+}

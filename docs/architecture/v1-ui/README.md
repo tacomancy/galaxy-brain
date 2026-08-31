@@ -29,6 +29,7 @@ navigation or release-status authorities:
 - `code-map.md` maps architectural responsibilities to live or explicitly planned source locations.
 - `delivery-plan.md` orders vertical tracer bullets for red-to-green implementation.
 - [V1 victory checklist](v1-victory-checklist.md) records the release gates and final scope decisions required to declare V1 complete.
+- [V1 release-readiness specification](v1-release-readiness-spec.md) scopes the provider-free packaged-app and initial MC/DC evidence work.
 - `tracer-bullet-*-spec.md` and `issue-51-explicit-context-selection-spec.md` record scoped implementation briefs and delivery evidence.
 - `stack-research.md` records primary-source evidence for the desktop foundation.
 - `complexity-policy.md` records the production complexity limits and verification evidence.

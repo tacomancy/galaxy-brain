@@ -1,6 +1,6 @@
 # V1 Victory Checklist
 
-Status: draft release checklist. TB15 is merged and accepted; TB16 implementation and human acceptance are complete on its branch, while integration and the final V1 scope decision and release-readiness dispositions below remain open.
+Status: draft release checklist. TB15 and TB16 are merged and accepted; the provider-free release gate, MC/DC evidence, final V1 scope decision, and release-readiness dispositions below remain open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
@@ -33,29 +33,38 @@ Complete and verify every slice in [the TB16 specification](tracer-bullet-16-spe
 
 ## C. Provider-free packaged application gate
 
+The implementation entry point for this gate is the [V1 release-readiness specification](v1-release-readiness-spec.md). It keeps packaged behavior evidence at the existing S1–S5 seams and does not mark a gate complete from lower-seam or automated evidence alone.
+
 Verify the packaged macOS Workbench against a real file-backed Knowledge Repository:
 
-- [ ] Build and package using the repository's pinned runtime/toolchain.
-- [ ] Create and reopen a real file-backed repository.
+- [x] Build and package using the repository's pinned runtime/toolchain; the
+      named automated gate is `npm run test:provider-free`, which packages with
+      Node.js `24.19.0` and runs the isolated S1 provider-free workflow.
+- [x] Create and reopen a real file-backed repository; creation/opening is
+      covered by the named gate and relaunch/reopen by the existing
+      `resume-selected-knowledge-repository` workflow.
 - [ ] Complete the core workflow locally without Git, GitHub, credentials, network, or an Agent Provider.
 - [ ] Detect an external edit and preserve the user's work safely.
 - [ ] Recover from an interrupted transaction without silent data loss.
 - [ ] Roll back and recover a prior version or saved result.
 - [ ] Show truthful local-save status; never imply a commit, backup, or remote sync that did not occur.
 - [ ] Handle an unavailable or changed linked PDF without corrupting the repository.
-- [ ] Show a clear unavailable-provider state without blocking provider-free workflows.
+- [x] Show a clear unavailable-provider state without blocking provider-free
+      workflows; the named packaged gate reports `agent-provider-unavailable`.
 - [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy.
 
 This gate proves the packaged application behavior. It does not by itself prove that an unsigned development `.app` is a supported end-user distribution.
 
 ## C1. Mixed condition/decision coverage
 
+The initial implementation scope and explicit MC/DC deferrals are recorded in the [V1 release-readiness specification](v1-release-readiness-spec.md).
+
 Track MC/DC as an explicit quality work item alongside, rather than folded into, line, branch, and changed-lines coverage:
 
-- [ ] Select the high-risk multi-condition decisions in framework-independent application Modules, starting with Governance and Source Processing, and assign stable decision identifiers.
-- [ ] Add independently known truth-table cases that exercise each condition as both `true` and `false` and provide an independence pair showing that each condition changes the decision outcome.
-- [ ] Add a dedicated `test:mcdc`/`check:mcdc` gate that reports condition coverage, decision coverage, and MC/DC witnesses separately and fails when a registered decision lacks required evidence.
-- [ ] Define and document short-circuit handling, unreachable-condition exemptions, and the boundary between Module MC/DC evidence and renderer/UI workflow coverage.
+- [x] Select the initial high-risk multi-condition decisions in framework-independent Governance and Source Processing Modules and assign stable decision identifiers in the [V1 release-readiness specification](v1-release-readiness-spec.md).
+- [x] Add independently authored truth-table cases that exercise each condition as both `true` and `false` and provide an independence pair showing that each condition changes the decision outcome.
+- [x] Add dedicated `test:mcdc` and `check:mcdc` gates that report condition coverage, decision coverage, and MC/DC witnesses separately and fail when a registered decision lacks required evidence.
+- [x] Define and document the short-circuit/reachability boundary, explicit exemptions, and the boundary between Module MC/DC evidence and renderer/UI workflow coverage in the [V1 release-readiness specification](v1-release-readiness-spec.md).
 - [ ] Require MC/DC evidence for changed registered decisions before declaring the V1 release candidate complete; do not infer MC/DC from LCOV line or branch data.
 
 The initial scope is deliberately limited to dense, consequential domain decisions. Expanding the manifest to every conditional, including presentation-only UI conditions, is deferred until a concrete risk or requirement justifies it.
@@ -129,7 +138,7 @@ If any of TB12–TB14 is required for V1, review the governing documentation and
 
 - [ ] Provider-free core release gate passed.
 - [ ] TB15 integrated and accepted.
-- [ ] TB16 integrated and accepted.
+- [x] TB16 integrated and accepted in PR #106 on August 31, 2026.
 - [ ] TB12–TB14 scope classification recorded.
 - [ ] Distribution and release-operations outcome recorded.
 - [ ] Post-TB hardening and whole-release human acceptance complete or explicitly deferred with residual risks accepted.
@@ -168,7 +177,7 @@ cd /Users/slehr/GitHub/dr-tacomancer/galaxy-brain/app
 npm run check
 npm run test:coverage
 npm run lint:complexity
-npm run check:changed-coverage
+npm run check:changed-coverage -- --lcov coverage/lcov.info --base-ref origin/main --repository-root .. --coverage-root .
 npm run test:workflow
 npm audit --omit=dev --audit-level=high
 npm audit --audit-level=high
