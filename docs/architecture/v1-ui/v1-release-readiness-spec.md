@@ -163,9 +163,7 @@ That brief extends TB15's accepted S3 behavior to a production linked-file
 Adapter and Paper Desk S1 workflow. It was confirmation-gated until the owner
 confirmed linked-existing-record scope, selected the production PDF
 technology, and recorded that choice in an ADR. Gates 1–6 were confirmed on
-August 31, 2026, and the PDF.js choice is recorded in [ADR 0015](../../adr/0015-use-pdfjs-behind-pdf-adapter.md); implementation is now complete on
-the working branch. Automated packaged acceptance passes, and final human
-review of the artifact remains open.
+August 31, 2026, and the PDF.js choice is recorded in [ADR 0015](../../adr/0015-use-pdfjs-behind-pdf-adapter.md); implementation and automated packaged acceptance are complete on the working branch. The human owner also passed and accepted all six final packaged-artifact gates on August 31, 2026.
 
 ## Alternatives considered and discarded
 
@@ -196,10 +194,10 @@ and unavailable-provider behavior. The linked-PDF slice adds production
 relink verification, and S1/S5 evidence for available, unavailable, changed,
 failed-relink, and successful-relink states. The MC/DC evaluator is included
 in the changed-lines coverage surface so new quality logic cannot bypass that
-PR gate. The remaining release work for this slice is visible human review of
-the packaged artifact and local-only privacy boundary; the broader provider-
-free checklist, distribution, security, and whole-release obligations remain
-open.
+PR gate. The linked-PDF slice's visible human review and local-only privacy
+boundary are accepted; the broader provider-free checklist, distribution,
+security, and whole-release obligations remain open. The six-gate human
+acceptance and explicit approval were recorded on August 31, 2026.
 Implementation is complete only when that evidence passes, coverage and
 complexity evidence is current, the code map and release documents are
 current, and the provider-free packaged workflow is ready for a visible human

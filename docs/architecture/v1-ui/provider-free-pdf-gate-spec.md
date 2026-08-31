@@ -1,8 +1,9 @@
 # Provider-free PDF source-status packaged-gate specification
 
-Status: implementation complete on `codex/production-pdf-release-gate`;
-human acceptance remains pending. Gates 1–6 were explicitly confirmed by the
-human owner on August 31, 2026. The PDF.js choice is recorded in [ADR
+Status: implementation complete and human-accepted on
+`codex/production-pdf-release-gate` on August 31, 2026; automated evidence is
+green. The six final human acceptance gates were explicitly passed and accepted
+by the human owner. The PDF.js choice is recorded in [ADR
 0015](../../adr/0015-use-pdfjs-behind-pdf-adapter.md). The production
 dependency is pinned to `pdfjs-dist@6.3.289`; its legacy module, worker module,
 and standard-font resources are packaged under `Contents/Resources/pdfjs-dist`
@@ -389,8 +390,22 @@ and the governing documentation before continuing.
   is restricted to the silent/review harness; normal launches use the
   application-private configuration root.
 - Focused S5 and PDF.js contracts pass; the full silent packaged suite passes
-  27/27 workflow specs. Human acceptance of the packaged artifact is still
-  required before this release checklist item is marked complete.
+  27/27 workflow specs. The human owner passed the six final packaged-artifact
+  acceptance gates on August 31, 2026, covering baseline availability, changed
+  source detection, invalid replacement rejection, verified relinking,
+  unavailable-source recovery, and relaunch/privacy boundaries.
+
+### Human acceptance record — August 31, 2026
+
+The human owner reviewed the visible packaged application in explicit review
+mode and passed all six final gates. The review confirmed the available source
+baseline; external-change detection with annotation preservation; rejection of
+an invalid replacement locator; successful verified relinking; unavailable
+source recovery after the relinked file disappeared; and stable relaunch,
+provider-free operation, and repository privacy behavior. The owner explicitly
+accepted this implemented scope. This approval does not promote the documented
+Add/Import, managed-copy, OCR, remapping, automatic-relink, distribution, or
+whole-release deferrals.
 
 The slice is complete only when:
 

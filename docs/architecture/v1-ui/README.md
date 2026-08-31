@@ -30,7 +30,7 @@ navigation or release-status authorities:
 - `delivery-plan.md` orders vertical tracer bullets for red-to-green implementation.
 - [V1 victory checklist](v1-victory-checklist.md) records the release gates and final scope decisions required to declare V1 complete.
 - [V1 release-readiness specification](v1-release-readiness-spec.md) scopes the provider-free packaged-app and initial MC/DC evidence work.
-- [Provider-free PDF source-status packaged-gate specification](provider-free-pdf-gate-spec.md) records the implemented packaged linked-PDF preservation slice and its remaining human acceptance gate.
+- [Provider-free PDF source-status packaged-gate specification](provider-free-pdf-gate-spec.md) records the implemented and human-accepted packaged linked-PDF preservation slice and its explicit deferrals.
 - `tracer-bullet-*-spec.md` and `issue-51-explicit-context-selection-spec.md` record scoped implementation briefs and delivery evidence.
 - `stack-research.md` records primary-source evidence for the desktop foundation.
 - `complexity-policy.md` records the production complexity limits and verification evidence.
