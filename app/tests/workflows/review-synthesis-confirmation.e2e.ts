@@ -37,7 +37,7 @@ describe("Review a Synthesis request", () => {
         "Synthesize into topic",
       );
       assert.equal(
-        await $("#studio-synthesis-include-all-context").getText(),
+        await $("label.checkbox-row").getText(),
         "Include all saved claims for this Source Record",
       );
       assert.equal(
