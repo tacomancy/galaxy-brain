@@ -3,10 +3,12 @@
  * sibling, validates the complete skeleton, and renames only into a new or
  * explicitly empty destination, so failed creation cannot overwrite data.
  */
+import { constants } from "node:fs";
 import {
   lstat,
   mkdir,
   mkdtemp,
+  open,
   readFile,
   readdir,
   realpath,
@@ -63,6 +65,27 @@ export interface KnowledgeRepositoryFileSystem {
 
 const defaultFileSystem: KnowledgeRepositoryFileSystem = { rename, rm };
 
+const readStarterFile = async (sourcePath: string): Promise<Buffer> => {
+  // Open and validate the same descriptor so a starter-path replacement
+  // cannot turn the prior safety check into a read of a different file.
+  const fileHandle = await open(
+    sourcePath,
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  );
+
+  try {
+    if (!(await fileHandle.stat()).isFile()) {
+      throw new UnsafeRepositoryTargetError(
+        "The starter skeleton contains an unsafe non-file entry.",
+      );
+    }
+
+    return await fileHandle.readFile();
+  } finally {
+    await fileHandle.close();
+  }
+};
+
 const copyStarterEntry = async (
   sourcePath: string,
   destinationPath: string,
@@ -88,7 +111,7 @@ const copyStarterEntry = async (
     return;
   }
 
-  await writeFile(destinationPath, await readFile(sourcePath));
+  await writeFile(destinationPath, await readStarterFile(sourcePath));
 };
 
 const copyStarterContents = async (
