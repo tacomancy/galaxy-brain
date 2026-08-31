@@ -29,9 +29,15 @@ export interface PdfJsAdapterOptions {
   diagnostics?: PdfJsDiagnostics;
 }
 
-/** Internal sink for PDF.js and filesystem causes retained outside the Adapter API. */
+/** Internal sink for sanitized PDF.js and filesystem diagnostics. */
 export interface PdfJsDiagnostics {
-  record(cause: unknown): void;
+  record(diagnostic: PdfJsDiagnostic): void;
+}
+
+/** Sanitized filesystem or PDF.js operation metadata for internal diagnostics. */
+export interface PdfJsDiagnostic {
+  category: "filesystem" | "pdfjs";
+  operation: "read-source" | "load-document" | "resolve-locator" | "cleanup";
 }
 
 const loadPdfJs = async (
@@ -64,8 +70,11 @@ export const createPdfJsAdapter = (
 
     try {
       bytes = await readFile(input.sourceReference);
-    } catch (cause: unknown) {
-      options.diagnostics?.record(cause);
+    } catch {
+      options.diagnostics?.record({
+        category: "filesystem",
+        operation: "read-source",
+      });
       return {
         outcome: "source-unavailable",
         detail: "The linked Source Asset could not be read.",
@@ -85,8 +94,11 @@ export const createPdfJsAdapter = (
           ? {}
           : { standardFontDataUrl: options.standardFontDataUrl }),
       }).promise;
-    } catch (cause: unknown) {
-      options.diagnostics?.record(cause);
+    } catch {
+      options.diagnostics?.record({
+        category: "pdfjs",
+        operation: "load-document",
+      });
       return {
         outcome: "source-unavailable",
         detail: "The linked Source Asset could not be parsed.",
@@ -112,8 +124,11 @@ export const createPdfJsAdapter = (
       }
 
       return { outcome: "located", text: text.slice(input.start, input.end) };
-    } catch (cause: unknown) {
-      options.diagnostics?.record(cause);
+    } catch {
+      options.diagnostics?.record({
+        category: "pdfjs",
+        operation: "resolve-locator",
+      });
       return {
         outcome: "source-unavailable",
         detail: "The requested source locator could not be resolved.",
@@ -121,8 +136,11 @@ export const createPdfJsAdapter = (
     } finally {
       try {
         await document.cleanup();
-      } catch (cause: unknown) {
-        options.diagnostics?.record(cause);
+      } catch {
+        options.diagnostics?.record({
+          category: "pdfjs",
+          operation: "cleanup",
+        });
         // Cleanup is best effort after the domain outcome is determined; a
         // vendor cleanup failure must not escape the Adapter boundary.
       }

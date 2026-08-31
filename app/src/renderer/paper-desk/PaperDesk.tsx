@@ -20,7 +20,7 @@ const sourceStatusLabel = (
     available: "Source available",
     "source-changed": "Source status changed",
     "source-status-unavailable": "Source status unavailable",
-    relinked: "Source relinked and verified.",
+    relinked: "Source available",
   }[status.outcome];
 };
 
@@ -55,6 +55,9 @@ const SourceStatusCard = ({
       ) : null}
       {sourceStatus?.outcome === "source-status-unavailable" ? (
         <p>{sourceStatus.detail}</p>
+      ) : null}
+      {sourceStatus?.outcome === "relinked" ? (
+        <p id="paper-desk-relink-confirmation">Source relinked and verified.</p>
       ) : null}
     </div>
     {sourceStatus?.outcome === "source-changed" ||
@@ -150,9 +153,6 @@ export const PaperDesk = ({
                 </p>
               )}
             </article>
-            <p className="source-preview-note">
-              The source preview is resolved through the production PDF Adapter.
-            </p>
           </section>
           <aside className="paper-desk-sidebar">
             <section

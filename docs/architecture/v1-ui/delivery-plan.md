@@ -669,15 +669,16 @@ documented in the governing specification.
 The PR-readiness hardening cycle also has explicit red-to-green evidence:
 `npm test -- --run tests/contracts/source-asset-adapter.test.ts
 tests/contracts/pdfjs-pdf-adapter.test.ts` first ran 11 tests with two failures
-because the new diagnostics assertions received no retained causes. After the
+because the new diagnostics assertions received no diagnostic records. After the
 internal diagnostics sinks were implemented, the same focused command passed
-all 11 tests. The final hardening verification passed `npm run check` (113
+all 13 tests, including malformed-PDF, TOCTOU, and sanitized-diagnostics
+regressions. The final hardening verification passed `npm run check` (115
 tests, documentation validation, and both registered MC/DC decisions),
-`npm run test:coverage` (82.58% statements, 74.57% branches, 96.74% functions,
-82.47% lines), `npm run lint:complexity`, `npm run test:provider-free` (both
+`npm run test:coverage` (82.57% statements, 74.51% branches, 96.74% functions,
+82.46% lines), `npm run lint:complexity`, `npm run test:provider-free` (both
 named provider-free workflows), and `npm run test:workflow` (27/27 silent
 packaged specs). Changed-lines coverage passes against the committed head at
-81.06% (107/132 executable changed lines, 80.00% threshold).
+82.03% (105/128 executable changed lines, 80.00% threshold).
 
 Saved agent context must retain its point-in-time snapshot when the current source cannot be checked or lacks a comparable identity. The Workbench reports `source status unavailable` without blocking access or claiming that the snapshot is current. An explicit refresh must create a new snapshot/version while preserving the original and must never silently replace it in place. Refresh updates only the saved context representation; a separate result-regeneration action requires fresh confirmation before any new OpenAI request.
 

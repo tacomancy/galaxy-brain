@@ -1,10 +1,10 @@
 /** WebdriverIO configuration for S1 packaged Electron workflow tests. */
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 import {
   lstatSync,
-  mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -26,13 +26,31 @@ const packagedBinary = join(
 // Keep isolated session-state files for each workflow worker so a reload
 // exercises persistence while parallel specs remain independent.
 const testSessionStateRoot = mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-"));
-const testSourceAssetRoot = join(tmpdir(), "galaxy-brain-wdio-source-assets");
-mkdirSync(testSourceAssetRoot, { recursive: true });
-const testSourcePdfPath = join(
-  testSourceAssetRoot,
-  "bayesian-statistics-fixture.pdf",
+const testSourceAssetCoordinatePath = join(
+  tmpdir(),
+  "galaxy-brain-wdio-source-assets-path.txt",
 );
-const testSourceAssetsPath = join(testSourceAssetRoot, "source-assets.json");
+const isWdioLauncher = process.env.WDIO_WORKER_ID === undefined;
+const configuredSourcePdfPath = process.env.GALAXY_BRAIN_TEST_SOURCE_PDF;
+const configuredSourceAssetsPath = process.env.GALAXY_BRAIN_TEST_SOURCE_ASSETS;
+const reusesConfiguredSourceAssets =
+  configuredSourcePdfPath !== undefined &&
+  configuredSourceAssetsPath !== undefined;
+const coordinatedSourceAssetRoot = isWdioLauncher
+  ? mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-source-assets-"))
+  : readFileSync(testSourceAssetCoordinatePath, "utf8");
+if (isWdioLauncher) {
+  writeFileSync(testSourceAssetCoordinatePath, coordinatedSourceAssetRoot);
+}
+const testSourceAssetRoot = reusesConfiguredSourceAssets
+  ? dirname(configuredSourcePdfPath)
+  : coordinatedSourceAssetRoot;
+const testSourcePdfPath = reusesConfiguredSourceAssets
+  ? configuredSourcePdfPath
+  : join(testSourceAssetRoot, "bayesian-statistics-fixture.pdf");
+const testSourceAssetsPath = reusesConfiguredSourceAssets
+  ? configuredSourceAssetsPath
+  : join(testSourceAssetRoot, "source-assets.json");
 const testSourcePdf = createTwoPagePdf(
   Buffer.from(
     "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA4NiA+PgpzdHJlYW0KQlQKL0YxIDEyIFRmCjcyIDcyMCBUZAooQmF5ZXNpYW4gaW5mZXJlbmNlIHVwZGF0ZXMgcHJpb3IgYmVsaWVmIHdpdGggZXZpZGVuY2UuKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNDEgMDAwMDAgbiAKMDAwMDAwMDM3NiAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQ0NgolJUVPRgo=",
@@ -94,29 +112,32 @@ function createTwoPagePdf(
   pdf += `trailer${newline}<< /Size ${bodies.length + 1} /Root 1 0 R >>${newline}startxref${newline}${xref}${newline}%%EOF${newline}`;
   return Buffer.from(pdf);
 }
-writeFileSync(testSourcePdfPath, testSourcePdf);
-writeFileSync(testInvalidReplacementPdfPath, testInvalidReplacementPdf);
-const testSourceStats = lstatSync(testSourcePdfPath);
-writeFileSync(
-  testSourceAssetsPath,
-  `${JSON.stringify(
-    {
-      format: "galaxy-brain-source-assets",
-      format_version: 1,
-      links: {
-        "bayesian-statistics-fixture-source": {
-          mode: "linked-local",
-          path: testSourcePdfPath,
-          source_identity: `file:${testSourceStats.dev}:${testSourceStats.ino}`,
-          content_identity: `sha256:${createHash("sha256").update(testSourcePdf).digest("hex")}`,
+if (!reusesConfiguredSourceAssets) {
+  writeFileSync(testSourcePdfPath, testSourcePdf);
+  writeFileSync(testInvalidReplacementPdfPath, testInvalidReplacementPdf);
+  const testSourceStats = lstatSync(testSourcePdfPath);
+  writeFileSync(
+    testSourceAssetsPath,
+    `${JSON.stringify(
+      {
+        format: "galaxy-brain-source-assets",
+        format_version: 1,
+        links: {
+          "bayesian-statistics-fixture-source": {
+            mode: "linked-local",
+            path: testSourcePdfPath,
+            source_identity: `file:${testSourceStats.dev}:${testSourceStats.ino}`,
+            content_identity: `sha256:${createHash("sha256").update(testSourcePdf).digest("hex")}`,
+          },
         },
       },
-    },
-    null,
-    2,
-  )}\n`,
-);
+      null,
+      2,
+    )}\n`,
+  );
+}
 process.env.GALAXY_BRAIN_TEST_SOURCE_PDF = testSourcePdfPath;
+process.env.GALAXY_BRAIN_TEST_SOURCE_ASSETS = testSourceAssetsPath;
 process.env.GALAXY_BRAIN_TEST_INVALID_REPLACEMENT_PDF =
   testInvalidReplacementPdfPath;
 const sessionStateArgumentPrefix = "--galaxy-brain-session-state=";
@@ -220,7 +241,10 @@ export const config: Options.Testrunner &
   },
   onComplete: () => {
     rmSync(testSessionStateRoot, { recursive: true, force: true });
-    rmSync(testSourceAssetRoot, { recursive: true, force: true });
+    if (isWdioLauncher && !reusesConfiguredSourceAssets) {
+      rmSync(testSourceAssetRoot, { recursive: true, force: true });
+      rmSync(testSourceAssetCoordinatePath, { force: true });
+    }
   },
   mochaOpts: {
     ui: "bdd",

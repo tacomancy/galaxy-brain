@@ -1,6 +1,6 @@
 /** S1 packaged workflow for production linked-PDF status and relink. */
 import { strict as assert } from "node:assert";
-import { cp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { $ } from "@wdio/globals";
@@ -67,8 +67,9 @@ describe("Production linked PDF status", () => {
       "Classification: source-claim",
     );
 
-    await writeFile(sourcePdfPath, "changed source bytes", "utf8");
+    await cp(invalidReplacementPdfPath, sourcePdfPath);
     await $("#workspace-switcher-atlas").click();
+    await $("#atlas-heading").waitForDisplayed();
     await $("#workspace-switcher-paper-desk").click();
     await $("#paper-desk-source-status-heading").waitForDisplayed();
     await browser.waitUntil(
@@ -144,15 +145,19 @@ describe("Production linked PDF status", () => {
     await browser.waitUntil(
       async () =>
         (await $("#paper-desk-source-status-heading").getText()) ===
-        "Source relinked and verified.",
+        "Source available",
       {
         timeout: 5_000,
         timeoutMsg:
-          "The replacement PDF relink outcome did not become visible.",
+          "The replacement PDF availability outcome did not become visible.",
       },
     );
     assert.equal(
       await $("#paper-desk-source-status-heading").getText(),
+      "Source available",
+    );
+    assert.equal(
+      await $("#paper-desk-relink-confirmation").getText(),
       "Source relinked and verified.",
     );
     assert.equal(
@@ -161,6 +166,7 @@ describe("Production linked PDF status", () => {
     );
 
     await $("#workspace-switcher-atlas").click();
+    await $("#atlas-heading").waitForDisplayed();
     await $("#workspace-switcher-paper-desk").click();
     await $("#paper-desk-source-status-heading").waitForDisplayed();
     assert.equal(
@@ -195,6 +201,5 @@ describe("Production linked PDF status", () => {
       "utf8",
     );
     assert.equal(portableAnnotation.includes(sourcePdfPath), false);
-    assert.equal(portableAnnotation.includes("changed source bytes"), false);
   });
 });

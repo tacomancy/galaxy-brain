@@ -894,12 +894,6 @@ summary:focus-visible {
     serif;
 }
 
-.source-preview-note {
-  margin: 18px 4px 0;
-  color: #b7b9b1;
-  font-size: 11px;
-}
-
 .source-status-card {
   display: flex;
   align-items: center;

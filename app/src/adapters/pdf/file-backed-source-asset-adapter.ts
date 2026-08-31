@@ -69,9 +69,21 @@ export interface FileBackedSourceAssetAdapterOptions {
   diagnostics?: SourceAssetDiagnostics;
 }
 
-/** Internal sink for infrastructure causes retained outside the Adapter API. */
+/** Internal sink for sanitized infrastructure diagnostics. */
 export interface SourceAssetDiagnostics {
-  record(cause: unknown): void;
+  record(diagnostic: SourceAssetDiagnostic): void;
+}
+
+/** Sanitized filesystem operation metadata retained for internal diagnostics. */
+export interface SourceAssetDiagnostic {
+  category: "filesystem";
+  operation:
+    | "read-store"
+    | "read-source"
+    | "resolve-replacement"
+    | "verify-replacement"
+    | "save-replacement"
+    | "cleanup";
 }
 
 /**
@@ -146,6 +158,10 @@ const identityFor = async (
     }
 
     const content = await filesystem.readFile(canonicalPath);
+    if (content.subarray(0, 5).toString("ascii") !== "%PDF-") {
+      return unavailable("The linked Source Asset is not a regular PDF file.");
+    }
+
     const digest = createHash("sha256").update(content).digest("hex");
 
     return {
@@ -159,8 +175,8 @@ const identityFor = async (
         contentIdentity: `sha256:${digest}`,
       },
     };
-  } catch (cause: unknown) {
-    diagnostics?.record(cause);
+  } catch {
+    diagnostics?.record({ category: "filesystem", operation: "read-source" });
     return unavailable("The linked Source Asset is unavailable.");
   }
 };
@@ -175,8 +191,8 @@ const readStore = async (
       await filesystem.readFile(configurationPath, "utf8"),
     ) as unknown;
     return parseStore(raw);
-  } catch (cause: unknown) {
-    diagnostics?.record(cause);
+  } catch {
+    diagnostics?.record({ category: "filesystem", operation: "read-store" });
     return undefined;
   }
 };
@@ -185,6 +201,7 @@ const writeStore = async (
   configurationPath: string,
   store: SourceAssetStore,
   filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
 ): Promise<void> => {
   const temporaryPath = join(
     dirname(configurationPath),
@@ -193,6 +210,9 @@ const writeStore = async (
 
   await filesystem.mkdir(dirname(configurationPath), { recursive: true });
 
+  let operationError: unknown;
+  let committed = false;
+
   try {
     await filesystem.writeFile(
       temporaryPath,
@@ -200,8 +220,22 @@ const writeStore = async (
       "utf8",
     );
     await filesystem.rename(temporaryPath, configurationPath);
-  } finally {
+    committed = true;
+  } catch (cause: unknown) {
+    operationError = cause;
+  }
+
+  try {
     await filesystem.rm(temporaryPath, { force: true });
+  } catch (cause: unknown) {
+    diagnostics?.record({ category: "filesystem", operation: "cleanup" });
+    if (!committed && operationError === undefined) {
+      operationError = cause;
+    }
+  }
+
+  if (operationError !== undefined) {
+    throw operationError;
   }
 };
 
@@ -224,8 +258,11 @@ const replacementPathFor = async (
 
   try {
     return await filesystem.realpath(resolve(reference));
-  } catch (cause: unknown) {
-    diagnostics?.record(cause);
+  } catch {
+    diagnostics?.record({
+      category: "filesystem",
+      operation: "resolve-replacement",
+    });
     return unavailable("The replacement Source Asset is unavailable.");
   }
 };
@@ -254,8 +291,11 @@ const verifyReplacement = async (
       sourceReference: replacementPath,
       ...input.verificationLocator,
     });
-  } catch (cause: unknown) {
-    diagnostics?.record(cause);
+  } catch {
+    diagnostics?.record({
+      category: "filesystem",
+      operation: "verify-replacement",
+    });
     return {
       outcome: "unavailable",
       detail: "The replacement Source Asset could not be verified.",
@@ -390,6 +430,33 @@ export const createFileBackedSourceAssetAdapter = (
       return verification;
     }
 
+    const verifiedIdentity = await identityFor(
+      replacementPath,
+      filesystem,
+      options.diagnostics,
+    );
+
+    if (verifiedIdentity.outcome === "unavailable") {
+      return verifiedIdentity;
+    }
+
+    if (
+      !identitiesMatch(
+        verifiedIdentity.current,
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+      )
+    ) {
+      return {
+        outcome: "changed",
+        recorded: {
+          sourceIdentity: previousLink.source_identity,
+          contentIdentity: previousLink.content_identity,
+        },
+        current: verifiedIdentity.current,
+      };
+    }
+
     const nextStore: SourceAssetStore = {
       ...store,
       links: {
@@ -397,23 +464,31 @@ export const createFileBackedSourceAssetAdapter = (
         [input.sourceRecord.id]: {
           mode: "linked-local",
           path: replacementPath,
-          source_identity: current.sourceIdentity,
-          content_identity: current.contentIdentity,
+          source_identity: verifiedIdentity.current.sourceIdentity,
+          content_identity: verifiedIdentity.current.contentIdentity,
         },
       },
     };
 
     try {
-      await writeStore(options.configurationPath, nextStore, filesystem);
-    } catch (cause: unknown) {
-      options.diagnostics?.record(cause);
+      await writeStore(
+        options.configurationPath,
+        nextStore,
+        filesystem,
+        options.diagnostics,
+      );
+    } catch {
+      options.diagnostics?.record({
+        category: "filesystem",
+        operation: "save-replacement",
+      });
       return unavailable("The replacement Source Asset could not be saved.");
     }
 
     return {
       outcome: "available",
-      recorded: current,
-      current,
+      recorded: verifiedIdentity.current,
+      current: verifiedIdentity.current,
     };
   };
 

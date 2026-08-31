@@ -144,22 +144,13 @@ const WorkbenchShell = ({
     ProposalReviewApplyOutcome | undefined
   >();
 
-  useEffect(() => {
-    let isCurrent = true;
-    const sourceContext = workbench.context;
+  const clearSourceStatus = (): void => {
+    setSourceStatus(undefined);
+  };
 
-    if (sourceContext !== undefined) {
-      void window.workbench.readSourceAvailability().then((outcome) => {
-        if (isCurrent) {
-          setSourceStatus(outcome);
-        }
-      });
-    }
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [workbench.activeWorkspace, workbench.context]);
+  const refreshSourceStatus = async (): Promise<void> => {
+    setSourceStatus(await window.workbench.readSourceAvailability());
+  };
 
   useEffect(() => {
     if (!shouldFocusSelectedContextAction.current) {
@@ -178,6 +169,7 @@ const WorkbenchShell = ({
   ): void => {
     if (outcome.outcome === "transitioned") {
       setLastOutcome(undefined);
+      clearSourceStatus();
       setWorkbench(outcome.workbench);
       return;
     }
@@ -188,6 +180,7 @@ const WorkbenchShell = ({
   const refreshWorkbench = async (): Promise<void> => {
     // React owns only this presentation projection; the main-process Session
     // remains the authority for repository selection and access.
+    clearSourceStatus();
     setWorkbench(await window.workbench.openFreshWorkbench());
     const authoringOutcome = await window.workbench.readAuthoringDraft();
     setAuthoring(authoringOutcome);
@@ -268,6 +261,7 @@ const WorkbenchShell = ({
 
     if (outcome.outcome === "selected") {
       setLastOutcome(undefined);
+      clearSourceStatus();
       setWorkbench(outcome.workbench);
       shouldFocusSelectedContextAction.current = true;
       return;
@@ -311,6 +305,10 @@ const WorkbenchShell = ({
     const outcome =
       await window.workbench.openSourceRecordInPaperDesk(sourceRecordId);
     applyWorkspaceTransition(outcome);
+
+    if (outcome.outcome === "transitioned" && outcome.workbench.context) {
+      await refreshSourceStatus();
+    }
   };
 
   const switchWorkspace = async (
@@ -318,6 +316,14 @@ const WorkbenchShell = ({
   ): Promise<void> => {
     const outcome = await window.workbench.switchWorkspace(workspace);
     applyWorkspaceTransition(outcome);
+
+    if (
+      outcome.outcome === "transitioned" &&
+      outcome.workbench.activeWorkspace === "paper-desk" &&
+      outcome.workbench.context
+    ) {
+      await refreshSourceStatus();
+    }
   };
 
   const openSavedAnnotation = async (): Promise<void> => {
@@ -325,7 +331,9 @@ const WorkbenchShell = ({
 
     if (outcome.outcome === "position-restored") {
       setLastOutcome(undefined);
+      clearSourceStatus();
       setWorkbench(outcome.workbench);
+      void refreshSourceStatus();
       return;
     }
 

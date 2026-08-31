@@ -39,16 +39,16 @@ describe("production Source Asset Adapter contract", () => {
     try {
       const adapter = createFileBackedSourceAssetAdapter({
         configurationPath,
-        diagnostics: { record: (cause) => causes.push(cause) },
+        diagnostics: { record: (diagnostic) => causes.push(diagnostic) },
       });
 
       assert.deepEqual(await adapter.readIdentity(sourceRecordId), {
         outcome: "unavailable",
         detail: "The linked Source Asset is unavailable.",
       });
-      assert.equal(causes.length, 1);
-      assert.ok(causes[0] instanceof Error);
-      assert.match((causes[0] as Error).message, /missing-source-assets/);
+      assert.deepEqual(causes, [
+        { category: "filesystem", operation: "read-store" },
+      ]);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
@@ -98,6 +98,49 @@ describe("production Source Asset Adapter contract", () => {
           sourceIdentity,
           contentIdentity,
         },
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("does not report a regular non-PDF file as available", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const sourcePath = join(temporaryRoot, "not-a-pdf.txt");
+    const configurationPath = join(temporaryRoot, "source-assets.json");
+
+    try {
+      const sourceBytes = "plain text is not a PDF\n";
+      await writeFile(sourcePath, sourceBytes, "utf8");
+      const fileStats = await lstat(sourcePath);
+      await writeFile(
+        configurationPath,
+        JSON.stringify(
+          {
+            format: "galaxy-brain-source-assets",
+            format_version: 1,
+            links: {
+              [sourceRecordId]: {
+                mode: "linked-local",
+                path: sourcePath,
+                source_identity: `file:${fileStats.dev}:${fileStats.ino}`,
+                content_identity: contentIdentityFor(sourceBytes),
+              },
+            },
+          },
+          null,
+          2,
+        ),
+        "utf8",
+      );
+
+      const adapter = createFileBackedSourceAssetAdapter({
+        configurationPath,
+      });
+
+      assert.deepEqual(await adapter.readIdentity(sourceRecordId), {
+        outcome: "unavailable",
+        detail: "The linked Source Asset is not a regular PDF file.",
       });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
@@ -263,6 +306,75 @@ describe("production Source Asset Adapter contract", () => {
           current: {
             sourceIdentity: `file:${replacementStats.dev}:${replacementStats.ino}`,
             contentIdentity: actualReplacementContentIdentity,
+          },
+        },
+      );
+      assert.equal(await readFile(configurationPath, "utf8"), originalStore);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a replacement that changes during PDF verification", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const originalPath = join(temporaryRoot, "original.pdf");
+    const replacementPath = join(temporaryRoot, "replacement.pdf");
+    const configurationPath = join(temporaryRoot, "source-assets.json");
+    const originalStore = JSON.stringify({
+      format: "galaxy-brain-source-assets",
+      format_version: 1,
+      links: {
+        [sourceRecordId]: {
+          mode: "linked-local",
+          path: originalPath,
+          source_identity: "file:original",
+          content_identity: "sha256:original",
+        },
+      },
+    });
+
+    try {
+      await writeFile(originalPath, "%PDF-1.4\noriginal PDF\n", "utf8");
+      const replacementBytes = "%PDF-1.4\nreplacement\n";
+      const changedReplacementBytes = "%PDF-1.4\nchanged during verification\n";
+      await writeFile(replacementPath, replacementBytes, "utf8");
+      await writeFile(configurationPath, originalStore, "utf8");
+      const replacementStats = await lstat(replacementPath);
+
+      const adapter = createFileBackedSourceAssetAdapter({
+        configurationPath,
+        pdf: {
+          readSelection: async () => {
+            await writeFile(replacementPath, changedReplacementBytes, "utf8");
+            return {
+              outcome: "located" as const,
+              text: "verified passage",
+            };
+          },
+        },
+      });
+
+      assert.deepEqual(
+        await adapter.relink({
+          sourceRecord: {
+            id: sourceRecordId,
+            title: "Bayesian statistics fixture source",
+          },
+          replacementReference: replacementPath,
+          expectedReplacementSourceIdentity: `file:${replacementStats.dev}:${replacementStats.ino}`,
+          expectedReplacementContentIdentity:
+            contentIdentityFor(replacementBytes),
+          verificationLocator: { page: 2, start: 0, end: 16 },
+        }),
+        {
+          outcome: "changed",
+          recorded: {
+            sourceIdentity: "file:original",
+            contentIdentity: "sha256:original",
+          },
+          current: {
+            sourceIdentity: `file:${replacementStats.dev}:${replacementStats.ino}`,
+            contentIdentity: contentIdentityFor(changedReplacementBytes),
           },
         },
       );

@@ -382,9 +382,11 @@ and the governing documentation before continuing.
   bytes through `pdfjs-dist@6.3.289`.
 - The silent packaged S1 workflow uses the real unsigned Electron package and
   production PDF.js path. It covers available, changed, unavailable, failed
-  relink (including identity-mismatched and locator-invalid replacements),
-  successful relink, Source Record/annotation metadata preservation, canonical
-  replacement-path persistence, and post-relink status persistence. Its
+  relink (including locator-invalid replacements), successful relink,
+  post-verification replacement changes, and the identity-mismatch contract in
+  the focused S5 suite. It also covers Source Record/
+  annotation metadata preservation, canonical replacement-path persistence,
+  and post-relink status persistence. Its
   isolated fixture also verifies that absolute paths and replacement bytes do
   not enter the selected portable repository. The source-store path override
   is restricted to the silent/review harness; normal launches use the
@@ -398,8 +400,8 @@ and the governing documentation before continuing.
 
 ### Red-to-green evidence for PR-readiness hardening
 
-- **Red:** `npm test -- --run tests/contracts/source-asset-adapter.test.ts tests/contracts/pdfjs-pdf-adapter.test.ts` initially ran 11 tests with 2 failures. Both new diagnostics assertions observed the sanitized domain outcome but received zero retained causes.
-- **Green:** The same focused command passed all 11 tests after the optional internal diagnostics sinks were added. `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, `npm run test:provider-free`, and `npm run test:workflow` are green for this hardening cycle. Changed-lines coverage passes against the committed head at 81.06% (107/132 executable changed lines, 80.00% threshold).
+- **Red:** `npm test -- --run tests/contracts/source-asset-adapter.test.ts tests/contracts/pdfjs-pdf-adapter.test.ts` initially ran 11 tests with 2 failures. Both new diagnostics assertions observed the sanitized domain outcome but received no diagnostic records.
+- **Green:** The same focused command passed all 13 tests after the optional internal diagnostics sinks, PDF-header validation, TOCTOU recheck, and isolated packaged fixture coordination were added. `npm run check` (115 tests), `npm run test:coverage` (82.57% statements, 74.51% branches, 96.74% functions, 82.46% lines), `npm run lint:complexity`, `npm run test:provider-free`, and `npm run test:workflow` are green for this hardening cycle. Changed-lines coverage passes at 82.03% (105/128 executable changed lines, 80.00% threshold).
 
 ### Human acceptance record — August 31, 2026
 

@@ -39,4 +39,5 @@ package and load without network access. The S1 packaged gate exercises real
 temporary PDF bytes through the production Adapter, while S3 tests continue to use
 independently authored fixture text and locators. PDF.js-specific failures are
 translated by the Adapter and must not leak raw paths, bytes, or vendor
-exceptions into renderer state, repository content, or diagnostics.
+exceptions into renderer state, repository content, or diagnostics. Internal
+diagnostics may retain only sanitized category and operation metadata.

@@ -74,7 +74,7 @@ describe("production PDF.js Adapter contract", () => {
         await createPdfJsAdapter({
           modulePath: pathToFileURL(join(temporaryRoot, "missing-pdfjs.mjs"))
             .href,
-          diagnostics: { record: (cause) => causes.push(cause) },
+          diagnostics: { record: (diagnostic) => causes.push(diagnostic) },
         }).readSelection({
           sourceRecord: {
             id: "bayesian-statistics-fixture-source",
@@ -90,8 +90,9 @@ describe("production PDF.js Adapter contract", () => {
           detail: "The linked Source Asset could not be parsed.",
         },
       );
-      assert.equal(causes.length, 1);
-      assert.ok(causes[0] instanceof Error);
+      assert.deepEqual(causes, [
+        { category: "pdfjs", operation: "load-document" },
+      ]);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }
