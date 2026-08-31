@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 import {
   lstatSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
