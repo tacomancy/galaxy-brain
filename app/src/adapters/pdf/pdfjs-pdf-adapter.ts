@@ -26,6 +26,12 @@ const importFromRuntime = new Function(
 export interface PdfJsAdapterOptions {
   modulePath?: string;
   standardFontDataUrl?: string;
+  diagnostics?: PdfJsDiagnostics;
+}
+
+/** Internal sink for PDF.js and filesystem causes retained outside the Adapter API. */
+export interface PdfJsDiagnostics {
+  record(cause: unknown): void;
 }
 
 const loadPdfJs = async (
@@ -58,7 +64,8 @@ export const createPdfJsAdapter = (
 
     try {
       bytes = await readFile(input.sourceReference);
-    } catch {
+    } catch (cause: unknown) {
+      options.diagnostics?.record(cause);
       return {
         outcome: "source-unavailable",
         detail: "The linked Source Asset could not be read.",
@@ -78,7 +85,8 @@ export const createPdfJsAdapter = (
           ? {}
           : { standardFontDataUrl: options.standardFontDataUrl }),
       }).promise;
-    } catch {
+    } catch (cause: unknown) {
+      options.diagnostics?.record(cause);
       return {
         outcome: "source-unavailable",
         detail: "The linked Source Asset could not be parsed.",
@@ -104,7 +112,8 @@ export const createPdfJsAdapter = (
       }
 
       return { outcome: "located", text: text.slice(input.start, input.end) };
-    } catch {
+    } catch (cause: unknown) {
+      options.diagnostics?.record(cause);
       return {
         outcome: "source-unavailable",
         detail: "The requested source locator could not be resolved.",
@@ -112,7 +121,8 @@ export const createPdfJsAdapter = (
     } finally {
       try {
         await document.cleanup();
-      } catch {
+      } catch (cause: unknown) {
+        options.diagnostics?.record(cause);
         // Cleanup is best effort after the domain outcome is determined; a
         // vendor cleanup failure must not escape the Adapter boundary.
       }

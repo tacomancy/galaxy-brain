@@ -66,6 +66,12 @@ export interface FileBackedSourceAssetAdapterOptions {
   configurationPath: string;
   pdf?: PdfAdapter;
   filesystem?: SourceAssetFileSystem;
+  diagnostics?: SourceAssetDiagnostics;
+}
+
+/** Internal sink for infrastructure causes retained outside the Adapter API. */
+export interface SourceAssetDiagnostics {
+  record(cause: unknown): void;
 }
 
 /**
@@ -129,6 +135,7 @@ const unavailable = (detail: string): SourceAssetIdentityOutcome => ({
 const identityFor = async (
   path: string,
   filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
 ): Promise<SourceAssetIdentityOutcome> => {
   try {
     const canonicalPath = await filesystem.realpath(path);
@@ -152,26 +159,24 @@ const identityFor = async (
         contentIdentity: `sha256:${digest}`,
       },
     };
-  } catch {
+  } catch (cause: unknown) {
+    diagnostics?.record(cause);
     return unavailable("The linked Source Asset is unavailable.");
   }
 };
 
-const currentIdentityFor = async (
-  path: string,
-  filesystem: SourceAssetFileSystem,
-): Promise<SourceAssetIdentityOutcome> => identityFor(path, filesystem);
-
 const readStore = async (
   configurationPath: string,
   filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
 ): Promise<SourceAssetStore | undefined> => {
   try {
     const raw = JSON.parse(
       await filesystem.readFile(configurationPath, "utf8"),
     ) as unknown;
     return parseStore(raw);
-  } catch {
+  } catch (cause: unknown) {
+    diagnostics?.record(cause);
     return undefined;
   }
 };
@@ -200,6 +205,80 @@ const writeStore = async (
   }
 };
 
+const identitiesMatch = (
+  current: { sourceIdentity: string; contentIdentity: string },
+  expectedSourceIdentity: string,
+  expectedContentIdentity: string,
+): boolean =>
+  current.sourceIdentity === expectedSourceIdentity &&
+  current.contentIdentity === expectedContentIdentity;
+
+const replacementPathFor = async (
+  reference: string,
+  filesystem: SourceAssetFileSystem,
+  diagnostics?: SourceAssetDiagnostics,
+): Promise<string | SourceAssetIdentityOutcome> => {
+  if (!isAbsolute(reference)) {
+    return unavailable("The replacement Source Asset is unavailable.");
+  }
+
+  try {
+    return await filesystem.realpath(resolve(reference));
+  } catch (cause: unknown) {
+    diagnostics?.record(cause);
+    return unavailable("The replacement Source Asset is unavailable.");
+  }
+};
+
+type ReplacementVerificationOutcome =
+  { outcome: "verified" } | { outcome: "unavailable"; detail: string };
+
+const verifyReplacement = async (
+  pdf: PdfAdapter | undefined,
+  input: RelinkSourceInput,
+  replacementPath: string,
+  diagnostics?: SourceAssetDiagnostics,
+): Promise<ReplacementVerificationOutcome> => {
+  if (pdf === undefined) {
+    return {
+      outcome: "unavailable",
+      detail: "The replacement Source Asset could not be verified.",
+    };
+  }
+
+  let selection: Awaited<ReturnType<PdfAdapter["readSelection"]>>;
+
+  try {
+    selection = await pdf.readSelection({
+      sourceRecord: input.sourceRecord,
+      sourceReference: replacementPath,
+      ...input.verificationLocator,
+    });
+  } catch (cause: unknown) {
+    diagnostics?.record(cause);
+    return {
+      outcome: "unavailable",
+      detail: "The replacement Source Asset could not be verified.",
+    };
+  }
+
+  if (selection.outcome === "source-unavailable") {
+    return { outcome: "unavailable", detail: selection.detail };
+  }
+
+  if (
+    selection.text.length !==
+    input.verificationLocator.end - input.verificationLocator.start
+  ) {
+    return {
+      outcome: "unavailable",
+      detail: "The replacement Source Asset could not be verified.",
+    };
+  }
+
+  return { outcome: "verified" };
+};
+
 /**
  * Creates the production machine-local linked Source Asset Adapter.
  * Filesystem paths and PDF bytes remain inside this main-process boundary.
@@ -214,14 +293,22 @@ export const createFileBackedSourceAssetAdapter = (
   const readIdentity = async (
     sourceRecordId: string,
   ): Promise<SourceAssetIdentityOutcome> => {
-    const store = await readStore(options.configurationPath, filesystem);
+    const store = await readStore(
+      options.configurationPath,
+      filesystem,
+      options.diagnostics,
+    );
     const link = store?.links[sourceRecordId];
 
     if (link === undefined || !isAbsolute(link.path)) {
       return unavailable("The linked Source Asset is unavailable.");
     }
 
-    const current = await currentIdentityFor(link.path, filesystem);
+    const current = await identityFor(
+      link.path,
+      filesystem,
+      options.diagnostics,
+    );
 
     if (current.outcome === "unavailable") {
       return current;
@@ -240,47 +327,47 @@ export const createFileBackedSourceAssetAdapter = (
   const relink = async (
     input: RelinkSourceInput,
   ): Promise<SourceAssetRelinkOutcome> => {
-    const store = await readStore(options.configurationPath, filesystem);
+    const store = await readStore(
+      options.configurationPath,
+      filesystem,
+      options.diagnostics,
+    );
     const previousLink = store?.links[input.sourceRecord.id];
 
     if (store === undefined || previousLink === undefined) {
       return unavailable("The linked Source Asset is unavailable.");
     }
 
-    const replacementPathCandidate = isAbsolute(input.replacementReference)
-      ? resolve(input.replacementReference)
-      : "";
+    const replacementPathOrOutcome = await replacementPathFor(
+      input.replacementReference,
+      filesystem,
+      options.diagnostics,
+    );
 
-    if (replacementPathCandidate.length === 0) {
-      return unavailable("The replacement Source Asset is unavailable.");
+    if (typeof replacementPathOrOutcome !== "string") {
+      return replacementPathOrOutcome;
     }
 
-    let replacementPath: string;
+    const replacementPath = replacementPathOrOutcome;
 
-    try {
-      replacementPath = await filesystem.realpath(replacementPathCandidate);
-    } catch {
-      return unavailable("The replacement Source Asset is unavailable.");
-    }
-
-    const replacementIdentity = await currentIdentityFor(
+    const replacementIdentity = await identityFor(
       replacementPath,
       filesystem,
+      options.diagnostics,
     );
 
     if (replacementIdentity.outcome === "unavailable") {
       return replacementIdentity;
     }
 
-    if (options.pdf === undefined) {
-      return unavailable("The replacement Source Asset could not be verified.");
-    }
-
     const current = replacementIdentity.current;
 
     if (
-      current.sourceIdentity !== input.expectedReplacementSourceIdentity ||
-      current.contentIdentity !== input.expectedReplacementContentIdentity
+      !identitiesMatch(
+        current,
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+      )
     ) {
       return {
         outcome: "changed",
@@ -292,27 +379,15 @@ export const createFileBackedSourceAssetAdapter = (
       };
     }
 
-    let selection: Awaited<ReturnType<PdfAdapter["readSelection"]>>;
+    const verification = await verifyReplacement(
+      options.pdf,
+      input,
+      replacementPath,
+      options.diagnostics,
+    );
 
-    try {
-      selection = await options.pdf.readSelection({
-        sourceRecord: input.sourceRecord,
-        sourceReference: replacementPath,
-        ...input.verificationLocator,
-      });
-    } catch {
-      return unavailable("The replacement Source Asset could not be verified.");
-    }
-
-    if (selection.outcome === "source-unavailable") {
-      return unavailable(selection.detail);
-    }
-
-    if (
-      selection.text.length !==
-      input.verificationLocator.end - input.verificationLocator.start
-    ) {
-      return unavailable("The replacement Source Asset could not be verified.");
+    if (verification.outcome === "unavailable") {
+      return verification;
     }
 
     const nextStore: SourceAssetStore = {
@@ -330,7 +405,8 @@ export const createFileBackedSourceAssetAdapter = (
 
     try {
       await writeStore(options.configurationPath, nextStore, filesystem);
-    } catch {
+    } catch (cause: unknown) {
+      options.diagnostics?.record(cause);
       return unavailable("The replacement Source Asset could not be saved.");
     }
 
@@ -348,7 +424,7 @@ export const createFileBackedSourceAssetAdapter = (
       return unavailable("The replacement Source Asset is unavailable.");
     }
 
-    return currentIdentityFor(resolve(reference), filesystem);
+    return identityFor(resolve(reference), filesystem, options.diagnostics);
   };
 
   return { readIdentity, readReferenceIdentity, relink };

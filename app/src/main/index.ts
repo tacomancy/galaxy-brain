@@ -166,30 +166,27 @@ const createWindow = async (): Promise<void> => {
     isFixtureMode && sourceAssetsArgument !== undefined
       ? sourceAssetsArgument.slice("--galaxy-brain-source-assets=".length)
       : defaultSourceAssetsPath;
+  const pdfjsRoot = app.isPackaged
+    ? join(process.resourcesPath, "pdfjs-dist")
+    : join(app.getAppPath(), "node_modules", "pdfjs-dist");
   const productionPdf = createPdfJsAdapter({
-    modulePath: pathToFileURL(
-      app.isPackaged
-        ? join(
-            process.resourcesPath,
-            "pdfjs-dist",
-            "legacy",
-            "build",
-            "pdf.mjs",
-          )
-        : join(
-            app.getAppPath(),
-            "node_modules",
-            "pdfjs-dist",
-            "legacy",
-            "build",
-            "pdf.mjs",
-          ),
+    modulePath: pathToFileURL(join(pdfjsRoot, "legacy", "build", "pdf.mjs"))
+      .href,
+    standardFontDataUrl: pathToFileURL(
+      `${join(pdfjsRoot, "standard_fonts")}${sep}`,
     ).href,
   });
   const sourceAsset = createFileBackedSourceAssetAdapter({
     configurationPath: sourceAssetsPath,
     pdf: productionPdf,
   });
+  const sourceProcessingFor = (repositoryPath: string) =>
+    createSourceProcessing({
+      pdf: productionPdf,
+      sourceAsset,
+      workingMaterial:
+        createFileBackedWorkingMaterialRepository(repositoryPath),
+    });
   const workbenchSession = createWorkbenchSession(
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
@@ -304,13 +301,9 @@ const createWindow = async (): Promise<void> => {
       return undefined;
     }
 
-    return createSourceProcessing({
-      pdf: productionPdf,
-      sourceAsset,
-      workingMaterial: createFileBackedWorkingMaterialRepository(
-        workbench.repositoryPath,
-      ),
-    }).checkSourceAvailability({
+    return sourceProcessingFor(
+      workbench.repositoryPath,
+    ).checkSourceAvailability({
       sourceRecord: workbench.context.sourceRecord,
     });
   };
@@ -357,13 +350,7 @@ const createWindow = async (): Promise<void> => {
       };
     }
 
-    return createSourceProcessing({
-      pdf: productionPdf,
-      sourceAsset,
-      workingMaterial: createFileBackedWorkingMaterialRepository(
-        workbench.repositoryPath,
-      ),
-    }).relinkSource({
+    return sourceProcessingFor(workbench.repositoryPath).relinkSource({
       sourceRecord: workbench.context.sourceRecord,
       replacementReference,
       expectedReplacementSourceIdentity:

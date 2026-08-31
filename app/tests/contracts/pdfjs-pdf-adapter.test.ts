@@ -2,6 +2,7 @@ import { strict as assert } from "node:assert";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { describe, it } from "vitest";
 
@@ -61,6 +62,41 @@ const createWorkflowPdf = (): Buffer => {
 };
 
 describe("production PDF.js Adapter contract", () => {
+  it("retains PDF.js loading failures for diagnostics without exposing the cause", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const pdfPath = join(temporaryRoot, "diagnostic-fixture.pdf");
+    const causes: unknown[] = [];
+
+    try {
+      await writeFile(pdfPath, knownPdf);
+
+      assert.deepEqual(
+        await createPdfJsAdapter({
+          modulePath: pathToFileURL(join(temporaryRoot, "missing-pdfjs.mjs"))
+            .href,
+          diagnostics: { record: (cause) => causes.push(cause) },
+        }).readSelection({
+          sourceRecord: {
+            id: "bayesian-statistics-fixture-source",
+            title: "Bayesian statistics fixture source",
+          },
+          sourceReference: pdfPath,
+          page: 1,
+          start: 0,
+          end: 54,
+        }),
+        {
+          outcome: "source-unavailable",
+          detail: "The linked Source Asset could not be parsed.",
+        },
+      );
+      assert.equal(causes.length, 1);
+      assert.ok(causes[0] instanceof Error);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it("resolves a known page range from real PDF bytes", async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
     const pdfPath = join(temporaryRoot, "bayesian-statistics.pdf");

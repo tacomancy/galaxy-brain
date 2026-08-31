@@ -31,6 +31,29 @@ const contentIdentityFor = (content: string) =>
   `sha256:${createHash("sha256").update(content).digest("hex")}`;
 
 describe("production Source Asset Adapter contract", () => {
+  it("retains private store failures for diagnostics without exposing the cause", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const configurationPath = join(temporaryRoot, "missing-source-assets.json");
+    const causes: unknown[] = [];
+
+    try {
+      const adapter = createFileBackedSourceAssetAdapter({
+        configurationPath,
+        diagnostics: { record: (cause) => causes.push(cause) },
+      });
+
+      assert.deepEqual(await adapter.readIdentity(sourceRecordId), {
+        outcome: "unavailable",
+        detail: "The linked Source Asset is unavailable.",
+      });
+      assert.equal(causes.length, 1);
+      assert.ok(causes[0] instanceof Error);
+      assert.match((causes[0] as Error).message, /missing-source-assets/);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it("reads a valid private link and computes the current SHA-256 identity", async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
     const pdfPath = join(temporaryRoot, "bayesian-statistics.pdf");

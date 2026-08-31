@@ -334,7 +334,7 @@ This slice does not implement:
 - accepting changed bytes merely by opening a file;
 - provider, Git, GitHub, credential, remote, or network behavior;
 - Proposal, Governance, Discovery, or Synthesis changes;
-- provider payload retention or source-content diagnostics; or
+- provider payload retention or diagnostics that expose source content; or
 - non-PDF viewers, Windows/Linux packaging, or signed/notarized distribution.
 
 If implementation requires a new Repository Format field, a new portable
@@ -389,11 +389,17 @@ and the governing documentation before continuing.
   not enter the selected portable repository. The source-store path override
   is restricted to the silent/review harness; normal launches use the
   application-private configuration root.
-- Focused S5 and PDF.js contracts pass; the full silent packaged suite passes
-  27/27 workflow specs. The human owner passed the six final packaged-artifact
+- Focused S5 and PDF.js contracts pass; `npm run test:provider-free` passes
+  both the provider-free baseline and production linked-PDF workflows, and the
+  full silent packaged suite passes 27/27 workflow specs. The human owner passed the six final packaged-artifact
   acceptance gates on August 31, 2026, covering baseline availability, changed
   source detection, invalid replacement rejection, verified relinking,
   unavailable-source recovery, and relaunch/privacy boundaries.
+
+### Red-to-green evidence for PR-readiness hardening
+
+- **Red:** `npm test -- --run tests/contracts/source-asset-adapter.test.ts tests/contracts/pdfjs-pdf-adapter.test.ts` initially ran 11 tests with 2 failures. Both new diagnostics assertions observed the sanitized domain outcome but received zero retained causes.
+- **Green:** The same focused command passed all 11 tests after the optional internal diagnostics sinks were added. `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, `npm run test:provider-free`, and `npm run test:workflow` are green for this hardening cycle; changed-lines coverage is rerun against the committed head before push.
 
 ### Human acceptance record — August 31, 2026
 

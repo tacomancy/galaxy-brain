@@ -666,6 +666,19 @@ bounded release-gate scope; Add/Import, managed-copy, OCR, remapping, automatic
 relinking, distribution, and whole-release obligations remain deferred as
 documented in the governing specification.
 
+The PR-readiness hardening cycle also has explicit red-to-green evidence:
+`npm test -- --run tests/contracts/source-asset-adapter.test.ts
+tests/contracts/pdfjs-pdf-adapter.test.ts` first ran 11 tests with two failures
+because the new diagnostics assertions received no retained causes. After the
+internal diagnostics sinks were implemented, the same focused command passed
+all 11 tests. The final hardening verification passed `npm run check` (113
+tests, documentation validation, and both registered MC/DC decisions),
+`npm run test:coverage` (82.58% statements, 74.57% branches, 96.74% functions,
+82.47% lines), `npm run lint:complexity`, `npm run test:provider-free` (both
+named provider-free workflows), and `npm run test:workflow` (27/27 silent
+packaged specs). Changed-lines coverage is rerun against the committed head
+before push.
+
 Saved agent context must retain its point-in-time snapshot when the current source cannot be checked or lacks a comparable identity. The Workbench reports `source status unavailable` without blocking access or claiming that the snapshot is current. An explicit refresh must create a new snapshot/version while preserving the original and must never silently replace it in place. Refresh updates only the saved context representation; a separate result-regeneration action requires fresh confirmation before any new OpenAI request.
 
 Result regeneration must create a new result version and preserve the previous result rather than silently overwriting it.
