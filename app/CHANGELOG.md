@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/tacomancy/galaxy-brain/compare/v0.12.0...v0.13.0) (2026-08-31)
+
+
+### Features
+
+* preserve provenance across missing or changed PDFs ([#104](https://github.com/tacomancy/galaxy-brain/issues/104)) ([2e8d18c](https://github.com/tacomancy/galaxy-brain/commit/2e8d18c6fe3f61fd8493cb4ec9b636140a093852))
+
 ## [0.12.0](https://github.com/tacomancy/galaxy-brain/compare/v0.11.0...v0.12.0) (2026-08-28)
 
 
