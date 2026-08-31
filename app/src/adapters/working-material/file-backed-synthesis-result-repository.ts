@@ -4,7 +4,8 @@
  * containment and retaining storage failures for main-process diagnostics.
  */
 import { createHash } from "node:crypto";
-import { lstat, mkdir, readFile, readdir, realpath } from "node:fs/promises";
+import { constants } from "node:fs";
+import { lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 
 import {
@@ -251,17 +252,30 @@ const readResultDirectory = async (
 
 type FileFingerprint = string | undefined;
 
-const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
-  try {
-    const stats = await lstat(filePath);
+const readRegularFile = async (filePath: string): Promise<Buffer> => {
+  // Open and validate the same descriptor so a path replacement cannot turn
+  // the prior safety check into a read of a different file.
+  const fileHandle = await open(
+    filePath,
+    constants.O_RDONLY | constants.O_NOFOLLOW,
+  );
 
-    if (stats.isSymbolicLink() || !stats.isFile()) {
+  try {
+    if (!(await fileHandle.stat()).isFile()) {
       throw new UnsafeSynthesisResultTargetError(
         "The Synthesis result target is unsafe.",
       );
     }
 
-    const contents = await readFile(filePath);
+    return await fileHandle.readFile();
+  } finally {
+    await fileHandle.close();
+  }
+};
+
+const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
+  try {
+    const contents = await readRegularFile(filePath);
     return createHash("sha256").update(contents).digest("hex");
   } catch (cause: unknown) {
     if (isErrnoException(cause) && cause.code === "ENOENT") {
@@ -276,7 +290,7 @@ const readResultFile = async (
   filePath: string,
   resultId: string,
 ): Promise<SynthesisSavedResult> => {
-  const contents = await readFile(filePath, "utf8");
+  const contents = (await readRegularFile(filePath)).toString("utf8");
   let parsed: unknown;
 
   try {
