@@ -103,6 +103,47 @@ export interface SynthesisSourceIdentityAdapter {
   readIdentity(sourceRecordId: string): Promise<SynthesisSourceIdentityOutcome>;
 }
 
+/** Current identity outcome for a linked Source Asset; unavailable is explicit. */
+export interface SourceAssetIdentity {
+  sourceIdentity: string;
+  contentIdentity: string;
+}
+
+/** Result of reading the recorded and current identity for a linked asset. */
+export type SourceAssetIdentityOutcome =
+  | {
+      outcome: "available";
+      /** Identity recorded for the current machine-local link. */
+      recorded: SourceAssetIdentity;
+      /** Identity read from the bytes currently at that link. */
+      current: SourceAssetIdentity;
+    }
+  | { outcome: "unavailable"; detail: string };
+
+/** Outcome of verifying a replacement before committing its machine-local link. */
+export type SourceAssetRelinkOutcome =
+  | SourceAssetIdentityOutcome
+  | {
+      outcome: "changed";
+      recorded: SourceAssetIdentity;
+      current: SourceAssetIdentity;
+    };
+
+/**
+ * External seam for linked Source Asset identity and explicit replacement.
+ * The Adapter owns machine-local path, hash, and locator verification; Source
+ * Processing owns caller-visible status and preservation policy.
+ */
+export interface SourceAssetAdapter {
+  /** Returns unavailable rather than throwing when identity cannot be read. */
+  readIdentity(sourceRecordId: string): Promise<SourceAssetIdentityOutcome>;
+  /**
+   * Returns unavailable or changed without committing when verification fails;
+   * commits only after identity and locator verification succeeds.
+   */
+  relink(input: RelinkSourceInput): Promise<SourceAssetRelinkOutcome>;
+}
+
 /** Agent provenance retained without promoting the result to authority. */
 export interface SynthesisProvenance {
   attribution: "agent-generated";
@@ -298,7 +339,86 @@ export interface CaptureSourceClaimInput {
   page: number;
   start: number;
   end: number;
+  /**
+   * Optional caller-observed identity. When a Source Asset Adapter is
+   * composed, capture still compares the Adapter's recorded and current
+   * identities, so omitting these fields cannot bypass the changed-source
+   * guard.
+   */
+  expectedSourceIdentity?: string;
+  expectedContentIdentity?: string;
 }
+
+/** Input for checking a linked Source Asset against its recorded identities. */
+export interface CheckSourceAvailabilityInput {
+  sourceRecord: SourceRecordReference;
+  /** Optional expected recorded identity; the Adapter is authoritative when omitted. */
+  expectedSourceIdentity?: string;
+  expectedContentIdentity?: string;
+}
+
+/** Caller-visible result of checking one linked Source Asset. */
+export type CheckSourceAvailabilityOutcome =
+  | {
+      outcome: "available";
+      sourceRecord: SourceRecordReference;
+      sourceIdentity: string;
+      contentIdentity: string;
+    }
+  | {
+      outcome: "source-status-unavailable";
+      sourceRecord: SourceRecordReference;
+      warning: "source status unavailable";
+      detail: string;
+    }
+  | {
+      outcome: "source-changed";
+      sourceRecord: SourceRecordReference;
+      warning: "source status changed";
+      expectedSourceIdentity: string;
+      expectedContentIdentity: string;
+      actualSourceIdentity: string;
+      actualContentIdentity: string;
+    };
+
+/**
+ * Input for a caller-authorized replacement. The Adapter must verify the
+ * expected replacement identities and locator before committing its link.
+ */
+export interface RelinkSourceInput {
+  sourceRecord: SourceRecordReference;
+  /** Machine-local replacement reference; never portable repository content. */
+  replacementReference: string;
+  /** Identity values the replacement must produce before it is committed. */
+  expectedReplacementSourceIdentity: string;
+  expectedReplacementContentIdentity: string;
+  /** Known page/range that the replacement must resolve. */
+  verificationLocator: Pick<CaptureSourceClaimInput, "page" | "start" | "end">;
+}
+
+/** Caller-visible result of an explicit linked Source Asset replacement. */
+export type RelinkSourceOutcome =
+  | {
+      outcome: "relinked";
+      sourceRecord: SourceRecordReference;
+      sourceIdentity: string;
+      contentIdentity: string;
+    }
+  | {
+      outcome: "source-changed";
+      sourceRecord: SourceRecordReference;
+      warning: "source status changed";
+      expectedSourceIdentity: string;
+      expectedContentIdentity: string;
+      actualSourceIdentity: string;
+      actualContentIdentity: string;
+    }
+  | {
+      outcome: "source-status-unavailable";
+      sourceRecord: SourceRecordReference;
+      warning: "source status unavailable";
+      detail: string;
+    };
 
 /** Result of resolving a caller-selected range through a PDF Adapter. */
 export type PdfSelectionOutcome =
@@ -351,10 +471,28 @@ export type CaptureSourceClaimOutcome =
 
 /** Public Source Processing behavior used by S3 callers and tests. */
 export interface SourceProcessing {
-  /** Captures a located source claim without creating Synthesis or a Proposal. */
+  /**
+   * Captures a located source claim without creating Synthesis or a Proposal.
+   * With a Source Asset Adapter, optional caller-observed identities are
+   * checked against the Adapter's recorded and current identities, and a
+   * changed or unavailable source is refused before PDF resolution.
+   */
   captureSourceClaim(
     input: CaptureSourceClaimInput,
   ): Promise<CaptureSourceClaimOutcome>;
+  /**
+   * Checks linked identity without changing portable source data. Returns
+   * available, source-status-unavailable, or source-changed; Adapters
+   * translate infrastructure failures into the unavailable outcome.
+   */
+  checkSourceAvailability(
+    input: CheckSourceAvailabilityInput,
+  ): Promise<CheckSourceAvailabilityOutcome>;
+  /**
+   * Explicitly verifies and accepts a replacement linked Source Asset.
+   * Returns relinked, source-changed, or source-status-unavailable.
+   */
+  relinkSource(input: RelinkSourceInput): Promise<RelinkSourceOutcome>;
   /** Prepares an inspectable Synthesis request without contacting a provider. */
   prepareSynthesis(
     input: PrepareSynthesisInput,
@@ -400,6 +538,8 @@ export interface SourceProcessingDependencies {
   model?: SynthesisModelAdapter;
   results?: SynthesisResultRepository;
   sourceIdentity?: SynthesisSourceIdentityAdapter;
+  /** Optional for legacy provider-free capture; required for linked checks. */
+  sourceAsset?: SourceAssetAdapter;
   diagnostics?: SourceProcessingDiagnostics;
 }
 
@@ -407,6 +547,42 @@ export interface SourceProcessingDependencies {
 export interface SourceProcessingDiagnostics {
   record(cause: unknown): void;
 }
+
+type SourceStatusUnavailableOutcome = Extract<
+  CheckSourceAvailabilityOutcome,
+  { outcome: "source-status-unavailable" }
+>;
+
+const sourceStatusUnavailable = (
+  sourceRecord: SourceRecordReference,
+  detail: string,
+): SourceStatusUnavailableOutcome => ({
+  outcome: "source-status-unavailable",
+  sourceRecord: { ...sourceRecord },
+  warning: "source status unavailable",
+  detail,
+});
+
+type SourceChangedOutcome = Extract<
+  CheckSourceAvailabilityOutcome,
+  { outcome: "source-changed" }
+>;
+
+const sourceChanged = (
+  sourceRecord: SourceRecordReference,
+  expectedSourceIdentity: string,
+  expectedContentIdentity: string,
+  actualSourceIdentity: string,
+  actualContentIdentity: string,
+): SourceChangedOutcome => ({
+  outcome: "source-changed",
+  sourceRecord: { ...sourceRecord },
+  warning: "source status changed",
+  expectedSourceIdentity,
+  expectedContentIdentity,
+  actualSourceIdentity,
+  actualContentIdentity,
+});
 
 const isValidLocator = (input: CaptureSourceClaimInput): boolean =>
   Number.isInteger(input.page) &&
@@ -523,13 +699,118 @@ const buildSavedSynthesisResult = (
 /**
  * Composes capture policy behind the Source Processing Interface. The PDF
  * Adapter resolves source material; this Module owns attribution, locator
- * representation, and the Working Material state.
- * @param dependencies The PDF, Working Material, and model Adapters.
+ * representation, and the Working Material state. The Source Asset Adapter
+ * verifies machine-local linked assets and commits explicit relinks only
+ * after its requested identity and locator checks succeed.
+ * @param dependencies The PDF, Source Asset, Working Material, and model Adapters.
  * @returns The Source Processing Module Interface.
  */
 export const createSourceProcessing = (
   dependencies: SourceProcessingDependencies,
 ): SourceProcessing => {
+  const checkSourceAvailability = async (
+    input: CheckSourceAvailabilityInput,
+  ): Promise<CheckSourceAvailabilityOutcome> => {
+    const sourceRecord = { ...input.sourceRecord };
+
+    if (dependencies.sourceAsset === undefined) {
+      return sourceStatusUnavailable(
+        sourceRecord,
+        "The linked source asset could not be checked.",
+      );
+    }
+
+    const identity = await dependencies.sourceAsset.readIdentity(
+      input.sourceRecord.id,
+    );
+
+    if (identity.outcome === "unavailable") {
+      return sourceStatusUnavailable(sourceRecord, identity.detail);
+    }
+
+    const expectedSourceIdentity =
+      input.expectedSourceIdentity ?? identity.recorded.sourceIdentity;
+    const expectedContentIdentity =
+      input.expectedContentIdentity ?? identity.recorded.contentIdentity;
+
+    if (
+      identity.recorded.sourceIdentity !== expectedSourceIdentity ||
+      identity.recorded.contentIdentity !== expectedContentIdentity ||
+      identity.current.sourceIdentity !== expectedSourceIdentity ||
+      identity.current.contentIdentity !== expectedContentIdentity
+    ) {
+      return sourceChanged(
+        sourceRecord,
+        expectedSourceIdentity,
+        expectedContentIdentity,
+        identity.current.sourceIdentity,
+        identity.current.contentIdentity,
+      );
+    }
+
+    return {
+      outcome: "available",
+      sourceRecord,
+      sourceIdentity: identity.current.sourceIdentity,
+      contentIdentity: identity.current.contentIdentity,
+    };
+  };
+
+  const relinkSource = async (
+    input: RelinkSourceInput,
+  ): Promise<RelinkSourceOutcome> => {
+    const sourceRecord = { ...input.sourceRecord };
+
+    if (dependencies.sourceAsset === undefined) {
+      return sourceStatusUnavailable(
+        sourceRecord,
+        "The linked source asset could not be relinked.",
+      );
+    }
+
+    const identity = await dependencies.sourceAsset.relink(input);
+
+    if (identity.outcome === "unavailable") {
+      return sourceStatusUnavailable(sourceRecord, identity.detail);
+    }
+
+    if (identity.outcome === "changed") {
+      return sourceChanged(
+        sourceRecord,
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+        identity.current.sourceIdentity,
+        identity.current.contentIdentity,
+      );
+    }
+
+    if (
+      identity.recorded.sourceIdentity !==
+        input.expectedReplacementSourceIdentity ||
+      identity.recorded.contentIdentity !==
+        input.expectedReplacementContentIdentity ||
+      identity.current.sourceIdentity !==
+        input.expectedReplacementSourceIdentity ||
+      identity.current.contentIdentity !==
+        input.expectedReplacementContentIdentity
+    ) {
+      return sourceChanged(
+        sourceRecord,
+        input.expectedReplacementSourceIdentity,
+        input.expectedReplacementContentIdentity,
+        identity.current.sourceIdentity,
+        identity.current.contentIdentity,
+      );
+    }
+
+    return {
+      outcome: "relinked",
+      sourceRecord,
+      sourceIdentity: identity.current.sourceIdentity,
+      contentIdentity: identity.current.contentIdentity,
+    };
+  };
+
   const captureSourceClaim = async (
     input: CaptureSourceClaimInput,
   ): Promise<CaptureSourceClaimOutcome> => {
@@ -538,6 +819,28 @@ export const createSourceProcessing = (
         outcome: "invalid-locator",
         detail: "The source locator is invalid.",
       };
+    }
+
+    if (dependencies.sourceAsset !== undefined) {
+      const availability = await checkSourceAvailability({
+        sourceRecord: input.sourceRecord,
+        ...(input.expectedSourceIdentity === undefined
+          ? {}
+          : { expectedSourceIdentity: input.expectedSourceIdentity }),
+        ...(input.expectedContentIdentity === undefined
+          ? {}
+          : { expectedContentIdentity: input.expectedContentIdentity }),
+      });
+
+      if (availability.outcome !== "available") {
+        return {
+          outcome: "source-unavailable",
+          detail:
+            availability.outcome === "source-changed"
+              ? "The source status changed; relink is required before capture."
+              : availability.detail,
+        };
+      }
     }
 
     let sourceSelection: PdfSelectionOutcome;
@@ -1069,6 +1372,8 @@ export const createSourceProcessing = (
 
   return {
     captureSourceClaim,
+    checkSourceAvailability,
+    relinkSource,
     prepareSynthesis,
     removeSynthesisContextItem,
     confirmSynthesis,

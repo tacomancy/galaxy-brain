@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -611,6 +611,18 @@ At S1, prove that a suggestion explains its fixture evidence but does not advanc
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S3, prove that an unavailable or hash-changed linked PDF preserves the Source Record and annotations. In the next cycle, prove relinking makes the known page available without silently accepting changed bytes or changing its logical Source Locator.
+
+The implementation entry point is the [TB15 specification](tracer-bullet-15-spec.md). Its explicit preparation task is to review the governing documentation, record the guidance-compliant behavior and test seam, document deferred work and discarded alternatives with rationale, and obtain human confirmation before implementation begins.
+
+#### TB15 S3 implementation record — August 28, 2026
+
+- **Public Behavior:** Source Processing reports available, unavailable, or changed linked-source identity; refuses capture from changed bytes until explicit relinking; preserves the Source Record and Structured Annotations on every failed check or relink; and accepts a replacement only through explicit verified relinking without changing the logical Source Locator.
+- **Test Seam:** S3 Source Processing Interface with an in-memory Working Material Adapter, the deterministic linked-asset fixture Adapter, and the fixture PDF Adapter. No UI or production PDF engine was required for this contract.
+- **Red evidence:** The first focused test failed because `checkSourceAvailability` was absent from the Source Processing Interface. The relink tests then failed because `relinkSource` was absent. The changed-capture test failed until capture consulted the linked-asset availability contract.
+- **Green evidence:** The focused TB15 suite passes all 9 tests. The complete `npm run check` gate passes formatting, linting, strict type checking, 93 Vitest tests, and documentation validation. `npm run lint:complexity` also passes.
+- **Implementation:** Added Source Asset identity/relink Interfaces and caller-visible availability, changed-source, and relink outcomes to the Source Processing Module, plus a deterministic fixture Adapter that verifies the known locator before committing its in-memory replacement state; portable Working Material remains preserved.
+- **Scope confirmed:** Production PDF engine, production linked-file Adapter, automatic relinking, path search, file watching, portable asset-schema changes, locator remapping, S1 status/relink controls, Synthesis, Proposal, Governance, Git, and network behavior remain explicitly deferred.
+- **Acceptance:** Automated implementation evidence is complete. The user completed all seven manual S3 review steps and explicitly accepted TB15 on August 31, 2026.
 
 ### 16. Complete the desktop quality contract
 
