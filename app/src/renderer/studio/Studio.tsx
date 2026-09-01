@@ -14,14 +14,12 @@ import type {
   SynthesisSavedResult,
 } from "../../modules/source-processing";
 import type { RestoreSynthesisResultOutcome } from "../../modules/source-processing";
-import type {
-  WorkbenchContext,
-  WorkbenchState,
-} from "../../modules/workbench-session";
+import type { WorkbenchContext } from "../../modules/workbench-session";
+import type { WorkbenchViewState } from "../../modules/workbench-view";
 
 interface StudioProps {
   controls: JSX.Element;
-  workbench: WorkbenchState;
+  workbench: WorkbenchViewState;
   authoring: AuthoringReadOutcome;
   isAuthoringOpen: boolean;
   onOpenAuthoringDraft: () => Promise<void>;
@@ -73,7 +71,6 @@ const StudioTopicSurface = ({
     <div className="surface-icon" aria-hidden="true">
       ◈
     </div>
-    <span className="card-kicker">Current topic</span>
     <h2 id="studio-topic-heading">Current topic</h2>
     <p id="studio-topic-title" className="studio-topic-title">
       {context.topic.title}
@@ -435,12 +432,12 @@ const SynthesisReviewCard = ({
     {synthesisPreview === undefined ? null : (
       <div
         id="studio-synthesis-preview"
-        className="synthesis-preview"
+        className="discovery-result synthesis-preview"
         aria-live="polite"
       >
         <h3>Confirm this request</h3>
         <p id="studio-synthesis-summary">{synthesisPreview.summary}</p>
-        <dl className="metadata-list">
+        <dl className="metadata-list discovery-preview-details">
           <div>
             <dt>Destination</dt>
             <dd id="studio-synthesis-destination">
@@ -458,7 +455,10 @@ const SynthesisReviewCard = ({
             <dd>{synthesisPreview.payload.context.length} source claim(s)</dd>
           </div>
         </dl>
-        <ul id="studio-synthesis-context" className="context-list">
+        <ul
+          id="studio-synthesis-context"
+          className="context-list discovery-context-list"
+        >
           {synthesisPreview.payload.context.map((item) => (
             <li key={item.annotationId}>
               <span>{item.text}</span>
@@ -505,25 +505,23 @@ const SynthesisReviewCard = ({
             Cancel
           </button>
         </div>
-        {synthesisOutcome === undefined ? null : (
-          <p
-            id="studio-synthesis-outcome"
-            role={
-              synthesisOutcome.outcome === "operation-failed"
-                ? "alert"
-                : "status"
-            }
-            aria-live={
-              synthesisOutcome.outcome === "operation-failed"
-                ? "assertive"
-                : "polite"
-            }
-            data-synthesis-outcome={synthesisOutcome.outcome}
-          >
-            {synthesisOutcomeText(synthesisOutcome)}
-          </p>
-        )}
       </div>
+    )}
+    {synthesisOutcome === undefined ? null : (
+      <p
+        id="studio-synthesis-outcome"
+        role={
+          synthesisOutcome.outcome === "operation-failed" ? "alert" : "status"
+        }
+        aria-live={
+          synthesisOutcome.outcome === "operation-failed"
+            ? "assertive"
+            : "polite"
+        }
+        data-synthesis-outcome={synthesisOutcome.outcome}
+      >
+        {synthesisOutcomeText(synthesisOutcome)}
+      </p>
     )}
   </section>
 );
@@ -619,15 +617,15 @@ const SavedSynthesisResultsCard = ({
               <dd>{result.resultVersion ?? 1}</dd>
             </div>
           </dl>
-          {result.priorResults?.map((prior) => (
+          {result.priorVersions?.map((prior) => (
             <button
-              key={`${result.id}-restore-${prior.resultVersion ?? 1}`}
-              id={`studio-synthesis-restore-${result.id}-${prior.resultVersion ?? 1}`}
+              key={`${result.id}-restore-${prior.version}`}
+              id={`studio-synthesis-restore-${result.id}-${prior.version}`}
               className="button button-quiet"
               type="button"
-              onClick={() => onRestore(result.id, prior.resultVersion ?? 1)}
+              onClick={() => onRestore(result.id, prior.version)}
             >
-              Restore version {prior.resultVersion ?? 1}
+              Restore version {prior.version}
             </button>
           ))}
         </article>

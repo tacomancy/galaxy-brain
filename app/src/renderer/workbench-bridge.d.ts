@@ -1,6 +1,5 @@
 /** Type declaration for the operation-specific API exposed by preload. */
 import type {
-  FreshWorkbench,
   ReadingPositionOutcome,
   RepositoryOperationOutcome,
   WorkbenchContextSelection,
@@ -10,6 +9,7 @@ import type {
   WorkbenchTheme,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
+import type { WorkbenchViewState } from "../modules/workbench-view";
 import type {
   CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
@@ -50,7 +50,7 @@ declare global {
     workbench: {
       // Keep renderer callers typed to the same public result as the preload
       // bridge and Workbench Session Module.
-      openFreshWorkbench(): Promise<FreshWorkbench>;
+      openFreshWorkbench(): Promise<WorkbenchViewState>;
       readSourceAvailability(): Promise<
         CheckSourceAvailabilityOutcome | undefined
       >;

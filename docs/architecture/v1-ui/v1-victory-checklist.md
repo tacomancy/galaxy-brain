@@ -94,6 +94,9 @@ Whichever distribution outcome is selected, complete or explicitly defer every m
 
 ## E. Post-tracer-bullet hardening and whole-release acceptance
 
+The implementation boundary and approval gates for the remaining work are in
+the [Section E hardening specification](section-e-hardening-spec.md).
+
 The post-TB quality map in [Issue #21](https://github.com/tacomancy/galaxy-brain/issues/21) begins only after the planned V1 tracer bullets are accepted and merged. It must not remain an implicit afterthought:
 
 - [ ] Issue #21 and its child workstreams are complete, or the human owner explicitly approves their deferral with each residual V1 risk recorded.

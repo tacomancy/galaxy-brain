@@ -62,6 +62,11 @@ import {
   type KnowledgeAuthoring,
 } from "../modules/knowledge-authoring";
 import { createSourceProcessing } from "../modules/source-processing";
+import { createSynthesisLifecycle } from "../modules/synthesis-lifecycle";
+import {
+  composeWorkbenchViewState,
+  type WorkbenchViewState,
+} from "../modules/workbench-view";
 import {
   createDiscovery,
   type AskPreview,
@@ -81,13 +86,16 @@ import type {
   CheckSourceAvailabilityOutcome,
   PrepareSynthesisOutcome,
   RelinkSourceOperationOutcome,
-  SynthesisPreview,
   SynthesisResultListReadOutcome,
   RestoreSynthesisResultOutcome,
   SynthesisResultReadOutcome,
 } from "../modules/source-processing";
 import { createWorkbenchSession } from "../modules/workbench-session";
-import type { WorkbenchWorkspace } from "../modules/workbench-session";
+import type {
+  WorkbenchContextSelectionOutcome,
+  WorkbenchWorkspace,
+  WorkspaceTransitionOutcome,
+} from "../modules/workbench-session";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -376,6 +384,47 @@ const createWindow = async (): Promise<void> => {
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
   );
+  const synthesisLifecycle = createSynthesisLifecycle({
+    sourceProcessingFor,
+  });
+  const readWorkbenchViewState = async (): Promise<WorkbenchViewState> => {
+    const workbench = await workbenchSession.openFreshWorkbench();
+
+    return composeWorkbenchViewState(
+      workbench,
+      workbench.repositoryPath === undefined
+        ? undefined
+        : sourceProcessingFor(workbench.repositoryPath),
+    );
+  };
+  const composeTransitionOutcome = async (
+    outcome: WorkspaceTransitionOutcome,
+  ): Promise<WorkspaceTransitionOutcome> =>
+    outcome.outcome === "transitioned"
+      ? {
+          outcome: "transitioned",
+          workbench: await composeWorkbenchViewState(
+            outcome.workbench,
+            outcome.workbench.repositoryPath === undefined
+              ? undefined
+              : sourceProcessingFor(outcome.workbench.repositoryPath),
+          ),
+        }
+      : outcome;
+  const composeContextSelectionOutcome = async (
+    outcome: WorkbenchContextSelectionOutcome,
+  ): Promise<WorkbenchContextSelectionOutcome> =>
+    outcome.outcome === "selected"
+      ? {
+          outcome: "selected",
+          workbench: await composeWorkbenchViewState(
+            outcome.workbench,
+            outcome.workbench.repositoryPath === undefined
+              ? undefined
+              : sourceProcessingFor(outcome.workbench.repositoryPath),
+          ),
+        }
+      : outcome;
   const atlasOrientation = createAtlasOrientation(
     isFixtureMode
       ? createFixtureAtlasOrientationSource()
@@ -513,7 +562,7 @@ const createWindow = async (): Promise<void> => {
   };
   let pendingReplacementReference: string | undefined;
   const relinkSource = async (): Promise<RelinkSourceOperationOutcome> => {
-    const workbench = await workbenchSession.openFreshWorkbench();
+    const workbench = await readWorkbenchViewState();
 
     if (
       workbench.repositoryPath === undefined ||
@@ -580,13 +629,11 @@ const createWindow = async (): Promise<void> => {
       throw cause;
     }
   };
-  let pendingSynthesis:
-    { repositoryPath: string; preview: SynthesisPreview } | undefined;
   let pendingAsk: { repositoryPath: string; preview: AskPreview } | undefined;
   const prepareSynthesisPreview = async (
     includeAllContext: boolean,
   ): Promise<PrepareSynthesisOutcome> => {
-    const workbench = await workbenchSession.openFreshWorkbench();
+    const workbench = await readWorkbenchViewState();
 
     if (
       workbench.repositoryPath === undefined ||
@@ -622,7 +669,7 @@ const createWindow = async (): Promise<void> => {
       }
     }
 
-    return createSourceProcessing({
+    const prepared = await createSourceProcessing({
       pdf: createFixturePdfAdapter(),
       workingMaterial,
       results: synthesisResultsFor(workbench.repositoryPath),
@@ -635,6 +682,13 @@ const createWindow = async (): Promise<void> => {
         model: "fixture-pinned-model",
       },
     });
+
+    return prepared.outcome === "preview-ready"
+      ? synthesisLifecycle.prepare({
+          repositoryPath: workbench.repositoryPath,
+          preview: prepared.preview,
+        })
+      : prepared;
   };
   const readSynthesisResults =
     async (): Promise<SynthesisResultListReadOutcome> => {
@@ -697,7 +751,7 @@ const createWindow = async (): Promise<void> => {
     }
 
     maybeInjectFailure("bootstrap");
-    return workbenchSession.openFreshWorkbench();
+    return readWorkbenchViewState();
   });
 
   registerIpcHandler("workbench:read-source-availability", (event) => {
@@ -949,7 +1003,7 @@ const createWindow = async (): Promise<void> => {
         outcome.outcome === "opened" ||
         outcome.outcome === "read-only-compatible"
       ) {
-        pendingSynthesis = undefined;
+        synthesisLifecycle.invalidate();
         pendingAsk = undefined;
       }
       return outcome;
@@ -989,7 +1043,7 @@ const createWindow = async (): Promise<void> => {
         outcome.outcome === "opened" ||
         outcome.outcome === "read-only-compatible"
       ) {
-        pendingSynthesis = undefined;
+        synthesisLifecycle.invalidate();
         pendingAsk = undefined;
       }
       return outcome;
@@ -1001,7 +1055,7 @@ const createWindow = async (): Promise<void> => {
 
   registerIpcHandler(
     "workbench:select-context",
-    (event, selection: unknown) => {
+    async (event, selection: unknown) => {
       if (event.sender !== mainWindow.webContents) {
         throw new Error("Untrusted Workbench bridge sender.");
       }
@@ -1020,16 +1074,17 @@ const createWindow = async (): Promise<void> => {
       }
 
       maybeInjectFailure("context-selection");
-      return workbenchSession.selectWorkbenchContext({
+      const outcome = await workbenchSession.selectWorkbenchContext({
         topicId: selection.topicId,
         sourceRecordId: selection.sourceRecordId,
       });
+      return composeContextSelectionOutcome(outcome);
     },
   );
 
   registerIpcHandler(
     "workbench:open-topic-in-studio",
-    (event, topicId: unknown) => {
+    async (event, topicId: unknown) => {
       if (event.sender !== mainWindow.webContents) {
         throw new Error("Untrusted Workbench bridge sender.");
       }
@@ -1039,13 +1094,15 @@ const createWindow = async (): Promise<void> => {
       }
 
       maybeInjectFailure("workspace-transition");
-      return workbenchSession.openTopicInStudio(topicId);
+      return composeTransitionOutcome(
+        await workbenchSession.openTopicInStudio(topicId),
+      );
     },
   );
 
   registerIpcHandler(
     "workbench:open-source-record-in-paper-desk",
-    (event, sourceRecordId: unknown) => {
+    async (event, sourceRecordId: unknown) => {
       if (event.sender !== mainWindow.webContents) {
         throw new Error("Untrusted Workbench bridge sender.");
       }
@@ -1055,13 +1112,15 @@ const createWindow = async (): Promise<void> => {
       }
 
       maybeInjectFailure("source-navigation");
-      return workbenchSession.openSourceRecordInPaperDesk(sourceRecordId);
+      return composeTransitionOutcome(
+        await workbenchSession.openSourceRecordInPaperDesk(sourceRecordId),
+      );
     },
   );
 
   registerIpcHandler(
     "workbench:switch-workspace",
-    (event, workspace: unknown) => {
+    async (event, workspace: unknown) => {
       if (event.sender !== mainWindow.webContents) {
         throw new Error("Untrusted Workbench bridge sender.");
       }
@@ -1072,16 +1131,44 @@ const createWindow = async (): Promise<void> => {
 
       maybeInjectFailure("discovery-jump-transition");
       maybeInjectFailure("workspace-transition");
-      return workbenchSession.switchWorkspace(workspace);
+      return composeTransitionOutcome(
+        await workbenchSession.switchWorkspace(workspace),
+      );
     },
   );
 
-  registerIpcHandler("workbench:open-saved-annotation", (event) => {
+  registerIpcHandler("workbench:open-saved-annotation", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
-    return workbenchSession.openSavedAnnotation();
+    const workbench = await readWorkbenchViewState();
+
+    if (
+      workbench.sourceAnnotation === undefined ||
+      workbench.repositoryPath === undefined
+    ) {
+      return {
+        outcome: "context-unavailable" as const,
+        detail: "The saved source annotation is not available.",
+      };
+    }
+
+    const outcome = await workbenchSession.openSavedAnnotation({
+      sourceRecordId: workbench.sourceAnnotation.sourceRecord.id,
+      page: workbench.sourceAnnotation.sourceLocator.page,
+      characterOffset: workbench.sourceAnnotation.sourceLocator.start,
+    });
+
+    return outcome.outcome === "position-restored"
+      ? {
+          outcome: "position-restored" as const,
+          workbench: await composeWorkbenchViewState(
+            outcome.workbench,
+            sourceProcessingFor(workbench.repositoryPath),
+          ),
+        }
+      : outcome;
   });
 
   registerIpcHandler(
@@ -1249,16 +1336,6 @@ const createWindow = async (): Promise<void> => {
 
       const prepared = await prepareSynthesisPreview(includeAllContext);
 
-      pendingSynthesis =
-        prepared.outcome === "preview-ready"
-          ? {
-              repositoryPath:
-                (await workbenchSession.openFreshWorkbench()).repositoryPath ??
-                "",
-              preview: prepared.preview,
-            }
-          : undefined;
-
       return prepared;
     },
   );
@@ -1274,30 +1351,18 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Synthesis context item.");
       }
 
-      if (pendingSynthesis === undefined) {
+      const workbench = await workbenchSession.openFreshWorkbench();
+      if (workbench.repositoryPath === undefined) {
         return {
           outcome: "invalid-selection",
           detail: "Prepare the Synthesis request again before editing it.",
         };
       }
 
-      const updated = await createSourceProcessing({
-        pdf: createFixturePdfAdapter(),
-        workingMaterial: workingMaterialFor(pendingSynthesis.repositoryPath),
-        diagnostics: mainOperationDiagnostics("source-processing"),
-      }).removeSynthesisContextItem({
-        preview: pendingSynthesis.preview,
+      return synthesisLifecycle.removeContextItem(
+        workbench.repositoryPath,
         annotationId,
-      });
-
-      if (updated.outcome === "preview-ready") {
-        pendingSynthesis = {
-          ...pendingSynthesis,
-          preview: updated.preview,
-        };
-      }
-
-      return updated;
+      );
     },
   );
 
@@ -1312,21 +1377,9 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Synthesis confirmation.");
       }
 
-      if (pendingSynthesis === undefined) {
-        return {
-          outcome: "operation-failed",
-          detail:
-            "The Synthesis preview is no longer available. Prepare it again.",
-        };
-      }
-
       const workbench = await workbenchSession.openFreshWorkbench();
 
-      if (
-        workbench.repositoryPath === undefined ||
-        workbench.repositoryPath !== pendingSynthesis.repositoryPath
-      ) {
-        pendingSynthesis = undefined;
+      if (workbench.repositoryPath === undefined) {
         return {
           outcome: "operation-failed",
           detail:
@@ -1334,17 +1387,7 @@ const createWindow = async (): Promise<void> => {
         };
       }
 
-      const preview = pendingSynthesis.preview;
-      pendingSynthesis = undefined;
-
-      return createSourceProcessing({
-        pdf: createFixturePdfAdapter(),
-        workingMaterial: workingMaterialFor(workbench.repositoryPath),
-        diagnostics: mainOperationDiagnostics("source-processing"),
-      }).confirmSynthesis({
-        preview,
-        confirmation,
-      });
+      return synthesisLifecycle.confirm(workbench.repositoryPath, confirmation);
     },
   );
 

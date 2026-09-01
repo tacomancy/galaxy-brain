@@ -58,10 +58,14 @@ describe("Recover a pending Synthesis review", () => {
       await $("#workspace-switcher-atlas").click();
       await $("#repository-status-heading").waitForDisplayed();
       await $("#open-repository").click();
-      await $("#repository-status-heading").waitForDisplayed();
-      assert.equal(
-        await $("#repository-location").getText(),
-        canonicalSecondRepositoryPath,
+      await browser.waitUntil(
+        async () =>
+          (await $("#repository-location").getText()) ===
+          canonicalSecondRepositoryPath,
+        {
+          timeout: 5_000,
+          timeoutMsg: "The second Knowledge Repository did not finish opening.",
+        },
       );
 
       await $("#workspace-switcher-studio").click();

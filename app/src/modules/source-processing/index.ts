@@ -168,9 +168,20 @@ export interface SynthesisSavedResult {
   contextSnapshotRefreshedAt?: string;
   priorContextSnapshots?: SynthesisContextSnapshotVersion[];
   resultVersion?: number;
+  /** Compact history metadata; full prior versions are read explicitly. */
+  priorVersions?: SynthesisResultVersionSummary[];
+  /** Legacy nested history accepted only while migrating older repositories. */
   priorResults?: SynthesisSavedResult[];
   humanAuthorship?: "human-authored";
   humanEdits?: SynthesisHumanEdit[];
+}
+
+/** Compact metadata for an immutable prior Synthesis result version. */
+export interface SynthesisResultVersionSummary {
+  version: number;
+  generatedAt: string;
+  title: string;
+  humanAuthorship?: "human-authored";
 }
 
 /** Concise, point-in-time context retained only with explicit opt-in. */
@@ -201,6 +212,10 @@ export interface SynthesisHumanEdit {
 export interface SynthesisResultRepository {
   saveResult(result: SynthesisSavedResult): Promise<void>;
   readResult?(resultId: string): Promise<SynthesisResultReadOutcome>;
+  readResultVersion?(
+    resultId: string,
+    version: number,
+  ): Promise<SynthesisResultReadOutcome>;
   readResults?(): Promise<SynthesisResultListReadOutcome>;
 }
 
@@ -477,6 +492,10 @@ export type CaptureSourceClaimOutcome =
 
 /** Public Source Processing behavior used by S3 callers and tests. */
 export interface SourceProcessing {
+  /** Reads the saved annotation associated with a Source Record. */
+  readSavedAnnotation(
+    sourceRecordId: string,
+  ): Promise<WorkingMaterialReadOutcome>;
   /**
    * Captures a located source claim without creating Synthesis or a Proposal.
    * With a Source Asset Adapter, optional caller-observed identities are
@@ -560,6 +579,7 @@ export type SourceProcessingDiagnostic = {
   operation:
     | "resolve-source-passage"
     | "save-source-claim"
+    | "read-source-annotation"
     | "request-synthesis"
     | "read-source-context"
     | "save-synthesis-result"
@@ -680,6 +700,24 @@ type SynthesisContextIdentities = Map<
   string,
   { sourceIdentity: string; contentIdentity: string }
 >;
+
+const versionSummaryFor = (
+  result: SynthesisSavedResult,
+): SynthesisResultVersionSummary => ({
+  version: result.resultVersion ?? 1,
+  generatedAt: result.provenance.generatedAt,
+  title: result.title,
+  ...(result.humanAuthorship === undefined
+    ? {}
+    : { humanAuthorship: result.humanAuthorship }),
+});
+
+const versionHistoryFor = (
+  result: SynthesisSavedResult,
+): SynthesisResultVersionSummary[] => [
+  ...(result.priorVersions ?? []),
+  ...(result.priorResults ?? []).map(versionSummaryFor),
+];
 
 const buildSavedSynthesisResult = (
   input: SaveSynthesisResultInput,
@@ -934,6 +972,22 @@ export const createSourceProcessing = (
     return { outcome: "captured", annotation };
   };
 
+  const readSavedAnnotation = async (
+    sourceRecordId: string,
+  ): Promise<WorkingMaterialReadOutcome> => {
+    try {
+      return await dependencies.workingMaterial.readAnnotationForSourceRecord(
+        sourceRecordId,
+      );
+    } catch (cause: unknown) {
+      recordDiagnostic("read-source-annotation", cause);
+      return {
+        outcome: "unavailable",
+        detail: "The saved source annotation could not be read.",
+      };
+    }
+  };
+
   const prepareSynthesis = async (
     input: PrepareSynthesisInput,
   ): Promise<PrepareSynthesisOutcome> => {
@@ -1149,6 +1203,7 @@ export const createSourceProcessing = (
   ): Promise<RefreshSynthesisContextOutcome> => {
     const snapshots = input.result.contextSnapshot;
     const currentVersion = input.result.contextSnapshotVersion;
+    const currentResultVersion = input.result.resultVersion ?? 1;
 
     if (
       snapshots === undefined ||
@@ -1198,6 +1253,11 @@ export const createSourceProcessing = (
 
     const refreshedResult: SynthesisSavedResult = {
       ...input.result,
+      resultVersion: currentResultVersion + 1,
+      priorVersions: [
+        ...versionHistoryFor(input.result),
+        versionSummaryFor(input.result),
+      ],
       contextSnapshotVersion: currentVersion + 1,
       contextSnapshot: refreshedSnapshots,
       priorContextSnapshots: [
@@ -1295,9 +1355,9 @@ export const createSourceProcessing = (
         })),
       },
       resultVersion: (input.previousResult.resultVersion ?? 1) + 1,
-      priorResults: [
-        ...(input.previousResult.priorResults ?? []),
-        input.previousResult,
+      priorVersions: [
+        ...versionHistoryFor(input.previousResult),
+        versionSummaryFor(input.previousResult),
       ],
     };
 
@@ -1318,10 +1378,23 @@ export const createSourceProcessing = (
     input: RestoreSynthesisResultInput,
   ): Promise<RestoreSynthesisResultOutcome> => {
     const currentVersion = input.currentResult.resultVersion ?? 1;
-    const priorResults = input.currentResult.priorResults ?? [];
-    const restoredResult = priorResults.find(
-      (result) => (result.resultVersion ?? 1) === input.version,
-    );
+    let restoredResult: SynthesisSavedResult | undefined =
+      input.currentResult.priorResults?.find(
+        (result) => (result.resultVersion ?? 1) === input.version,
+      );
+
+    if (
+      restoredResult === undefined &&
+      dependencies.results?.readResultVersion
+    ) {
+      const readOutcome = await dependencies.results.readResultVersion(
+        input.currentResult.id,
+        input.version,
+      );
+      if (readOutcome.outcome === "found") {
+        restoredResult = readOutcome.result;
+      }
+    }
 
     if (
       input.currentResult.id.length === 0 ||
@@ -1339,7 +1412,10 @@ export const createSourceProcessing = (
     const result: SynthesisSavedResult = {
       ...restoredResult,
       resultVersion: currentVersion + 1,
-      priorResults: [...priorResults, input.currentResult],
+      priorVersions: [
+        ...versionHistoryFor(input.currentResult),
+        versionSummaryFor(input.currentResult),
+      ],
     };
 
     try {
@@ -1395,6 +1471,11 @@ export const createSourceProcessing = (
           changedFields,
         },
       ],
+      resultVersion: (input.result.resultVersion ?? 1) + 1,
+      priorVersions: [
+        ...versionHistoryFor(input.result),
+        versionSummaryFor(input.result),
+      ],
     };
 
     try {
@@ -1412,6 +1493,7 @@ export const createSourceProcessing = (
 
   return {
     captureSourceClaim,
+    readSavedAnnotation,
     checkSourceAvailability,
     relinkSource,
     prepareSynthesis,

@@ -539,35 +539,6 @@ type: source
       repositoryPath,
       { recursive: true },
     );
-
-    assert.deepEqual(
-      await createFileBackedKnowledgeRepository(
-        starterRoot,
-      ).readWorkbenchAnnotation(
-        repositoryPath,
-        "bayesian-statistics-fixture-source",
-      ),
-      {
-        outcome: "found",
-        annotation: {
-          id: "annotation-bayesian-statistics-fixture-source-page-2-0-54",
-          state: "working-material",
-          sourceRecord: {
-            id: "bayesian-statistics-fixture-source",
-            title: "Bayesian statistics fixture source",
-          },
-          sourceLocator: {
-            page: 2,
-            start: 0,
-            end: 54,
-            logical: "page:2#chars=0-54",
-          },
-          text: "Bayesian inference updates prior belief with evidence.",
-          attribution: "source-claim",
-          classification: "source-claim",
-        },
-      },
-    );
   });
 });
 
@@ -587,10 +558,6 @@ describe("Workbench Session selection contract", () => {
         readWorkbenchContext: async () => ({
           outcome: "not-found" as const,
           detail: "No context.",
-        }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "not-found" as const,
-          detail: "No annotation.",
         }),
       },
       {
@@ -624,10 +591,6 @@ describe("Workbench Session selection contract", () => {
         readWorkbenchContext: async () => ({
           outcome: "not-found" as const,
           detail: "No context.",
-        }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "not-found" as const,
-          detail: "No annotation.",
         }),
       },
       {
@@ -686,10 +649,6 @@ describe("Workbench Session selection contract", () => {
           outcome: "ambiguous" as const,
           contexts,
         }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "not-found" as const,
-          detail: "The source annotation was not found.",
-        }),
       },
       {
         readSession: async () => undefined,
@@ -737,10 +696,6 @@ describe("Workbench Session selection contract", () => {
         readWorkbenchContext: async () => ({
           outcome: "ambiguous" as const,
           contexts,
-        }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "not-found" as const,
-          detail: "The source annotation was not found.",
         }),
       },
       {
@@ -829,10 +784,6 @@ describe("Workbench Session selection contract", () => {
           outcome: "available" as const,
           context: replacementContext,
         }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "not-found" as const,
-          detail: "The source annotation was not found.",
-        }),
       },
       {
         readSession: async () => ({
@@ -870,10 +821,6 @@ describe("Workbench Session selection contract", () => {
         readWorkbenchContext: async () => ({
           outcome: "not-found",
           detail: "No contextual topic is available.",
-        }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "not-found",
-          detail: "The source annotation was not found.",
         }),
       },
       {
@@ -945,10 +892,6 @@ describe("Workbench Session selection contract", () => {
           outcome: "available" as const,
           context,
         }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "found" as const,
-          annotation,
-        }),
       },
       {
         readSession: async () => undefined,
@@ -971,7 +914,6 @@ describe("Workbench Session selection contract", () => {
         repositoryAccess: "read-write",
         repositorySelection: "created",
         context,
-        sourceAnnotation: annotation,
       },
     });
     assert.deepEqual(await session.openSourceRecordInPaperDesk("source-id"), {
@@ -983,7 +925,6 @@ describe("Workbench Session selection contract", () => {
         repositoryAccess: "read-write",
         repositorySelection: "created",
         context,
-        sourceAnnotation: annotation,
       },
     });
     assert.deepEqual(await session.switchWorkspace("atlas"), {
@@ -997,23 +938,29 @@ describe("Workbench Session selection contract", () => {
         context,
       },
     });
-    assert.deepEqual(await session.openSavedAnnotation(), {
-      outcome: "position-restored",
-      workbench: {
-        activeWorkspace: "paper-desk",
-        repositoryStatus: "selected",
-        repositoryPath: "/contextual-repository",
-        repositoryAccess: "read-write",
-        repositorySelection: "created",
-        context,
-        sourceAnnotation: annotation,
-        readingPosition: {
-          sourceRecordId: "source-id",
-          page: 2,
-          characterOffset: 10,
+    assert.deepEqual(
+      await session.openSavedAnnotation({
+        sourceRecordId: annotation.sourceRecord.id,
+        page: annotation.sourceLocator.page,
+        characterOffset: annotation.sourceLocator.start,
+      }),
+      {
+        outcome: "position-restored",
+        workbench: {
+          activeWorkspace: "paper-desk",
+          repositoryStatus: "selected",
+          repositoryPath: "/contextual-repository",
+          repositoryAccess: "read-write",
+          repositorySelection: "created",
+          context,
+          readingPosition: {
+            sourceRecordId: "source-id",
+            page: 2,
+            characterOffset: 10,
+          },
         },
       },
-    });
+    );
     assert.deepEqual(latestSnapshot, {
       selectedRepositoryPath: "/contextual-repository",
       activeWorkspace: "paper-desk",
@@ -1048,23 +995,6 @@ describe("Workbench Session selection contract", () => {
         readWorkbenchContext: async () => ({
           outcome: "available" as const,
           context,
-        }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "found" as const,
-          annotation: {
-            id: "annotation-id",
-            state: "working-material" as const,
-            sourceRecord: context.sourceRecord,
-            sourceLocator: {
-              page: 2,
-              start: 0,
-              end: 5,
-              logical: "page:2#chars=0-5",
-            },
-            text: "claim",
-            attribution: "source-claim" as const,
-            classification: "source-claim" as const,
-          },
         }),
       },
       {
@@ -1115,10 +1045,6 @@ describe("Workbench Session selection contract", () => {
           outcome: "available" as const,
           context,
         }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "not-found" as const,
-          detail: "The source annotation was not found.",
-        }),
       },
       {
         readSession: async () => ({
@@ -1135,7 +1061,7 @@ describe("Workbench Session selection contract", () => {
     );
 
     assert.deepEqual(await session.openFreshWorkbench(), {
-      activeWorkspace: "atlas",
+      activeWorkspace: "paper-desk",
       repositoryStatus: "selected",
       repositoryPath: "/selected-repository",
       repositoryAccess: "read-write",
@@ -1163,10 +1089,6 @@ describe("Workbench Session selection contract", () => {
           outcome: "available" as const,
           context,
         }),
-        readWorkbenchAnnotation: async () => ({
-          outcome: "unavailable" as const,
-          detail: "The saved source annotation could not be read.",
-        }),
       },
       {
         readSession: async () => ({
@@ -1183,12 +1105,17 @@ describe("Workbench Session selection contract", () => {
     );
 
     assert.deepEqual(await session.openFreshWorkbench(), {
-      activeWorkspace: "atlas",
+      activeWorkspace: "paper-desk",
       repositoryStatus: "selected",
       repositoryPath: "/selected-repository",
       repositoryAccess: "read-write",
       repositorySelection: "opened",
       context,
+      readingPosition: {
+        sourceRecordId: "source-id",
+        page: 2,
+        characterOffset: 10,
+      },
     });
   });
 });

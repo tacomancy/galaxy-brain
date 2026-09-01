@@ -1,7 +1,7 @@
 {
   "name": "galaxy-brain",
   "productName": "Galaxy Brain",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "description": "The Galaxy Brain desktop Knowledge Workbench.",
   "private": true,
   "license": "MIT",

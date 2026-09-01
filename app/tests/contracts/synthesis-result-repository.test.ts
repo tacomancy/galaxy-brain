@@ -110,6 +110,19 @@ const result: SynthesisSavedResult = {
   ],
 };
 
+const resultWithoutLegacyHistory = { ...result };
+delete resultWithoutLegacyHistory.priorResults;
+const normalizedResult: SynthesisSavedResult = {
+  ...resultWithoutLegacyHistory,
+  priorVersions: [
+    {
+      version: 1,
+      generatedAt: "2026-08-27T20:00:00.000Z",
+      title: "Bayesian statistics synthesis — first draft",
+    },
+  ],
+};
+
 describe("Synthesis result Repository Adapter", () => {
   it("retains only sanitized diagnostics when the repository path is unavailable", async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
@@ -163,15 +176,117 @@ describe("Synthesis result Repository Adapter", () => {
 
       assert.deepEqual(await repository.readResult?.(result.id), {
         outcome: "found",
-        result,
+        result: normalizedResult,
       });
       assert.deepEqual(await repository.readResults?.(), {
         outcome: "found",
-        results: [result],
+        results: [normalizedResult],
       });
       assert.deepEqual(await repository.readResult?.("missing-result"), {
         outcome: "not-found",
         detail: "The Synthesis result was not found.",
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("migrates legacy nested history only when an explicit write occurs", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-migration-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+    const resultDirectory = join(
+      repositoryPath,
+      "scratch",
+      "synthesis-results",
+    );
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+      const before = await repository.readResult?.(result.id);
+      assert.equal(before?.outcome, "found");
+      assert.deepEqual(
+        JSON.parse(
+          await readFile(join(resultDirectory, `${result.id}.json`), "utf8"),
+        ).schema,
+        undefined,
+      );
+
+      if (before?.outcome !== "found") return;
+      await repository.saveResult(before.result);
+
+      assert.deepEqual(
+        JSON.parse(
+          await readFile(join(resultDirectory, `${result.id}.json`), "utf8"),
+        ),
+        {
+          schema: "galaxy-brain-synthesis-result-pointer",
+          schema_version: 1,
+          id: result.id,
+          current_version: 2,
+        },
+      );
+      assert.deepEqual(
+        JSON.parse(
+          await readFile(
+            join(resultDirectory, `${result.id}--version-1.json`),
+            "utf8",
+          ),
+        ).resultVersion,
+        1,
+      );
+      assert.deepEqual(await repository.readResultVersion?.(result.id, 1), {
+        outcome: "found",
+        result: {
+          ...result.priorResults![0],
+          title: "Bayesian statistics synthesis — first draft",
+          text: "Bayesian inference updates prior belief.",
+          resultVersion: 1,
+        },
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects moving the current result pointer to an older version", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-version-order-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+
+      await repository.saveResult(result);
+
+      await assert.rejects(
+        repository.saveResult({
+          ...result,
+          resultVersion: 1,
+          text: "An attempted rollback must not replace the current result.",
+        }),
+        /cannot move backwards/u,
+      );
+
+      assert.deepEqual(await repository.readResult?.(result.id), {
+        outcome: "found",
+        result: normalizedResult,
       });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
@@ -207,12 +322,16 @@ describe("Synthesis result Repository Adapter", () => {
           repositoryPath,
           undefined,
           replacementFailure,
-        ).saveResult({ ...result, text: "a competing result" }),
-        /replacement interrupted/,
+        ).saveResult({
+          ...result,
+          resultVersion: 3,
+          text: "a competing result",
+        }),
+        /replacement interrupted|immutable/,
       );
       assert.deepEqual(await repository.readResult?.(result.id), {
         outcome: "found",
-        result,
+        result: normalizedResult,
       });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
@@ -248,7 +367,7 @@ describe("Synthesis result Repository Adapter", () => {
 
       assert.deepEqual(await repository.readResult?.(result.id), {
         outcome: "found",
-        result,
+        result: normalizedResult,
       });
       await assert.rejects(readFile(abandonedTemporaryPath, "utf8"), {
         code: "ENOENT",
@@ -391,11 +510,11 @@ describe("Synthesis result Repository Adapter", () => {
           undefined,
           externalEditFilesystem,
         ).saveResult({ ...result, text: "a competing local result" }),
-        /changed while it was being saved/,
+        /immutable/,
       );
       assert.deepEqual(await originalRepository.readResult?.(result.id), {
         outcome: "found",
-        result: { ...result, text: "an external result edit" },
+        result: normalizedResult,
       });
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });

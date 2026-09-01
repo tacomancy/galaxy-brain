@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 
-import type { WorkbenchState } from "../../modules/workbench-session";
+import type { WorkbenchViewState } from "../../modules/workbench-view";
 import type {
   CheckSourceAvailabilityOutcome,
   RelinkSourceOutcome,
@@ -38,7 +38,7 @@ const relinkOutcomeMessage = (
 
 interface PaperDeskProps {
   controls: JSX.Element;
-  workbench: WorkbenchState;
+  workbench: WorkbenchViewState;
   sourceStatus: SourceStatusPresentation | undefined;
   relinkOutcome: RelinkSourceOutcome | undefined;
   onRelinkSource: () => Promise<void>;

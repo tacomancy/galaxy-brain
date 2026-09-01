@@ -48,15 +48,14 @@ import type {
   SynthesisSavedResult,
 } from "../modules/source-processing";
 import type {
-  FreshWorkbench,
   RepositoryOperationOutcome,
   WorkbenchContextSelection,
   WorkbenchContextSelectionOutcome,
-  WorkbenchState,
   WorkbenchTheme,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
+import type { WorkbenchViewState } from "../modules/workbench-view";
 
 const rootElement = document.getElementById("root");
 
@@ -230,7 +229,7 @@ const WorkbenchShell = ({
   initialAtlasOrientation,
   initialLearning,
 }: {
-  initialWorkbench: FreshWorkbench;
+  initialWorkbench: WorkbenchViewState;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
   initialProposalReview: ProposalReviewReadOutcome;
   initialAuthoring: AuthoringReadOutcome;
@@ -238,7 +237,8 @@ const WorkbenchShell = ({
   initialAtlasOrientation: AtlasOrientationReadOutcome;
   initialLearning: LearningReadOutcome;
 }) => {
-  const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
+  const [workbench, setWorkbench] =
+    useState<WorkbenchViewState>(initialWorkbench);
   const [authoring, setAuthoring] =
     useState<AuthoringReadOutcome>(initialAuthoring);
   const [theme, setTheme] = useState<WorkbenchTheme>(initialTheme);
@@ -953,6 +953,8 @@ const WorkbenchShell = ({
   const confirmSynthesis = async (
     confirmation: "confirmed" | "declined" | "canceled",
   ): Promise<void> => {
+    setSynthesisPreview(undefined);
+    setSynthesisOutcome(undefined);
     await runBridgeOperation("confirm-synthesis", async () => {
       setSynthesisOutcome(
         await window.workbench.confirmSynthesis(confirmation),

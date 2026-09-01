@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.18.0](https://github.com/tacomancy/galaxy-brain/compare/v0.17.0...v0.18.0) (2026-09-01)
+
+
+### Features
+
+* centralize repository artifact storage ([#138](https://github.com/tacomancy/galaxy-brain/issues/138)) ([9fc3156](https://github.com/tacomancy/galaxy-brain/commit/9fc3156a9f3fb01eeb9497098afeb6c479d509bb))
+* implement Section E hardening ([#141](https://github.com/tacomancy/galaxy-brain/issues/141)) ([c575894](https://github.com/tacomancy/galaxy-brain/commit/c575894737abe8cd1b6e60c97e02ef2178414e5d))
+
 ## [0.17.0](https://github.com/tacomancy/galaxy-brain/compare/v0.16.0...v0.17.0) (2026-09-01)
 
 
