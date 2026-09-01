@@ -748,6 +748,30 @@ below are the implementation evidence for this issue.
   portable format field was added. The three packaged Issue 22 workflows were
   also rerun independently after the path correction and passed.
 
+### Issue 23. Completed-codebase complexity and architecture review
+
+The completed-codebase review was performed after TB12–TB14, TB16, Issue #52,
+and Issue #22 were merged. The durable findings and their dispositions are in
+the [Issue #23 codebase review](issue-23-codebase-review.md). The review covers
+Module depth, public Interfaces, dependency direction, state ownership,
+persistence policy, renderer orchestration, test organization, fixture
+composition, and CSS maintenance surface.
+
+No broad simplification was made on this branch. The Source Processing and
+Synthesis lifecycle risks remain tracked by Issues #70 and #72; duplicated
+file-backed safety policy remains tracked by #69; and Session/Source Processing
+ownership remains tracked by #71. Renderer orchestration, the Synthesis test
+hotspot, fixture composition, and global CSS are explicitly deferred to the V1
+maintainers with revisit conditions and residual risks recorded in the review.
+The code map was repaired to include the Proposal Review Module, the shared
+atomic-write Adapter, and the current TB12/TB16 status.
+
+Verification is green at the reviewed revision: `npm run check`,
+`npm run test:coverage`, and `npm run lint:complexity` passed; the packaged
+workflow passed 35 specs with one intentional skip, including the Issue #22 and
+Issue #52 recovery workflows. This issue is complete as a review and
+disposition activity; Issues #69–#72 remain separate implementation work.
+
 ### Release-readiness implementation preparation
 
 The next work package is defined in the [V1 release-readiness specification](v1-release-readiness-spec.md). It covers the provider-free packaged-application gate and the initial MC/DC evidence gate as separate quality obligations. The specification explicitly preserves the existing S1–S5 seams, isolates mutating workflow fixtures, keeps LCOV branch coverage distinct from MC/DC, and defers signed distribution and broad product expansion.
