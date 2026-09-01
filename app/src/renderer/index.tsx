@@ -114,6 +114,10 @@ type BridgeOperationFailure = {
   retry: () => Promise<void>;
 };
 
+type BridgeOperationOptions = {
+  nested?: boolean;
+};
+
 // Bridge recovery preserves the last rendered projection and offers only a
 // user-invoked retry of the failed operation.
 const BridgeOperationRecovery = ({
@@ -122,23 +126,39 @@ const BridgeOperationRecovery = ({
 }: {
   failure: BridgeOperationFailure;
   onRetry: () => Promise<void>;
-}): JSX.Element => (
-  <div
-    id="bridge-operation-failed"
-    role="alert"
-    data-workbench-outcome="bridge-operation-failed"
-  >
-    <p>Galaxy Brain couldn't complete that action. You can retry it.</p>
-    <button
-      id="retry-bridge-operation"
-      type="button"
-      onClick={() => void onRetry()}
+}): JSX.Element => {
+  const [isRetrying, setIsRetrying] = useState(false);
+  const retry = async (): Promise<void> => {
+    if (isRetrying) {
+      return;
+    }
+    setIsRetrying(true);
+    try {
+      await onRetry();
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  return (
+    <div
+      id="bridge-operation-failed"
+      role="alert"
+      data-workbench-outcome="bridge-operation-failed"
     >
-      Retry operation
-    </button>
-    <span className="sr-only">Failed operation: {failure.operation}</span>
-  </div>
-);
+      <p>Galaxy Brain couldn't complete that action. You can retry it.</p>
+      <button
+        id="retry-bridge-operation"
+        type="button"
+        disabled={isRetrying}
+        onClick={() => void retry()}
+      >
+        Retry operation
+      </button>
+      <span className="sr-only">Failed operation: {failure.operation}</span>
+    </div>
+  );
+};
 
 // Startup recovery prevents a rejected bootstrap promise from leaving a blank
 // renderer and keeps retry under explicit keyboard-operable user control.
@@ -211,6 +231,7 @@ const WorkbenchShell = ({
   );
   const shouldFocusSelectedContextAction = useRef(false);
   const bridgeOperationDepth = useRef(0);
+  const bridgeOperationQueue = useRef(Promise.resolve());
   const bridgeFailureVersion = useRef(0);
   const bridgeRootOperation = useRef<string | undefined>(undefined);
   const [lastOutcome, setLastOutcome] = useState<
@@ -227,44 +248,64 @@ const WorkbenchShell = ({
     operation: string,
     action: () => Promise<T>,
     retryOperation?: () => Promise<void>,
+    options?: BridgeOperationOptions,
   ): Promise<T | undefined> => {
-    const isRootOperation = bridgeOperationDepth.current === 0;
-    const failureVersionAtStart = bridgeFailureVersion.current;
-    if (isRootOperation) {
-      bridgeRootOperation.current = operation;
-    }
-    const retry =
-      retryOperation ??
-      (async (): Promise<void> => {
-        await runBridgeOperation(operation, action);
-      });
-    bridgeOperationDepth.current += 1;
-    try {
-      const result = await action();
-      if (
-        isRootOperation &&
-        bridgeFailureVersion.current === failureVersionAtStart
-      ) {
-        bridgeRetry.current = undefined;
-        bridgeRootOperation.current = undefined;
-        setBridgeFailure(undefined);
-      }
-      return result;
-    } catch {
-      bridgeFailureVersion.current += 1;
+    const isNestedOperation = options?.nested === true;
+    const isRootOperation = !isNestedOperation;
+    const execute = async (): Promise<T | undefined> => {
+      const failureVersionAtStart = bridgeFailureVersion.current;
       if (isRootOperation) {
-        bridgeRetry.current = retry;
+        bridgeRootOperation.current = operation;
       }
-      setBridgeFailure({
-        operation: bridgeRootOperation.current ?? operation,
-        retry: isRootOperation ? retry : (bridgeRetry.current ?? retry),
-      });
-      return undefined;
+      const retry =
+        retryOperation ??
+        (async (): Promise<void> => {
+          await runBridgeOperation(operation, action);
+        });
+      bridgeOperationDepth.current += 1;
+      try {
+        const result = await action();
+        if (
+          isRootOperation &&
+          bridgeFailureVersion.current === failureVersionAtStart
+        ) {
+          bridgeRetry.current = undefined;
+          bridgeRootOperation.current = undefined;
+          setBridgeFailure(undefined);
+        }
+        return result;
+      } catch {
+        bridgeFailureVersion.current += 1;
+        if (isRootOperation) {
+          bridgeRetry.current = retry;
+        }
+        setBridgeFailure({
+          operation: bridgeRootOperation.current ?? operation,
+          retry,
+        });
+        return undefined;
+      } finally {
+        bridgeOperationDepth.current -= 1;
+        if (isRootOperation && bridgeOperationDepth.current === 0) {
+          bridgeRootOperation.current = undefined;
+        }
+      }
+    };
+
+    if (isNestedOperation) {
+      return execute();
+    }
+
+    const previousOperation = bridgeOperationQueue.current;
+    let release!: () => void;
+    bridgeOperationQueue.current = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previousOperation;
+    try {
+      return await execute();
     } finally {
-      bridgeOperationDepth.current -= 1;
-      if (isRootOperation && bridgeOperationDepth.current === 0) {
-        bridgeRootOperation.current = undefined;
-      }
+      release();
     }
   };
   const [synthesisPreview, setSynthesisPreview] = useState<
@@ -384,6 +425,7 @@ const WorkbenchShell = ({
         await readSavedSynthesisResults();
       };
       bridgeRetry.current = retry;
+      bridgeFailureVersion.current += 1;
       setBridgeFailure({ operation: "read-synthesis-results", retry });
     }
     // The retry ref intentionally captures the current operation descriptor.
@@ -574,41 +616,58 @@ const WorkbenchShell = ({
       const outcome = await window.workbench.discoveryJump(command);
       setDiscoveryJumpOutcome(outcome);
       if (outcome.outcome !== "resolved") return;
-      if (outcome.target.kind === "workspace") {
-        applyWorkspaceTransition(
-          await window.workbench.switchWorkspace(outcome.target.workspace),
-        );
-      } else if (outcome.target.kind === "topic") {
-        applyWorkspaceTransition(
-          await window.workbench.openTopicInStudio(outcome.target.id),
-        );
-      } else if (outcome.target.kind === "source-record") {
-        applyWorkspaceTransition(
-          await window.workbench.openSourceRecordInPaperDesk(outcome.target.id),
-        );
-      } else if (
-        outcome.target.kind === "structured-annotation" &&
-        outcome.target.sourceRecordId !== undefined
-      ) {
-        applyWorkspaceTransition(
-          await window.workbench.openSourceRecordInPaperDesk(
-            outcome.target.sourceRecordId,
-          ),
-        );
-      } else if (
-        outcome.target.kind === "saved-synthesis-result" &&
-        outcome.target.targetTopicId !== undefined
-      ) {
-        applyWorkspaceTransition(
-          await window.workbench.openTopicInStudio(
-            outcome.target.targetTopicId,
-          ),
-        );
-      } else {
-        applyWorkspaceTransition(
-          await window.workbench.switchWorkspace("studio"),
-        );
-      }
+      const target = outcome.target;
+
+      const transitionDiscoveryTarget = async (): Promise<void> => {
+        const nested = bridgeRootOperation.current !== undefined;
+        const runDiscoveryTransition = (
+          action: () => Promise<WorkspaceTransitionOutcome>,
+        ): Promise<WorkspaceTransitionOutcome | undefined> =>
+          runBridgeOperation(
+            "discovery-jump-transition",
+            action,
+            transitionDiscoveryTarget,
+            { nested },
+          );
+        let transition: WorkspaceTransitionOutcome | undefined;
+        if (target.kind === "workspace") {
+          transition = await runDiscoveryTransition(() =>
+            window.workbench.switchWorkspace(target.workspace),
+          );
+        } else if (target.kind === "topic") {
+          transition = await runDiscoveryTransition(() =>
+            window.workbench.openTopicInStudio(target.id),
+          );
+        } else if (target.kind === "source-record") {
+          transition = await runDiscoveryTransition(() =>
+            window.workbench.openSourceRecordInPaperDesk(target.id),
+          );
+        } else if (
+          target.kind === "structured-annotation" &&
+          target.sourceRecordId !== undefined
+        ) {
+          const sourceRecordId = target.sourceRecordId;
+          transition = await runDiscoveryTransition(() =>
+            window.workbench.openSourceRecordInPaperDesk(sourceRecordId),
+          );
+        } else if (
+          target.kind === "saved-synthesis-result" &&
+          target.targetTopicId !== undefined
+        ) {
+          const targetTopicId = target.targetTopicId;
+          transition = await runDiscoveryTransition(() =>
+            window.workbench.openTopicInStudio(targetTopicId),
+          );
+        } else {
+          transition = await runDiscoveryTransition(() =>
+            window.workbench.switchWorkspace("studio"),
+          );
+        }
+
+        if (transition !== undefined) applyWorkspaceTransition(transition);
+      };
+
+      await transitionDiscoveryTarget();
     });
   };
 

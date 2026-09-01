@@ -14,6 +14,14 @@ const waitForAtlas = async (): Promise<void> => {
 };
 
 describe("Issue 52 recoverable Workbench failures", () => {
+  const temporaryRoots: string[] = [];
+
+  after(async () => {
+    await Promise.all(
+      temporaryRoots.map((root) => rm(root, { recursive: true, force: true })),
+    );
+  });
+
   if (failure === "bootstrap") {
     it("renders a keyboard-operable startup recovery and retries bootstrap", async () => {
       const recovery = await $("#workbench-startup-failure");
@@ -64,6 +72,7 @@ describe("Issue 52 recoverable Workbench failures", () => {
       const root = await realpath(
         await mkdtemp(join(tmpdir(), "galaxy-brain-issue-52-")),
       );
+      temporaryRoots.push(root);
       const repositoryPath = join(root, "repository");
       await cp(
         join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
@@ -90,7 +99,6 @@ describe("Issue 52 recoverable Workbench failures", () => {
       assert.equal(await $("#atlas-empty-state").isExisting(), true);
       await $("#retry-bridge-operation").click();
       await $("#repository-status-heading").waitForDisplayed();
-      await rm(root, { recursive: true, force: true });
     });
   }
 
@@ -99,6 +107,7 @@ describe("Issue 52 recoverable Workbench failures", () => {
       const root = await realpath(
         await mkdtemp(join(tmpdir(), "galaxy-brain-issue-52-")),
       );
+      temporaryRoots.push(root);
       const repositoryPath = join(root, "repository");
       await cp(
         join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
@@ -123,7 +132,36 @@ describe("Issue 52 recoverable Workbench failures", () => {
         true,
         await $("body").getText(),
       );
-      await rm(root, { recursive: true, force: true });
+    });
+  }
+
+  if (failure === "discovery-jump-transition") {
+    it("retries a failed Discovery transition without repeating the Jump", async () => {
+      const root = await realpath(
+        await mkdtemp(join(tmpdir(), "galaxy-brain-issue-52-")),
+      );
+      temporaryRoots.push(root);
+      const repositoryPath = join(root, "repository");
+      await cp(
+        join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+        repositoryPath,
+        { recursive: true },
+      );
+      const dialog = await browser.electron.mock("dialog", "showOpenDialog");
+      await dialog.mockResolvedValue({
+        canceled: false,
+        filePaths: [repositoryPath],
+      });
+
+      await $("#open-repository").click();
+      await $("#discovery-surface").waitForDisplayed();
+      await $("#discovery-mode-jump").click();
+      await $("#discovery-input").setValue("Studio");
+      await $("#discovery-submit").click();
+      await $("#bridge-operation-failed").waitForDisplayed();
+      assert.equal(await $("#atlas-heading").isExisting(), true);
+      await $("#retry-bridge-operation").click();
+      await $("#studio-heading").waitForDisplayed();
     });
   }
 });

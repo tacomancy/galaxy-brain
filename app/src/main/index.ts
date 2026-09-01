@@ -155,6 +155,50 @@ const recordMainDiagnostic = (
   );
 };
 
+const workbenchIpcChannels = [
+  "workbench:open-fresh",
+  "workbench:read-source-availability",
+  "workbench:relink-source",
+  "workbench:read-theme",
+  "workbench:set-theme",
+  "workbench:read-authoring-draft",
+  "workbench:open-authoring-draft",
+  "workbench:edit-authoring-semantic-text",
+  "workbench:undo-authoring-semantic-text",
+  "workbench:open-authoring-construct",
+  "workbench:set-authoring-mode",
+  "workbench:read-proposal-review",
+  "workbench:read-atlas-orientation",
+  "workbench:edit-learning-route-title",
+  "workbench:read-learning-progress",
+  "workbench:confirm-learning-progress",
+  "workbench:correct-learning-progress",
+  "workbench:open-proposal-review",
+  "workbench:accept-proposal-review",
+  "workbench:create-repository",
+  "workbench:open-repository",
+  "workbench:select-context",
+  "workbench:open-topic-in-studio",
+  "workbench:open-source-record-in-paper-desk",
+  "workbench:switch-workspace",
+  "workbench:open-saved-annotation",
+  "workbench:discovery-search",
+  "workbench:discovery-context-candidates",
+  "workbench:prepare-ask",
+  "workbench:remove-ask-context-item",
+  "workbench:confirm-ask",
+  "workbench:discovery-jump",
+  "workbench:prepare-synthesis",
+  "workbench:remove-synthesis-context-item",
+  "workbench:confirm-synthesis",
+  "workbench:read-synthesis-results",
+  "workbench:restore-synthesis-result",
+] as const;
+
+const removeWorkbenchIpcHandlers = (): void => {
+  workbenchIpcChannels.forEach((channel) => ipcMain.removeHandler(channel));
+};
+
 /**
  * Serves packaged renderer assets through the allow-listed custom scheme.
  * Requests outside the renderer root are rejected before any file is read.
@@ -968,6 +1012,7 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Workbench workspace transition.");
       }
 
+      maybeInjectFailure("discovery-jump-transition");
       maybeInjectFailure("workspace-transition");
       return workbenchSession.switchWorkspace(workspace);
     },
@@ -1316,43 +1361,7 @@ const createWindow = async (): Promise<void> => {
 
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
-    ipcMain.removeHandler("workbench:open-fresh");
-    ipcMain.removeHandler("workbench:read-source-availability");
-    ipcMain.removeHandler("workbench:relink-source");
-    ipcMain.removeHandler("workbench:read-theme");
-    ipcMain.removeHandler("workbench:set-theme");
-    ipcMain.removeHandler("workbench:read-authoring-draft");
-    ipcMain.removeHandler("workbench:open-authoring-draft");
-    ipcMain.removeHandler("workbench:edit-authoring-semantic-text");
-    ipcMain.removeHandler("workbench:undo-authoring-semantic-text");
-    ipcMain.removeHandler("workbench:open-authoring-construct");
-    ipcMain.removeHandler("workbench:set-authoring-mode");
-    ipcMain.removeHandler("workbench:read-proposal-review");
-    ipcMain.removeHandler("workbench:read-atlas-orientation");
-    ipcMain.removeHandler("workbench:edit-learning-route-title");
-    ipcMain.removeHandler("workbench:read-learning-progress");
-    ipcMain.removeHandler("workbench:confirm-learning-progress");
-    ipcMain.removeHandler("workbench:correct-learning-progress");
-    ipcMain.removeHandler("workbench:open-proposal-review");
-    ipcMain.removeHandler("workbench:accept-proposal-review");
-    ipcMain.removeHandler("workbench:create-repository");
-    ipcMain.removeHandler("workbench:open-repository");
-    ipcMain.removeHandler("workbench:select-context");
-    ipcMain.removeHandler("workbench:open-topic-in-studio");
-    ipcMain.removeHandler("workbench:open-source-record-in-paper-desk");
-    ipcMain.removeHandler("workbench:switch-workspace");
-    ipcMain.removeHandler("workbench:open-saved-annotation");
-    ipcMain.removeHandler("workbench:discovery-search");
-    ipcMain.removeHandler("workbench:discovery-context-candidates");
-    ipcMain.removeHandler("workbench:prepare-ask");
-    ipcMain.removeHandler("workbench:remove-ask-context-item");
-    ipcMain.removeHandler("workbench:confirm-ask");
-    ipcMain.removeHandler("workbench:discovery-jump");
-    ipcMain.removeHandler("workbench:prepare-synthesis");
-    ipcMain.removeHandler("workbench:remove-synthesis-context-item");
-    ipcMain.removeHandler("workbench:confirm-synthesis");
-    ipcMain.removeHandler("workbench:read-synthesis-results");
-    ipcMain.removeHandler("workbench:restore-synthesis-result");
+    removeWorkbenchIpcHandlers();
   });
 
   if (MAIN_WINDOW_WEBPACK_ENTRY.startsWith("file:")) {
@@ -1389,6 +1398,7 @@ const recoverWindowStartup = async (cause: unknown): Promise<void> => {
   if (result.response === 0) {
     // A failed load may have registered handlers on a still-open window;
     // destroy it first so the retry can recreate the one-window composition.
+    removeWorkbenchIpcHandlers();
     BrowserWindow.getAllWindows().forEach((window) => window.destroy());
     await createWindow().catch(recoverWindowStartup);
     return;
