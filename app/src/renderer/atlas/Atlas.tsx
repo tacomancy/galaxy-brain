@@ -159,7 +159,7 @@ const SelectedRepositoryCard = ({
         type="button"
         onClick={onOpenRepository}
       >
-        Open another Knowledge Repository
+        Switch Knowledge Repository
       </button>
       <button
         id="create-repository"
@@ -167,7 +167,7 @@ const SelectedRepositoryCard = ({
         type="button"
         onClick={onCreateRepository}
       >
-        Create another Knowledge Repository
+        Create a new Knowledge Repository
       </button>
     </div>
   </section>
@@ -207,7 +207,7 @@ const ContinueWorkingCard = ({
       type="button"
       onClick={() => onOpenTopicInStudio(context.topic.id)}
     >
-      Open in Studio
+      Open topic in Studio
     </button>
   </section>
 );

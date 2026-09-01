@@ -7,6 +7,8 @@ import { tmpdir } from "node:os";
 import { $, browser } from "@wdio/globals";
 import "@wdio/electron-service";
 
+import { openDiscovery } from "./discovery-helper";
+
 describe("Recover a pending Synthesis review", () => {
   it("clears a preview when the selected Knowledge Repository changes", async () => {
     const fixtureRepositoryPath = join(
@@ -40,7 +42,7 @@ describe("Recover a pending Synthesis review", () => {
 
       await $("#open-repository").click();
       await $("#repository-status-heading").waitForDisplayed();
-      await $("#discovery-surface").waitForDisplayed();
+      await openDiscovery();
       await $("#discovery-mode-ask").click();
       await $("#discovery-ask-context-bayesian-statistics").click();
       await $("#discovery-input").setValue(
@@ -48,6 +50,7 @@ describe("Recover a pending Synthesis review", () => {
       );
       await $("#discovery-submit").click();
       await $("#discovery-ask-preview").waitForDisplayed();
+      await $("#discovery-close").click();
       await $("#atlas-topic-open-studio").click();
       await $("#studio-synthesis-prepare").click();
       await $("#studio-synthesis-preview").waitForDisplayed();

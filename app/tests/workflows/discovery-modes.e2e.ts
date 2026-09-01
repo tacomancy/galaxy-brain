@@ -7,6 +7,8 @@ import { tmpdir } from "node:os";
 import { $ } from "@wdio/globals";
 import "@wdio/electron-service";
 
+import { openDiscovery } from "./discovery-helper";
+
 describe("Use explicit Discovery modes", () => {
   it("keeps retrieval, synthesis review, and navigation distinct", async () => {
     const fixtureRepositoryPath = join(
@@ -29,7 +31,7 @@ describe("Use explicit Discovery modes", () => {
         filePaths: [isolatedRepositoryPath],
       });
       await $("#open-repository").click();
-      await $("#discovery-surface").waitForDisplayed();
+      await openDiscovery();
 
       assert.equal(
         await $("#discovery-mode-search").getAttribute("aria-selected"),
@@ -126,12 +128,7 @@ describe("Use explicit Discovery modes", () => {
           timeoutMsg: "Known Jump target did not open Studio.",
         },
       );
-      assert.equal(
-        await $("#discovery-jump-outcome").getAttribute(
-          "data-discovery-outcome",
-        ),
-        "resolved",
-      );
+      assert.equal(await $("#discovery-surface").isDisplayed(), false);
     } finally {
       await rm(isolatedRepositoryPath, { recursive: true, force: true });
     }

@@ -147,11 +147,6 @@ export const PaperDesk = ({
             reading together.
           </p>
         </div>
-        <SourceStatusCard
-          sourceStatus={sourceStatus}
-          relinkOutcome={relinkOutcome}
-          onRelinkSource={onRelinkSource}
-        />
         <div id="paper-desk-reading-surface" className="paper-desk-layout">
           <section
             id="paper-desk-source-preview"
@@ -180,7 +175,16 @@ export const PaperDesk = ({
               )}
             </article>
           </section>
-          <aside className="paper-desk-sidebar">
+          <aside
+            id="paper-desk-supporting-sidebar"
+            className="paper-desk-sidebar"
+            aria-label="Supporting context"
+          >
+            <SourceStatusCard
+              sourceStatus={sourceStatus}
+              relinkOutcome={relinkOutcome}
+              onRelinkSource={onRelinkSource}
+            />
             <section
               data-source-record-id={workbench.context.sourceRecord.id}
               className="source-identity-card"
