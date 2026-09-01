@@ -1,10 +1,10 @@
 # V1 Victory Checklist
 
-Status: draft release checklist. TB15 and TB16 are merged and accepted, and the
-provider-free release gate now has focused packaged-workflow evidence for its
-local governance and recovery behaviors, while the linked-PDF packaging
-boundary, privacy review, MC/DC release-candidate rule, TB13–TB14 implementation
-and acceptance, and release-readiness dispositions below remain open.
+Status: draft release checklist. TB12–TB16, the provider-free release gate,
+Issue #52 recovery, and Issue #22 behavioral-contract coverage are merged and
+accepted for their recorded scopes. Privacy review, the MC/DC release-candidate
+rule, Issue #23 follow-up approval, remaining architecture hardening, and other
+release-readiness dispositions below remain open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
@@ -94,9 +94,9 @@ Whichever distribution outcome is selected, complete or explicitly defer every m
 The post-TB quality map in [Issue #21](https://github.com/tacomancy/galaxy-brain/issues/21) begins only after the planned V1 tracer bullets are accepted and merged. It must not remain an implicit afterthought:
 
 - [ ] Issue #21 and its child workstreams are complete, or the human owner explicitly approves their deferral with each residual V1 risk recorded.
-- [ ] Renderer bootstrap, main-window creation, and representative rejected bridge operations show a keyboard-operable, privacy-safe recovery state instead of a blank or falsely successful UI, as specified by [Issue #52](https://github.com/tacomancy/galaxy-brain/issues/52).
-- [ ] The behavior, privacy, recovery, and Adapter-contract gaps in [Issue #22](https://github.com/tacomancy/galaxy-brain/issues/22) are closed or individually deferred with rationale and ownership.
-- [ ] The completed-codebase review in [Issue #23](https://github.com/tacomancy/galaxy-brain/issues/23) ranks Module depth, Interface, dependency-direction, state-ownership, and complexity findings; every material finding is fixed, explicitly deferred, or tracked.
+- [x] Renderer bootstrap, main-window creation, and representative rejected bridge operations show a keyboard-operable, privacy-safe recovery state instead of a blank or falsely successful UI, as specified by [Issue #52](https://github.com/tacomancy/galaxy-brain/issues/52) and merged in [PR #133](https://github.com/tacomancy/galaxy-brain/pull/133).
+- [x] The behavior, privacy, recovery, and Adapter-contract gaps in [Issue #22](https://github.com/tacomancy/galaxy-brain/issues/22) are closed or individually deferred with rationale and ownership; implementation and evidence are recorded in [the delivery plan](delivery-plan.md#issue-22-behavioral-and-adapter-contract-coverage).
+- [x] The completed-codebase review in [Issue #23](https://github.com/tacomancy/galaxy-brain/issues/23) ranks Module depth, Interface, dependency-direction, state-ownership, and complexity findings; every material finding is fixed, explicitly deferred, or tracked in the [Issue #23 review](issue-23-codebase-review.md).
 - [x] A superseding whole-release human acceptance run covers every desktop-supported user story on the exact release commit and packaged artifact, records platform/version evidence, and replaces the stale baseline in [Issue #75](https://github.com/tacomancy/galaxy-brain/issues/75); all 13 stories were accepted on August 31, 2026 using the packaged arm64 application at commit `9d8cdaa`, with the complete run record in the [Issue #75 acceptance comment](https://github.com/tacomancy/galaxy-brain/issues/75#issuecomment-5483988343).
 - [ ] The existing architecture follow-ups—safe artifact storage, Synthesis lifecycle ownership, Workbench Session/Source Processing separation, and append-only result history in [Issues #69–#72](https://github.com/tacomancy/galaxy-brain/issues/69)—are completed or explicitly deferred with their V1 recovery, provenance, and persistence risks recorded.
 
