@@ -123,6 +123,7 @@ export const PaperDesk = ({
   return (
     <main
       className="workspace-page paper-desk-page"
+      data-workbench-theme-surface="page"
       aria-labelledby="paper-desk-heading"
     >
       <header className="workspace-header">
@@ -151,6 +152,7 @@ export const PaperDesk = ({
           <section
             id="paper-desk-source-preview"
             className="source-preview"
+            data-workbench-theme-surface="panel"
             aria-labelledby="paper-desk-preview-heading"
           >
             <div className="source-preview-header">

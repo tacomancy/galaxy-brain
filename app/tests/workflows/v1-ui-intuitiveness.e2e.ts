@@ -253,9 +253,11 @@ describe("V1 UI intuitiveness", () => {
       panelColor: string;
     }> =>
       await browser.execute(() => {
-        const page = document.querySelector<HTMLElement>(".workspace-page");
+        const page = document.querySelector<HTMLElement>(
+          '[data-workbench-theme-surface="page"]',
+        );
         const panel = document.querySelector<HTMLElement>(
-          "#repository-status, #studio-authoring-surface, #paper-desk-source-preview",
+          '[data-workbench-theme-surface="panel"]',
         );
         if (page === null || panel === null) {
           return {
@@ -287,6 +289,7 @@ describe("V1 UI intuitiveness", () => {
     await $("#atlas-proposal-review").click();
     await $("#proposal-review-heading").waitForDisplayed();
     assert.equal(await $("#workbench-theme").getValue(), "light");
+    const lightProposalReview = await readCurrentPalette();
     await $("#proposal-review-back").click();
     await $("#atlas-continue-surface").waitForDisplayed();
 
@@ -298,19 +301,72 @@ describe("V1 UI intuitiveness", () => {
       const navigation = document.querySelector<HTMLElement>(
         "#workspace-switcher-studio",
       );
+      const navigationSurface = document.querySelector<HTMLElement>(
+        "#workspace-switcher",
+      );
       const viewer = document.querySelector<HTMLElement>(".source-page");
-      if (navigation === null || viewer === null) {
-        return { navigationColor: "", viewerBackground: "", viewerColor: "" };
+      const viewerText =
+        document.querySelector<HTMLElement>(".source-page-text");
+      if (
+        navigation === null ||
+        navigationSurface === null ||
+        viewer === null ||
+        viewerText === null
+      ) {
+        return {
+          navigationColor: "",
+          navigationContrast: 0,
+          viewerBackground: "",
+          viewerColor: "",
+          viewerContrast: 0,
+        };
       }
+      const luminance = (value: string): number => {
+        const channels = (value.match(/\d+(?:\.\d+)?/g) ?? [])
+          .slice(0, 3)
+          .map((channel) => Number(channel) / 255)
+          .map((channel) =>
+            channel <= 0.03928
+              ? channel / 12.92
+              : ((channel + 0.055) / 1.055) ** 2.4,
+          );
+        return (
+          0.2126 * (channels[0] ?? 0) +
+          0.7152 * (channels[1] ?? 0) +
+          0.0722 * (channels[2] ?? 0)
+        );
+      };
+      const contrast = (foreground: string, background: string): number => {
+        const foregroundLuminance = luminance(foreground);
+        const backgroundLuminance = luminance(background);
+        return (
+          (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+          (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+        );
+      };
+      const navigationStyle = getComputedStyle(navigation);
+      const navigationSurfaceStyle = getComputedStyle(navigationSurface);
+      const viewerTextStyle = getComputedStyle(viewerText);
+      const viewerStyle = getComputedStyle(viewer);
       return {
-        navigationColor: getComputedStyle(navigation).color,
-        viewerBackground: getComputedStyle(viewer).backgroundColor,
-        viewerColor: getComputedStyle(viewer).color,
+        navigationColor: navigationStyle.color,
+        navigationContrast: contrast(
+          navigationStyle.color,
+          navigationSurfaceStyle.backgroundColor,
+        ),
+        viewerBackground: viewerStyle.backgroundColor,
+        viewerColor: viewerStyle.color,
+        viewerContrast: contrast(
+          viewerTextStyle.color,
+          viewerStyle.backgroundColor,
+        ),
       };
     });
     assert.notEqual(darkReadability.navigationColor, "rgb(255, 255, 255)");
     assert.notEqual(darkReadability.viewerBackground, "rgb(255, 253, 248)");
     assert.notEqual(darkReadability.viewerColor, "rgb(24, 32, 29)");
+    assert.ok(darkReadability.navigationContrast >= 4.5);
+    assert.ok(darkReadability.viewerContrast >= 4.5);
     await $("#side-nav-studio").click();
     await $("#studio-authoring-surface").waitForDisplayed();
     const darkStudio = await readCurrentPalette();
@@ -320,12 +376,13 @@ describe("V1 UI intuitiveness", () => {
     await $("#atlas-proposal-review").click();
     await $("#proposal-review-heading").waitForDisplayed();
     assert.equal(await $("#workbench-theme").getValue(), "dark");
+    const darkProposalReview = await readCurrentPalette();
     await $("#proposal-review-back").click();
 
-    for (const palette of [lightStudio, lightPaperDesk]) {
+    for (const palette of [lightStudio, lightPaperDesk, lightProposalReview]) {
       assert.deepEqual(palette, lightAtlas);
     }
-    for (const palette of [darkStudio, darkAtlas]) {
+    for (const palette of [darkStudio, darkAtlas, darkProposalReview]) {
       assert.deepEqual(palette, darkPaperDesk);
     }
     assert.notDeepEqual(lightAtlas, darkAtlas);

@@ -166,6 +166,7 @@ const AuthoringSurface = ({
     <section
       id="studio-authoring-surface"
       className="working-material-card authoring-card"
+      data-workbench-theme-surface="panel"
       aria-labelledby="studio-authoring-heading"
     >
       <div className="card-header-row">
@@ -694,6 +695,7 @@ export const Studio = ({
   return (
     <main
       className="workspace-page studio-page"
+      data-workbench-theme-surface="page"
       aria-labelledby="studio-heading"
     >
       <StudioHeader />

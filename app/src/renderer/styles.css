@@ -283,7 +283,7 @@ summary:focus-visible {
   align-items: center;
   gap: 7px;
   padding: 5px 8px;
-  border: 1px solid var(--navigation-border);
+  border: 1px solid rgba(71, 105, 91, 0.2);
   border-radius: 9px;
   background: var(--panel);
   color: var(--muted);
@@ -919,7 +919,7 @@ summary:focus-visible {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid rgba(71, 105, 91, 0.2);
+  border: 1px solid var(--navigation-border);
   border-radius: 11px;
   background: var(--navigation-surface);
   box-shadow: 0 8px 24px rgba(33, 44, 39, 0.1);

@@ -127,6 +127,7 @@ const SelectedRepositoryCard = ({
   <section
     id="repository-status"
     className="repository-card"
+    data-workbench-theme-surface="panel"
     aria-labelledby="repository-status-heading"
   >
     <div className="card-header-row">
@@ -782,7 +783,11 @@ export const Atlas = ({
   }
 
   return (
-    <main className="workspace-page atlas-page" aria-labelledby="atlas-heading">
+    <main
+      className="workspace-page atlas-page"
+      data-workbench-theme-surface="page"
+      aria-labelledby="atlas-heading"
+    >
       <AtlasHeader />
       {controls}
       <div className="workspace-content">
