@@ -32,6 +32,10 @@ import type {
   AtlasLearningRouteEditOutcome,
   AtlasOrientationReadOutcome,
 } from "../modules/atlas-orientation";
+import type {
+  LearningOperationOutcome,
+  LearningReadOutcome,
+} from "../modules/learning";
 
 declare global {
   interface Window {
@@ -59,6 +63,14 @@ declare global {
         routeId: string,
         title: string,
       ): Promise<AtlasLearningRouteEditOutcome>;
+      readLearningProgress(): Promise<LearningReadOutcome>;
+      confirmLearningProgress(
+        suggestionId: string,
+      ): Promise<LearningOperationOutcome>;
+      correctLearningProgress(
+        suggestionId: string,
+        correction: string,
+      ): Promise<LearningOperationOutcome>;
       openProposalReview(): Promise<ProposalReviewReadOutcome>;
       acceptProposalReview(): Promise<ProposalReviewApplyOutcome>;
       createRepository(): Promise<RepositoryOperationOutcome>;

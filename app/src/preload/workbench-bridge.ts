@@ -39,6 +39,10 @@ import type {
   AtlasLearningRouteEditOutcome,
   AtlasOrientationReadOutcome,
 } from "../modules/atlas-orientation";
+import type {
+  LearningOperationOutcome,
+  LearningReadOutcome,
+} from "../modules/learning";
 
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
@@ -75,6 +79,21 @@ contextBridge.exposeInMainWorld("workbench", {
     title: string,
   ): Promise<AtlasLearningRouteEditOutcome> =>
     ipcRenderer.invoke("workbench:edit-learning-route-title", routeId, title),
+  readLearningProgress: (): Promise<LearningReadOutcome> =>
+    ipcRenderer.invoke("workbench:read-learning-progress"),
+  confirmLearningProgress: (
+    suggestionId: string,
+  ): Promise<LearningOperationOutcome> =>
+    ipcRenderer.invoke("workbench:confirm-learning-progress", suggestionId),
+  correctLearningProgress: (
+    suggestionId: string,
+    correction: string,
+  ): Promise<LearningOperationOutcome> =>
+    ipcRenderer.invoke(
+      "workbench:correct-learning-progress",
+      suggestionId,
+      correction,
+    ),
   openProposalReview: (): Promise<ProposalReviewReadOutcome> =>
     ipcRenderer.invoke("workbench:open-proposal-review"),
   acceptProposalReview: (): Promise<ProposalReviewApplyOutcome> =>

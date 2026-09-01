@@ -529,6 +529,17 @@ summary:focus-visible {
   line-height: 1.6;
 }
 
+.source-item-link {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--moss);
+  text-underline-offset: 3px;
+}
+
 .route-step-list {
   margin-top: 18px;
 }

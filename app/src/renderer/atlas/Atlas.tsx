@@ -14,6 +14,10 @@ import type {
   AtlasLearningRouteEditOutcome,
   AtlasOrientationReadOutcome,
 } from "../../modules/atlas-orientation";
+import type {
+  LearningOperationOutcome,
+  LearningReadOutcome,
+} from "../../modules/learning";
 import type { JSX } from "react";
 import { useState } from "react";
 
@@ -40,6 +44,14 @@ interface AtlasProps {
     routeId: string,
     title: string,
   ) => Promise<AtlasLearningRouteEditOutcome>;
+  learning: LearningReadOutcome;
+  onConfirmLearningProgress: (
+    suggestionId: string,
+  ) => Promise<LearningOperationOutcome>;
+  onCorrectLearningProgress: (
+    suggestionId: string,
+    correction: string,
+  ) => Promise<LearningOperationOutcome>;
 }
 
 const AtlasHeader = (): JSX.Element => (
@@ -241,12 +253,227 @@ interface AtlasOrientationCardsProps {
     routeId: string,
     title: string,
   ) => Promise<AtlasLearningRouteEditOutcome>;
+  learning: LearningReadOutcome;
+  onConfirmLearningProgress: (
+    suggestionId: string,
+  ) => Promise<LearningOperationOutcome>;
+  onCorrectLearningProgress: (
+    suggestionId: string,
+    correction: string,
+  ) => Promise<LearningOperationOutcome>;
 }
+
+interface LearningProgressCardProps {
+  learning: LearningReadOutcome;
+  onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
+  onConfirmLearningProgress: (
+    suggestionId: string,
+  ) => Promise<LearningOperationOutcome>;
+  onCorrectLearningProgress: (
+    suggestionId: string,
+    correction: string,
+  ) => Promise<LearningOperationOutcome>;
+}
+
+const LearningProgressCard = ({
+  learning,
+  onOpenSourceRecordInPaperDesk,
+  onConfirmLearningProgress,
+  onCorrectLearningProgress,
+}: LearningProgressCardProps): JSX.Element | null => {
+  const [isCorrectionOpen, setIsCorrectionOpen] = useState(false);
+  const [correction, setCorrection] = useState("");
+  const [operationDetail, setOperationDetail] = useState<string | undefined>();
+
+  if (learning.outcome === "not-available") {
+    return null;
+  }
+
+  if (learning.outcome === "agent-provider-unavailable") {
+    return (
+      <section
+        id="atlas-learning-progress"
+        className="atlas-support-card progress-card"
+        aria-labelledby="atlas-learning-progress-heading"
+        data-learning-outcome={learning.outcome}
+      >
+        <span className="card-kicker">Learning progress</span>
+        <h2 id="atlas-learning-progress-heading">
+          Learning progress suggestion
+        </h2>
+        <p id="atlas-learning-progress-unavailable" className="support-copy">
+          {learning.detail}
+        </p>
+        <p id="atlas-learning-current-stage" className="support-copy">
+          Current stage remains: <strong>{learning.currentStage.title}</strong>
+        </p>
+      </section>
+    );
+  }
+
+  if (learning.outcome === "operation-failed") {
+    return (
+      <section
+        id="atlas-learning-progress"
+        className="atlas-support-card progress-card"
+        aria-labelledby="atlas-learning-progress-heading"
+        data-learning-outcome={learning.outcome}
+      >
+        <span className="card-kicker">Learning progress</span>
+        <h2 id="atlas-learning-progress-heading">
+          Learning progress suggestion
+        </h2>
+        <p id="atlas-learning-progress-status" className="support-copy">
+          {learning.detail}
+        </p>
+      </section>
+    );
+  }
+
+  const { progress } = learning;
+  const { suggestion } = progress;
+  const statusLabel =
+    suggestion.status === "awaiting-confirmation"
+      ? "Awaiting your confirmation"
+      : suggestion.status === "confirmed"
+        ? "Confirmed by you"
+        : "Corrected by you";
+
+  const confirmSuggestion = async (): Promise<void> => {
+    const result = await onConfirmLearningProgress(suggestion.id);
+    setOperationDetail(
+      result.outcome === "updated" ? undefined : result.detail,
+    );
+  };
+
+  const saveCorrection = async (): Promise<void> => {
+    const result = await onCorrectLearningProgress(suggestion.id, correction);
+    if (result.outcome === "updated") {
+      setIsCorrectionOpen(false);
+      setCorrection("");
+      setOperationDetail(undefined);
+      return;
+    }
+
+    setOperationDetail(result.detail);
+  };
+
+  return (
+    <section
+      id="atlas-learning-progress"
+      className="atlas-support-card progress-card"
+      aria-labelledby="atlas-learning-progress-heading"
+      data-learning-outcome={learning.outcome}
+    >
+      <span className="card-kicker">Learning progress suggestion</span>
+      <div className="card-header-row">
+        <div>
+          <h2 id="atlas-learning-progress-heading">
+            Review your learning progress
+          </h2>
+          <p id="atlas-learning-current-stage" className="support-copy">
+            Current stage: <strong>{progress.currentStage.title}</strong>
+          </p>
+        </div>
+        <span id="atlas-learning-progress-status" className="status-pill">
+          {statusLabel}
+        </span>
+      </div>
+      <p id="atlas-learning-suggested-stage" className="suggested-stage">
+        Suggested next stage: <strong>{suggestion.suggestedStage.title}</strong>
+      </p>
+      <p id="atlas-learning-progress-explanation" className="support-copy">
+        {suggestion.explanation}
+      </p>
+      <p className="support-label">Evidence</p>
+      <ul id="atlas-learning-progress-evidence" className="source-item-list">
+        {suggestion.evidence.map((item) => (
+          <li key={item.id}>
+            <button
+              id={`atlas-learning-progress-evidence-${item.id}`}
+              className="source-item-link"
+              type="button"
+              onClick={() => onOpenSourceRecordInPaperDesk(item.sourceRecordId)}
+            >
+              {item.title}
+            </button>
+          </li>
+        ))}
+      </ul>
+      {suggestion.status === "awaiting-confirmation" ? (
+        <div className="action-row action-row-compact">
+          <button
+            id="atlas-learning-progress-confirm"
+            className="button button-primary"
+            type="button"
+            onClick={() => void confirmSuggestion()}
+          >
+            Confirm stage suggestion
+          </button>
+          <button
+            id="atlas-learning-progress-correct"
+            className="button button-secondary"
+            type="button"
+            onClick={() => setIsCorrectionOpen(true)}
+          >
+            Correct suggestion
+          </button>
+        </div>
+      ) : null}
+      {isCorrectionOpen ? (
+        <div className="route-edit-form progress-correction-form">
+          <label htmlFor="atlas-learning-progress-correction">
+            Your correction
+          </label>
+          <input
+            id="atlas-learning-progress-correction"
+            value={correction}
+            onChange={(event) => setCorrection(event.target.value)}
+          />
+          <div className="action-row action-row-compact">
+            <button
+              id="atlas-learning-progress-save-correction"
+              className="button button-primary"
+              type="button"
+              onClick={() => void saveCorrection()}
+            >
+              Save correction
+            </button>
+            <button
+              id="atlas-learning-progress-cancel-correction"
+              className="button button-quiet"
+              type="button"
+              onClick={() => setIsCorrectionOpen(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+      {suggestion.correction === undefined ? null : (
+        <p
+          id="atlas-learning-progress-correction-result"
+          className="support-copy"
+        >
+          Correction: {suggestion.correction}
+        </p>
+      )}
+      {operationDetail === undefined ? null : (
+        <p id="atlas-learning-progress-operation-detail" role="alert">
+          {operationDetail}
+        </p>
+      )}
+    </section>
+  );
+};
 
 const AtlasOrientationCards = ({
   orientation,
   onOpenSourceRecordInPaperDesk,
   onEditLearningRouteTitle,
+  learning,
+  onConfirmLearningProgress,
+  onCorrectLearningProgress,
 }: AtlasOrientationCardsProps): JSX.Element | null => {
   const [editingRouteId, setEditingRouteId] = useState<string | undefined>();
   const [routeTitleDraft, setRouteTitleDraft] = useState("");
@@ -444,6 +671,12 @@ const AtlasOrientationCards = ({
           </button>
         </section>
       ))}
+      <LearningProgressCard
+        learning={learning}
+        onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
+        onConfirmLearningProgress={onConfirmLearningProgress}
+        onCorrectLearningProgress={onCorrectLearningProgress}
+      />
     </>
   );
 };
@@ -538,6 +771,9 @@ export const Atlas = ({
   orientation,
   onOpenSourceRecordInPaperDesk,
   onEditLearningRouteTitle,
+  learning,
+  onConfirmLearningProgress,
+  onCorrectLearningProgress,
 }: AtlasProps): JSX.Element => {
   // This is an invariant of the fresh-session Interface. Failing loudly keeps
   // a mismatched composition from looking like a valid Atlas screen.
@@ -595,6 +831,9 @@ export const Atlas = ({
               orientation={orientation}
               onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
               onEditLearningRouteTitle={onEditLearningRouteTitle}
+              learning={learning}
+              onConfirmLearningProgress={onConfirmLearningProgress}
+              onCorrectLearningProgress={onCorrectLearningProgress}
             />
           </div>
         )}

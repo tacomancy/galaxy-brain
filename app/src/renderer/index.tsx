@@ -23,6 +23,10 @@ import type {
   AtlasOrientationReadOutcome,
 } from "../modules/atlas-orientation";
 import type {
+  LearningOperationOutcome,
+  LearningReadOutcome,
+} from "../modules/learning";
+import type {
   CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
   RelinkSourceOutcome,
@@ -93,6 +97,7 @@ const WorkbenchShell = ({
   initialAuthoring,
   initialTheme,
   initialAtlasOrientation,
+  initialLearning,
 }: {
   initialWorkbench: FreshWorkbench;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
@@ -100,6 +105,7 @@ const WorkbenchShell = ({
   initialAuthoring: AuthoringReadOutcome;
   initialTheme: WorkbenchTheme;
   initialAtlasOrientation: AtlasOrientationReadOutcome;
+  initialLearning: LearningReadOutcome;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
   const [authoring, setAuthoring] =
@@ -144,6 +150,8 @@ const WorkbenchShell = ({
     useState<ProposalReviewReadOutcome>(initialProposalReview);
   const [atlasOrientation, setAtlasOrientation] =
     useState<AtlasOrientationReadOutcome>(initialAtlasOrientation);
+  const [learning, setLearning] =
+    useState<LearningReadOutcome>(initialLearning);
   const [sourceStatus, setSourceStatus] = useState<
     SourceStatusPresentation | undefined
   >();
@@ -206,6 +214,7 @@ const WorkbenchShell = ({
     }
     setProposalReview(await window.workbench.readProposalReview());
     setAtlasOrientation(await window.workbench.readAtlasOrientation());
+    setLearning(await window.workbench.readLearningProgress());
   };
 
   const openAuthoringDraft = async (): Promise<void> => {
@@ -298,6 +307,31 @@ const WorkbenchShell = ({
     );
     if (outcome.outcome === "updated") {
       setAtlasOrientation({ outcome: "available", overview: outcome.overview });
+    }
+    return outcome;
+  };
+
+  const confirmLearningProgress = async (
+    suggestionId: string,
+  ): Promise<LearningOperationOutcome> => {
+    const outcome =
+      await window.workbench.confirmLearningProgress(suggestionId);
+    if (outcome.outcome === "updated") {
+      setLearning({ outcome: "available", progress: outcome.progress });
+    }
+    return outcome;
+  };
+
+  const correctLearningProgress = async (
+    suggestionId: string,
+    correction: string,
+  ): Promise<LearningOperationOutcome> => {
+    const outcome = await window.workbench.correctLearningProgress(
+      suggestionId,
+      correction,
+    );
+    if (outcome.outcome === "updated") {
+      setLearning({ outcome: "available", progress: outcome.progress });
     }
     return outcome;
   };
@@ -536,6 +570,9 @@ const WorkbenchShell = ({
         orientation={atlasOrientation}
         onOpenSourceRecordInPaperDesk={openSourceRecordInPaperDesk}
         onEditLearningRouteTitle={editLearningRouteTitle}
+        learning={learning}
+        onConfirmLearningProgress={confirmLearningProgress}
+        onCorrectLearningProgress={correctLearningProgress}
       />
     );
   })();
@@ -544,14 +581,21 @@ const WorkbenchShell = ({
 };
 
 void window.workbench.openFreshWorkbench().then(async (workbench) => {
-  const [authoring, outcome, proposalReview, theme, atlasOrientation] =
-    await Promise.all([
-      window.workbench.readAuthoringDraft(),
-      window.workbench.readSynthesisResults(),
-      window.workbench.readProposalReview(),
-      window.workbench.readTheme(),
-      window.workbench.readAtlasOrientation(),
-    ]);
+  const [
+    authoring,
+    outcome,
+    proposalReview,
+    theme,
+    atlasOrientation,
+    learning,
+  ] = await Promise.all([
+    window.workbench.readAuthoringDraft(),
+    window.workbench.readSynthesisResults(),
+    window.workbench.readProposalReview(),
+    window.workbench.readTheme(),
+    window.workbench.readAtlasOrientation(),
+    window.workbench.readLearningProgress(),
+  ]);
 
   root.render(
     <WorkbenchShell
@@ -561,6 +605,7 @@ void window.workbench.openFreshWorkbench().then(async (workbench) => {
       initialProposalReview={proposalReview}
       initialTheme={theme}
       initialAtlasOrientation={atlasOrientation}
+      initialLearning={learning}
     />,
   );
 });
