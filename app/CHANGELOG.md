@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/tacomancy/galaxy-brain/compare/v0.13.2...v0.14.0) (2026-09-01)
+
+
+### Features
+
+* make Atlas actionable for TB13 ([#126](https://github.com/tacomancy/galaxy-brain/issues/126)) ([7a46ab8](https://github.com/tacomancy/galaxy-brain/commit/7a46ab8f8950da1142fd063459a9a4b1329f0f34))
+
 ## [0.13.2](https://github.com/tacomancy/galaxy-brain/compare/v0.13.1...v0.13.2) (2026-08-31)
 
 
