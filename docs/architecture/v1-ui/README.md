@@ -29,7 +29,7 @@ navigation or release-status authorities:
 - `code-map.md` maps architectural responsibilities to live or explicitly planned source locations.
 - `delivery-plan.md` orders vertical tracer bullets for red-to-green implementation.
 - [V1 victory checklist](v1-victory-checklist.md) records the release gates and final scope decisions required to declare V1 complete.
-- [V1 release-readiness specification](v1-release-readiness-spec.md) scopes the provider-free packaged-app and initial MC/DC evidence work.
+- [V1 release-readiness specification](v1-release-readiness-spec.md) scopes the provider-free packaged-app and MC/DC evidence/release-gate work.
 - [Provider-free PDF source-status packaged-gate specification](provider-free-pdf-gate-spec.md) records the implemented and human-accepted packaged linked-PDF preservation slice and its explicit deferrals.
 - [Provider-free privacy and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md) records the implemented and human-accepted Section C privacy boundary, its evidence, and its explicit deferrals.
 - [V1 stable distribution and release operations specification](v1-release-operations-spec.md) defines the implementation and acceptance boundary for Section D, including the required public-versus-developer-only decision.

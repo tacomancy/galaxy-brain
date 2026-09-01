@@ -1,10 +1,11 @@
 {
-  "version": 1,
+  "version": 2,
   "decisions": [
     {
       "id": "governance.target-identity-match",
       "owner": "Governance Module",
       "description": "A governed target matches the current target only when its stable id, title, and path each match.",
+      "implementationFiles": ["src/modules/governance/index.ts"],
       "conditions": [
         "target id matches",
         "target title matches",
@@ -54,6 +55,7 @@
       "id": "source-processing.locator-valid",
       "owner": "Source Processing Module",
       "description": "A source locator is valid only when page, start, and end are integer values within a non-empty ordered range.",
+      "implementationFiles": ["src/modules/source-processing/index.ts"],
       "conditions": [
         "page is an integer",
         "page is positive",

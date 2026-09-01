@@ -2,12 +2,13 @@
 
 Status: the provider-free packaged-app workflow, local governance/recovery
 workflows, initial mixed condition/decision coverage (MC/DC) evaluator, and
-the bounded Section C privacy/non-retention gate are implemented and accepted
-on `codex/section-c-privacy-gate`. This brief remains the bounded work plan
-for the remaining release evidence; it is not a replacement for the V1
-victory checklist, which remains the release decision authority. The Section
-C evidence is recorded in the [provider-free privacy and non-retention
-packaged-gate specification](provider-free-privacy-gate-spec.md).
+bounded Section C privacy/non-retention gate are implemented and accepted on
+`main`. The changed-decision release gate is implemented on
+`codex/c1-mcdc-release-gate`; its evidence is recorded below. This brief
+remains the bounded work plan for the remaining release evidence; it is not a
+replacement for the V1 victory checklist, which remains the release decision
+authority. The Section C evidence is recorded in the [provider-free privacy
+and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md).
 
 ## Governing documentation
 
@@ -81,6 +82,11 @@ Provider-free behavior uses the existing seams:
 - **MC/DC evaluator seam:** a framework-independent command-line tool consumes
   a checked-in decision manifest and independently authored cases. It reports
   evidence; it does not become an application Module or alter runtime behavior.
+  Each registered decision declares its owning implementation file(s), so the
+  release check can identify decisions affected by a branch diff without
+  inferring MC/DC from LCOV data. Manifest version 2 requires those paths to
+  be app-relative and present; missing paths fail the gate, while other
+  filesystem errors remain failures with their original diagnostic message.
 
 No new UI, repository format, PDF engine, or Agent Provider is selected by
 this brief. Section C explicitly selects one private, machine-local
@@ -131,11 +137,18 @@ support-bundle policy remain deferred.
    distinct from existing LCOV and changed-lines coverage gates. The
    `npm run test:mcdc` evaluator tests and `npm run check:mcdc` manifest gate
    now pass and report the three metrics separately.
-6. Run `npm run check`, coverage, complexity, documentation validation,
+6. Add the base-revision MC/DC release check. `npm run check:mcdc --
+   --base-ref <git-revision>` compares changed repository paths with the
+   manifest's registered implementation files, selects changed decisions (or
+   all current decisions when the manifest changes), and fails unless each
+   selected decision has independently authored condition, decision, and
+   witness evidence.
+7. Run `npm run check`, coverage, complexity, documentation validation,
    changed-lines coverage, the complete silent packaged workflow, and the
-   dedicated MC/DC gate. Record red/green evidence here and in the delivery
-   plan.
-7. Present the real packaged application for the provider-free human review;
+   dedicated MC/DC gates. In pull requests, CI runs the base-aware command
+   against `origin/${GITHUB_BASE_REF}`. Record red/green evidence here and in
+   the delivery plan.
+8. Present the real packaged application for the provider-free human review;
    automated evidence does not check those boxes by itself.
 
 ## Boundaries and explicit deferrals
@@ -187,11 +200,16 @@ August 31, 2026, and the PDF.js choice is recorded in [ADR 0015](../../adr/0015-
 - **Add a new runtime quality Module:** discarded because release verification
   belongs at existing S1–S5 seams and the MC/DC evaluator is a development
   tool, not application behavior.
+- **Require manual inspection without a changed-path gate:** discarded because
+  a release rule that depends on remembering which registered decisions a diff
+  touches is easy to omit. The explicit manifest mapping makes affected
+  decisions inspectable and repeatable while leaving cases and witnesses
+  independently authored.
 
 ## Acceptance evidence
 
 The selected automated gates now pass: `npm run test:mcdc`,
-`npm run check:mcdc`, the named provider-free packaged workflow, the full
+`npm run check:mcdc`, `npm run check:mcdc -- --base-ref <git-revision>`, the named provider-free packaged workflow, the full
 silent packaged suite, and the documentation/type/lint checks. The provider-
 free workflows cover external-edit preservation, interrupted-journal recovery,
 local governed application, truthful local-save status, saved-result recovery,
@@ -200,7 +218,9 @@ and unavailable-provider behavior. The linked-PDF slice adds production
 relink verification, and S1/S5 evidence for available, unavailable, changed,
 failed-relink, and successful-relink states. The MC/DC evaluator is included
 in the changed-lines coverage surface so new quality logic cannot bypass that
-PR gate. The linked-PDF slice's visible human review and local-only privacy
+PR gate. The changed-decision gate validates that mapped implementation files
+exist, uses a narrow Git/filesystem seam, and is enforced by the pull-request
+Coverage workflow. The linked-PDF slice's visible human review and local-only privacy
 boundary are accepted; the Section C privacy/non-retention gate is also
 implemented and human-accepted for its bounded scope. The broader
 provider-free checklist, distribution, security, and whole-release obligations
@@ -235,7 +255,7 @@ The following checks are intentionally not inferred from automated output:
    scenarios can be observed there without changing Source Records or saved
    locators.
 3. **Release-candidate MC/DC:** on the final release candidate, run
-   `npm run check:mcdc` after updating from the current merge base and confirm
-   that every changed registered decision has independently authored witnesses.
-   This is a release policy check, not a claim that LCOV branch coverage is
-   MC/DC.
+   `npm run check:mcdc -- --base-ref <current-merge-base>` and review the
+   reported changed registered decisions. Every reported decision must have
+   independently authored witnesses. This is a release policy check, not a
+   claim that LCOV branch coverage is MC/DC.

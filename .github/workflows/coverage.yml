@@ -45,6 +45,14 @@ jobs:
           --repository-root ..
           --coverage-root .
 
+      - name: Enforce changed-decision MC/DC
+        if: always()
+        run: >-
+          bash tools/run-ci-command.sh
+          "$RUNNER_TEMP/galaxy-brain-changed-mcdc.log"
+          npm run check:mcdc --
+          --base-ref "origin/${GITHUB_BASE_REF}"
+
       - name: Summarize coverage diagnostics
         if: always()
         run: |
@@ -62,6 +70,12 @@ jobs:
             else
               echo "Changed-lines coverage output was unavailable."
             fi
+            if [ -s "$RUNNER_TEMP/galaxy-brain-changed-mcdc.log" ]; then
+              grep -E "MC/DC|Changed registered decisions|failed|passed" \
+                "$RUNNER_TEMP/galaxy-brain-changed-mcdc.log" | tail -n 40 || true
+            else
+              echo "Changed-decision MC/DC output was unavailable."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage diagnostics
@@ -73,5 +87,6 @@ jobs:
             app/test-results/junit.xml
             app/coverage/lcov.info
             app/coverage/coverage-final.json
+            ${{ runner.temp }}/galaxy-brain-changed-mcdc.log
           if-no-files-found: ignore
           retention-days: 14

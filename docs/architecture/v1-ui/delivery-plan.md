@@ -774,28 +774,61 @@ disposition activity; Issues #69–#72 remain separate implementation work.
 
 ### Release-readiness implementation preparation
 
-The next work package is defined in the [V1 release-readiness specification](v1-release-readiness-spec.md). It covers the provider-free packaged-application gate and the initial MC/DC evidence gate as separate quality obligations. The specification explicitly preserves the existing S1–S5 seams, isolates mutating workflow fixtures, keeps LCOV branch coverage distinct from MC/DC, and defers signed distribution and broad product expansion.
+The next work package is defined in the [V1 release-readiness specification](v1-release-readiness-spec.md). It covers the provider-free packaged-application gate and the MC/DC evidence/release gate as separate quality obligations. The specification explicitly preserves the existing S1–S5 seams, isolates mutating workflow fixtures, keeps LCOV branch coverage distinct from MC/DC, and defers signed distribution and broad product expansion.
 
 Current evidence as of August 31, 2026: the named provider-free package gate
 passes, the MC/DC evaluator and manifest gate pass for the initial two
 registered decisions, the full silent packaged suite passes 27/27 specs, and
 the repository check, coverage, complexity, documentation, and changed-lines
-gates pass. The provider-free gate includes isolated packaged workflows for
+gates pass. The base-aware MC/DC release gate now maps changed repository paths
+to registered decisions and fails unless each affected decision has
+independently authored evidence; it is enforced in the pull-request Coverage
+workflow. The provider-free gate includes isolated packaged workflows for
 external-edit preservation, interrupted-journal restoration, local governed
 application, truthful local-save status, saved-result recovery, and
 unavailable-provider non-retention. The linked-PDF release slice adds
 production PDF.js loading, private source-asset identity storage, explicit
 relink verification, and packaged available/unavailable/changed/relink
-evidence. On this branch, changed-lines coverage is `NOT APPLICABLE` for the
-documentation/test-only portion. The remaining release work is the broader
+evidence. The remaining release work is the broader
 provider-free evidence checklist, security/privacy obligations outside this
-slice, MC/DC evidence for changed registered decisions, and human acceptance
-of other release behaviors. The linked-PDF slice's six-gate human acceptance
-was completed on August 31, 2026. The remaining Section C privacy/non-retention
-work is prepared in the [provider-free privacy and non-retention packaged-gate
-specification](provider-free-privacy-gate-spec.md); its documentation review
-and spec-generation prerequisite is explicit, and implementation/human
-acceptance remain pending.
+slice and human acceptance of other release behaviors. The linked-PDF slice's
+six-gate human acceptance was completed on August 31, 2026. The Section C
+privacy/non-retention gate was implemented and human-accepted on September 1,
+2026.
+
+### C1 changed-decision MC/DC release gate — September 1, 2026
+
+The C1 release rule is implemented at the existing framework-independent MC/DC
+evaluator seam. Each registered decision now declares its owning implementation
+file(s). `npm run check:mcdc -- --base-ref <git-revision>` reads the Git diff,
+selects affected registered decisions (or all current decisions when the
+manifest changes), and fails unless each selected decision has valid,
+independently authored condition, decision, and MC/DC witness evidence. The
+Coverage workflow runs this command against `origin/${GITHUB_BASE_REF}` for
+pull requests. The final V1 release candidate must still run and review this
+gate after updating from its actual merge base; this remains release evidence,
+not a replacement for LCOV coverage or human release acceptance.
+
+The first red-to-green slice used `npm test -- --run tests/tools/mcdc.test.ts`;
+the new selector test failed with `TypeError: findChangedDecisionIds is not a
+function`. The implementation then passed the focused suite with six tests,
+followed by the repository check with 172 tests. Review identified stale-path
+and direct-Git seam risks; the hardening slice added the Git and filesystem
+Adapters plus manifest-validation cases. The final focused suites pass 13
+MC/DC-tool tests and 12 Source Processing tests, `npm run check` passes 30
+files and 183 tests, `npm run test:coverage`
+passes at 86.18% statements and 75.86% branches, and changed-lines coverage
+passes at 100% (15/15) against `origin/main`. The next behavior is the final
+integrated-release review of the reported changed decisions; no later
+Tracer Bullet behavior is included here.
+
+The review hardening also added app-relative path and path-traversal
+validation, fail-closed missing-file checks that preserve non-missing
+filesystem errors, and narrow Git/filesystem test Adapters. The owning Source
+Processing public Interface now has independently authored cases for
+non-integer page, non-positive page, non-integer/non-negative start,
+non-integer end, and end-not-after-start inputs, proving reachability for
+every registered short-circuited locator condition.
 
 ### Provider-free linked-PDF release gate completion record — August 31, 2026
 

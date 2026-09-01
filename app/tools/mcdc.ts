@@ -1,3 +1,5 @@
+import { isAbsolute } from "node:path";
+
 export interface MCDCDecisionCase {
   id: string;
   conditions: boolean[];
@@ -10,17 +12,25 @@ export interface MCDCWitness {
   trueCaseId: string;
 }
 
+/**
+ * Independently authored evidence for one registered high-risk decision.
+ * Implementation files are nonempty paths relative to the app package and
+ * must exist when the release gate runs; they identify which decisions a
+ * repository diff may affect.
+ */
 export interface MCDCDecision {
   id: string;
   owner: string;
   description: string;
+  implementationFiles: string[];
   conditions: string[];
   cases: MCDCDecisionCase[];
   witnesses: MCDCWitness[];
 }
 
+/** Versioned manifest containing the registered decisions for a release gate. */
 export interface MCDCManifest {
-  version: 1;
+  version: 2;
   decisions: MCDCDecision[];
 }
 
@@ -41,6 +51,13 @@ export interface MCDCResult {
 
 const isBoolean = (value: unknown): value is boolean =>
   typeof value === "boolean";
+
+const normalizeRepositoryPath = (value: string): string => {
+  const normalized = value.replaceAll("\\", "/");
+  return normalized.startsWith("app/")
+    ? normalized.slice("app/".length)
+    : normalized;
+};
 
 const pairDiffersOnlyAt = (
   falseCase: MCDCDecisionCase,
@@ -69,6 +86,21 @@ const evaluateDecision = (decision: MCDCDecision): MCDCDecisionResult => {
   }
   if (decision.description.length === 0) {
     errors.push("Decision description must not be empty.");
+  }
+  if (decision.implementationFiles.length === 0) {
+    errors.push("At least one implementation file must be registered.");
+  }
+  for (const implementationFile of decision.implementationFiles) {
+    if (implementationFile.length === 0) {
+      errors.push("Implementation file paths must not be empty.");
+    } else if (
+      isAbsolute(implementationFile) ||
+      implementationFile.split(/[\\/]/).includes("..")
+    ) {
+      errors.push(
+        `Implementation file paths must be app-relative: ${implementationFile}.`,
+      );
+    }
   }
   if (expectedConditionCount < 2) {
     errors.push("MC/DC requires at least two atomic conditions.");
@@ -162,6 +194,36 @@ export const evaluateMCDC = (manifest: MCDCManifest): MCDCResult => {
       decisions.length > 0 && decisions.every((result) => result.mcdcCoverage),
     decisions,
   };
+};
+
+/**
+ * Finds manifest decisions affected by repository files changed from a base
+ * revision. Paths may be repository-relative or relative to the app package.
+ * A manifest change selects every current decision so evidence cannot be
+ * changed without the release gate reviewing it.
+ */
+export const findChangedDecisionIds = (
+  manifest: MCDCManifest,
+  changedFiles: string[],
+): string[] => {
+  const normalizedChangedFiles = new Set(
+    changedFiles.map(normalizeRepositoryPath),
+  );
+  const manifestChanged = normalizedChangedFiles.has(
+    "tools/mcdc-decisions.json",
+  );
+
+  return manifest.decisions
+    .filter(
+      (decision) =>
+        manifestChanged ||
+        decision.implementationFiles.some((implementationFile) =>
+          normalizedChangedFiles.has(
+            normalizeRepositoryPath(implementationFile),
+          ),
+        ),
+    )
+    .map((decision) => decision.id);
 };
 
 export const formatMCDCReport = (result: MCDCResult): string => {

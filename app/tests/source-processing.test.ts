@@ -30,6 +30,68 @@ const expectedAnnotation = {
 };
 
 describe("Source Processing", () => {
+  const shortCircuitLocatorCases = [
+    {
+      name: "a non-integer page",
+      page: 2.5,
+      start: 0,
+      end: 54,
+    },
+    {
+      name: "a non-integer start",
+      page: 2,
+      start: 0.5,
+      end: 54,
+    },
+    {
+      name: "a negative start",
+      page: 2,
+      start: -1,
+      end: 54,
+    },
+    {
+      name: "a non-integer end",
+      page: 2,
+      start: 0,
+      end: 54.5,
+    },
+    {
+      name: "an end that is not after the start",
+      page: 2,
+      start: 54,
+      end: 54,
+    },
+  ] as const;
+
+  for (const testCase of shortCircuitLocatorCases) {
+    it(`rejects ${testCase.name} through the public capture interface`, async () => {
+      let pdfCalls = 0;
+      const sourceProcessing = createSourceProcessing({
+        pdf: {
+          readSelection: async () => {
+            pdfCalls += 1;
+            return { outcome: "located" as const, text: "never used" };
+          },
+        },
+        workingMaterial: createInMemoryWorkingMaterialRepository(),
+      });
+
+      assert.deepEqual(
+        await sourceProcessing.captureSourceClaim({
+          sourceRecord: expectedAnnotation.sourceRecord,
+          page: testCase.page,
+          start: testCase.start,
+          end: testCase.end,
+        }),
+        {
+          outcome: "invalid-locator",
+          detail: "The source locator is invalid.",
+        },
+      );
+      assert.equal(pdfCalls, 0);
+    });
+  }
+
   it("captures and persists one located source claim as Working Material", async () => {
     const workingMaterial = createInMemoryWorkingMaterialRepository();
     const sourceProcessing = createSourceProcessing({
