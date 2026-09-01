@@ -164,14 +164,20 @@ export const PaperDesk = ({
               </div>
               <span className="page-badge">Page 2</span>
             </div>
-            <article className="source-page">
+            <article
+              className="source-page"
+              data-workbench-theme-surface="viewer"
+            >
               <p className="source-page-label">Captured passage</p>
               {workbench.sourceAnnotation === undefined ? (
                 <p className="source-page-empty">
                   No saved source claim is available for this Source Record.
                 </p>
               ) : (
-                <p className="source-page-text">
+                <p
+                  className="source-page-text"
+                  data-workbench-theme-text="viewer"
+                >
                   <mark>{workbench.sourceAnnotation.text}</mark>
                 </p>
               )}

@@ -304,9 +304,12 @@ describe("V1 UI intuitiveness", () => {
       const navigationSurface = document.querySelector<HTMLElement>(
         "#workspace-switcher",
       );
-      const viewer = document.querySelector<HTMLElement>(".source-page");
-      const viewerText =
-        document.querySelector<HTMLElement>(".source-page-text");
+      const viewer = document.querySelector<HTMLElement>(
+        '[data-workbench-theme-surface="viewer"]',
+      );
+      const viewerText = document.querySelector<HTMLElement>(
+        '[data-workbench-theme-text="viewer"]',
+      );
       if (
         navigation === null ||
         navigationSurface === null ||
