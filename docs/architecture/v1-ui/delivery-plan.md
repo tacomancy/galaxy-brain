@@ -880,7 +880,10 @@ Automated evidence is complete: the focused S3/S5 suite passes 30/30 tests;
 `npm run test:provider-free`, and `npm run test:workflow` pass. The named
 provider-free command passes its three workflows, and the complete silent suite
 passes 33 specs with one expected skip. The Section C victory-checklist item
-was marked complete after the human owner reviewed the exact unsigned macOS
+wires sanitized operation metadata from the production composition to private
+JSONL diagnostics beside the isolated session state; the workflow scans that
+state along with the repository and source-assets roots. The Section C
+victory-checklist item was marked complete after the human owner reviewed the exact unsigned macOS
 arm64 package, visible confirmation surface, and isolated
 persistence/diagnostic searches. Deferred provider transmission, real
 credentials, telemetry/support bundles, configurable retention, OS keychain

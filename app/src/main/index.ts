@@ -8,7 +8,7 @@
  * and IPC handling remains behind narrow, validated seams.
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
-import { readFile } from "node:fs/promises";
+import { appendFile, readFile } from "node:fs/promises";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -104,6 +104,7 @@ const isPositiveInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
 let injectedFailureConsumed = false;
+let mainDiagnosticPath: string | undefined;
 
 // A custom secure scheme lets packaged renderer assets load without exposing
 // a broad file:// surface to the sandboxed renderer.
@@ -122,10 +123,22 @@ protocol.registerSchemesAsPrivileged([
 // handler only once prevents duplicate protocol registrations in that path.
 let isRendererProtocolInstalled = false;
 
+type MainDiagnosticPhase =
+  | "bridge"
+  | "window"
+  | "pdf"
+  | "source-asset"
+  | "source-processing"
+  | "working-material"
+  | "synthesis-result";
+
+type MainDiagnosticCategory =
+  "unexpected-rejection" | "startup-failure" | "sanitized-operation";
+
 const recordMainDiagnostic = (
   operation: string,
-  phase: "bridge" | "window",
-  category: "unexpected-rejection" | "startup-failure",
+  phase: MainDiagnosticPhase,
+  category: MainDiagnosticCategory,
 ): void => {
   const timestamp = new Date().toISOString();
   // Keep diagnostics deliberately structured and non-sensitive. The renderer
@@ -140,7 +153,22 @@ const recordMainDiagnostic = (
       timestamp,
     }),
   );
+  if (mainDiagnosticPath !== undefined) {
+    void appendFile(
+      mainDiagnosticPath,
+      `${JSON.stringify({ operation, phase, category, timestamp })}\n`,
+      "utf8",
+    ).catch(() => undefined);
+  }
 };
+
+type SanitizedOperationDiagnostic = { operation: string };
+
+const mainOperationDiagnostics = (phase: MainDiagnosticPhase) => ({
+  record: (diagnostic: SanitizedOperationDiagnostic): void => {
+    recordMainDiagnostic(diagnostic.operation, phase, "sanitized-operation");
+  },
+});
 
 const workbenchIpcChannels = [
   "workbench:open-fresh",
@@ -267,6 +295,7 @@ const createWindow = async (): Promise<void> => {
   const sessionStatePath =
     sessionStateArgument?.slice("--galaxy-brain-session-state=".length) ??
     join(app.getPath("userData"), "workbench-session.json");
+  mainDiagnosticPath = join(dirname(sessionStatePath), "diagnostics.jsonl");
   const sourceAssetsArgument = process.argv.find((argument) =>
     argument.startsWith("--galaxy-brain-source-assets="),
   );
@@ -289,17 +318,29 @@ const createWindow = async (): Promise<void> => {
     standardFontDataUrl: pathToFileURL(
       `${join(pdfjsRoot, "standard_fonts")}${sep}`,
     ).href,
+    diagnostics: mainOperationDiagnostics("pdf"),
   });
   const sourceAsset = createFileBackedSourceAssetAdapter({
     configurationPath: sourceAssetsPath,
     pdf: productionPdf,
+    diagnostics: mainOperationDiagnostics("source-asset"),
   });
+  const workingMaterialFor = (repositoryPath: string) =>
+    createFileBackedWorkingMaterialRepository(
+      repositoryPath,
+      mainOperationDiagnostics("working-material"),
+    );
+  const synthesisResultsFor = (repositoryPath: string) =>
+    createFileBackedSynthesisResultRepository(
+      repositoryPath,
+      mainOperationDiagnostics("synthesis-result"),
+    );
   const sourceProcessingFor = (repositoryPath: string) =>
     createSourceProcessing({
       pdf: productionPdf,
       sourceAsset,
-      workingMaterial:
-        createFileBackedWorkingMaterialRepository(repositoryPath),
+      workingMaterial: workingMaterialFor(repositoryPath),
+      diagnostics: mainOperationDiagnostics("source-processing"),
     });
   const discoveryFor = async () => {
     const workbench = await workbenchSession.openFreshWorkbench();
@@ -539,9 +580,7 @@ const createWindow = async (): Promise<void> => {
       };
     }
 
-    const workingMaterial = createFileBackedWorkingMaterialRepository(
-      workbench.repositoryPath,
-    );
+    const workingMaterial = workingMaterialFor(workbench.repositoryPath);
     let selectedAnnotations = [workbench.sourceAnnotation];
 
     if (
@@ -567,9 +606,8 @@ const createWindow = async (): Promise<void> => {
     return createSourceProcessing({
       pdf: createFixturePdfAdapter(),
       workingMaterial,
-      results: createFileBackedSynthesisResultRepository(
-        workbench.repositoryPath,
-      ),
+      results: synthesisResultsFor(workbench.repositoryPath),
+      diagnostics: mainOperationDiagnostics("source-processing"),
     }).prepareSynthesis({
       targetTopic: workbench.context.topic,
       selectedAnnotations,
@@ -588,9 +626,7 @@ const createWindow = async (): Promise<void> => {
         return { outcome: "found", results: [] };
       }
 
-      const repository = createFileBackedSynthesisResultRepository(
-        workbench.repositoryPath,
-      );
+      const repository = synthesisResultsFor(workbench.repositoryPath);
 
       return (
         (await repository.readResults?.()) ?? {
@@ -1228,9 +1264,8 @@ const createWindow = async (): Promise<void> => {
 
       const updated = await createSourceProcessing({
         pdf: createFixturePdfAdapter(),
-        workingMaterial: createFileBackedWorkingMaterialRepository(
-          pendingSynthesis.repositoryPath,
-        ),
+        workingMaterial: workingMaterialFor(pendingSynthesis.repositoryPath),
+        diagnostics: mainOperationDiagnostics("source-processing"),
       }).removeSynthesisContextItem({
         preview: pendingSynthesis.preview,
         annotationId,
@@ -1285,9 +1320,8 @@ const createWindow = async (): Promise<void> => {
 
       return createSourceProcessing({
         pdf: createFixturePdfAdapter(),
-        workingMaterial: createFileBackedWorkingMaterialRepository(
-          workbench.repositoryPath,
-        ),
+        workingMaterial: workingMaterialFor(workbench.repositoryPath),
+        diagnostics: mainOperationDiagnostics("source-processing"),
       }).confirmSynthesis({
         preview,
         confirmation,
@@ -1333,9 +1367,7 @@ const createWindow = async (): Promise<void> => {
         };
       }
 
-      const results = createFileBackedSynthesisResultRepository(
-        workbench.repositoryPath,
-      );
+      const results = synthesisResultsFor(workbench.repositoryPath);
       const readOutcome: SynthesisResultReadOutcome =
         (await results.readResult?.(resultId)) ?? {
           outcome: "unavailable",
@@ -1351,9 +1383,8 @@ const createWindow = async (): Promise<void> => {
 
       return createSourceProcessing({
         pdf: createFixturePdfAdapter(),
-        workingMaterial: createFileBackedWorkingMaterialRepository(
-          workbench.repositoryPath,
-        ),
+        workingMaterial: workingMaterialFor(workbench.repositoryPath),
+        diagnostics: mainOperationDiagnostics("source-processing"),
         results,
       }).restoreSynthesisResult({
         currentResult: readOutcome.result,

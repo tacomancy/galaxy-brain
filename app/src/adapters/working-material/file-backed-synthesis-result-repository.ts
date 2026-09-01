@@ -1,7 +1,8 @@
 /**
  * Filesystem persistence Adapter. It keeps explicitly saved result versions
  * and provenance in portable Working Material while validating repository
- * containment and retaining storage failures for main-process diagnostics.
+ * containment and reporting only sanitized storage-failure metadata to
+ * main-process diagnostics.
  */
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
@@ -319,7 +320,7 @@ const readResultFile = async (
 /**
  * Creates storage for explicitly saved Synthesis results as Working Material.
  * @param repositoryPath The selected Knowledge Repository path.
- * @param diagnostics Optional sink for non-public storage causes.
+ * @param diagnostics Optional sink for sanitized operational metadata.
  * @param filesystem The filesystem Adapter used for safe persistence.
  * @returns The Synthesis result repository Adapter.
  */

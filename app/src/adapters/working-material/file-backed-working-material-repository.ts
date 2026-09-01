@@ -340,9 +340,10 @@ const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
 /**
  * Persists source annotations as portable Markdown Working Material. The
  * adapter canonicalizes and checks the repository path, protects the target
- * against external changes, and preserves read failures for diagnostics.
+ * against external changes, and reports only sanitized read-failure metadata
+ * to an optional diagnostic sink.
  * @param repositoryPath The selected Knowledge Repository path.
- * @param diagnostics Optional sink for non-public storage causes.
+ * @param diagnostics Optional sink for sanitized operational metadata.
  * @param filesystem The filesystem Adapter used for safe persistence.
  * @returns The Working Material repository Adapter.
  */

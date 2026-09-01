@@ -27,10 +27,10 @@ these tasks:
 2. [x] Confirm that this is a release-evidence and boundary-hardening work
        package, not a new Repository Format, provider, diagnostics product, or
        public distribution decision.
-3. [ ] Confirm the approved storage/display boundaries, fixture markers,
+3. [x] Confirm the approved storage/display boundaries, fixture markers,
        vertical path, and acceptance evidence in this brief before the first Red
        cycle.
-4. [ ] Create the first behavior test at a confirmed S3, S5, or S1 seam and
+4. [x] Create the first behavior test at a confirmed S3, S5, or S1 seam and
        begin implementation only after the owner confirms the bounded plan.
 
 The explicit to-do before implementation is therefore: review the governing
@@ -229,14 +229,22 @@ The bounded implementation is complete on this branch:
 - S5 Working Material and Synthesis Result Adapters now translate filesystem
   failures into fixed category/operation metadata; raw paths, errno text, and
   exception messages are not retained by their diagnostic sinks.
+- The main-process composition wires the sanitized PDF, Source Asset, Source
+  Processing, Working Material, and Synthesis Result diagnostics to a private
+  JSONL diagnostic output beside the machine-local session state. Each record
+  contains only operation, phase, category, and timestamp metadata.
 - Public S3/S5 regression tests use independently authored path and provider
   canaries and passed 30/30 focused tests. The initial Red runs captured the
   raw path/provider exceptions; the Green runs captured only the approved
   metadata.
 - The S1 `provider-free-privacy.e2e.ts` workflow runs in the existing silent
-  packaged harness. It displays a deterministic Ask payload, declines it, and
-  scans isolated repository, session-state, and source-asset roots for prompt,
-  credential, and API-key canaries without printing the canary content.
+  packaged harness. It displays a deterministic Ask payload, scans the pending
+  state, exercises decline and cancellation, verifies unavailable Synthesis
+  leaves the explicit saved fixture result unchanged, deliberately exercises an
+  unavailable linked source to produce safe production diagnostics, and scans
+  isolated repository, session-state (including diagnostics), and source-asset
+  roots for prompt, source-excerpt, credential, absolute-path, and API-key
+  canaries without printing the canary content.
 - `npm run test:provider-free` passes all three named workflows, including the
   unavailable-provider baseline, linked-PDF status workflow, and privacy
   workflow. `npm run test:workflow` passes 33 packaged specs with one expected
@@ -257,6 +265,25 @@ and explicitly accepted the Section C privacy/non-retention gate. The
 acceptance covered the exact pending payload, decline, cancellation,
 unavailable-provider handling, isolated persistence scans, relaunch behavior,
 and documented deferrals.
+
+The Red-to-Green handoff evidence was:
+
+- `npm test -- --run tests/source-processing/prepare-synthesis-preview.test.ts
+tests/contracts/source-processing.test.ts
+tests/contracts/synthesis-result-repository.test.ts` first failed the new
+  path/provider-canary assertions because raw exceptions reached the diagnostic
+  sinks; after the boundary changes, the same focused command passed 30/30.
+- The first packaged privacy run failed only because the exact payload was
+  inside a collapsed disclosure element. Expanding the disclosure before
+  assertion fixed the observation point; the final `npm run test:provider-free`
+  run passed all three named workflows, and `npm run test:workflow` passed 33
+  specs with one expected skip plus all five Issue #52 runs.
+- `npm run check`, `npm run test:coverage`, and `npm run lint:complexity` passed
+  after the final implementation. No new ADR was required: ADR 0013's
+  non-retention boundary and ADR 0014's explicit-save/provenance boundary are
+  preserved. The remaining risks are the explicit deferrals below and the
+  deterministic scan's intentional limitation to repository-owned and
+  harness-supplied state roots.
 
 ## Explicit deferrals
 
