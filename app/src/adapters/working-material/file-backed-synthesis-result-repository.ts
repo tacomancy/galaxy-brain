@@ -484,6 +484,10 @@ export const createFileBackedSynthesisResultRepository = (
 
         if (entry.isSymbolicLink()) {
           diagnostics?.record(
+            {
+              category: "filesystem",
+              operation: "read-result",
+            },
             new UnsafeSynthesisResultTargetError(
               "The Synthesis result directory contains a symbolic link.",
             ),

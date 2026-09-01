@@ -247,7 +247,7 @@ describe("Source Processing", () => {
         },
       },
       workingMaterial: createInMemoryWorkingMaterialRepository(),
-      diagnostics: { record: (cause) => causes.push(cause) },
+      diagnostics: { record: (_diagnostic, cause) => causes.push(cause) },
     });
 
     assert.deepEqual(
@@ -284,7 +284,7 @@ describe("Source Processing", () => {
           detail: "The source annotation was not found.",
         }),
       },
-      diagnostics: { record: (cause) => causes.push(cause) },
+      diagnostics: { record: (_diagnostic, cause) => causes.push(cause) },
     });
 
     assert.deepEqual(

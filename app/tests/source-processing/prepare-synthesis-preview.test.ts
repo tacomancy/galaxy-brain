@@ -519,7 +519,7 @@ describe("Synthesize selected evidence", () => {
           throw new Error("private provider response details");
         },
       },
-      diagnostics: { record: (cause) => causes.push(cause) },
+      diagnostics: { record: (_diagnostic, cause) => causes.push(cause) },
     });
     const preview = await sourceProcessing.prepareSynthesis({
       ...synthesisInput,
