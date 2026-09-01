@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB14 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; Issue #69 shared repository-scoped artifact storage implementation and automated acceptance are complete on September 1, 2026; Section E implementation and automated acceptance are complete on September 1, 2026, pending final human acceptance; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB14 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; Issue #69 shared repository-scoped artifact storage implementation and automated acceptance are complete on September 1, 2026; Section E implementation, automated acceptance, and human acceptance are complete on September 1, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -835,21 +835,29 @@ and durable history-layout decisions before implementation.
   Module. E3 stores current-result pointers and immutable full version files,
   exposes compact version summaries and explicit version reads, and migrates
   legacy nested history only on explicit write. E4 records the integrated
-  verification state here and leaves final human acceptance open.
+  verification and human acceptance state here.
 - **Implementation evidence:** `npm run typecheck`, `npm run format:check`,
-  `npm run lint`, and the complete Vitest suite pass (32 files, 189 tests).
+  `npm run lint`, and the complete Vitest suite pass (32 files, 190 tests).
   The focused E1/E2/E3 suites pass, and `npm run check:mcdc` passes both
   registered decisions. The legacy migration contract verifies that reads do
   not mutate the fixture and an explicit save creates the documented pointer
   and independent version files. With Node.js `24.19.0`, the complete
-  packaged workflow passes 37/37 specs including the Issue #52 recovery
-  matrix.
+  packaged workflow passes 36 specs with one intentional skip (37 total),
+  including the Issue #52 recovery matrix, which passes all five cases. The
+  release manifest verifies the macOS arm64 artifact against source commit
+  `f6068a8`.
 - **Deferred work:** Restart persistence for pending previews, a general
   workflow manager, automatic migration on read, history pruning/deletion,
   arbitrary unknown-file migration, Repository Format v2, and broader renderer
   redesign remain explicitly deferred in the Section E specification.
-- **Acceptance:** Human acceptance of the complete Section E implementation is
-  pending; no acceptance is inferred from automated evidence or this record.
+- **Acceptance:** The user passed Gates 0–4 and explicitly accepted the
+  complete Section E implementation on September 1, 2026. Gate 1 confirmed
+  ownership and resume/continuation behavior; Gate 2 confirmed transient,
+  repository-scoped Synthesis previews, decline/cancel behavior, and the
+  Ask-style payload presentation; Gate 3 confirmed append-only history and
+  migration; and Gate 4 confirmed whole-release checks, the packaged
+  workflow, the Issue #52 recovery matrix, dependency audits, and artifact
+  manifest verification.
 
 ### Release-readiness implementation preparation
 

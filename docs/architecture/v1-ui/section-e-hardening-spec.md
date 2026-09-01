@@ -335,13 +335,17 @@ workstreams, related follow-ups, and whole-release acceptance are reconciled.
 ### 5.1 Implementation evidence — September 1, 2026
 
 E1, E2, and E3 are implemented on the Section E branch. The complete Vitest
-suite passes 32 files and 189 tests; strict type checking, formatting, and
+suite passes 32 files and 190 tests; strict type checking, formatting, and
 linting pass; and the MC/DC gate passes both registered decisions. Focused
 tests cover the Source Processing annotation read, lifecycle ownership and
 invalidation, immutable pointer/version files, explicit version reads, and
 legacy migration on explicit write. With Node.js `24.19.0`, the complete
-packaged workflow passes 37/37 specs, including the Issue #52 recovery matrix.
-Human acceptance remains intentionally pending.
+packaged workflow passes 36 specs with one intentional skip (37 total), and
+the Issue #52 recovery matrix passes all five cases. Human acceptance of Gates
+0–4 was completed by the user on September 1, 2026. The review included the
+ownership boundary, transient preview dismissal and payload presentation,
+append-only history and migration, and whole-release artifact and workflow
+verification.
 
 ## 6. Explicit non-goals and deferred work
 
