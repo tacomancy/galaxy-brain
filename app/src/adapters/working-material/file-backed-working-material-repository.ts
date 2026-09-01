@@ -3,17 +3,17 @@
  * the target fingerprint before replacement, and preserves external edits
  * while translating storage failures into caller-facing outcomes.
  */
-import { createHash } from "node:crypto";
-import { constants } from "node:fs";
-import { lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
-import { join, resolve, sep } from "node:path";
+import { join } from "node:path";
 
 import {
-  discardAbandonedTemporaryFiles,
   defaultAtomicFileSystem,
   type AtomicFileSystem,
-  writeFileAtomically,
 } from "../file-backed-atomic-write";
+import {
+  createRepositoryScopedArtifactStore,
+  isRepositoryScopedArtifactStoreRepositoryError,
+} from "./repository-scoped-artifact-store";
+import type { RepositoryArtifactEntry } from "./repository-scoped-artifact-store";
 import type {
   SourceLocator,
   StructuredAnnotation,
@@ -50,27 +50,12 @@ class UnsafeAnnotationTargetError extends Error {}
 const isErrnoException = (error: unknown): error is NodeJS.ErrnoException =>
   error instanceof Error && "code" in error;
 
-const annotationFilePath = (
-  canonicalRepositoryPath: string,
-  annotationId: string,
-): string => {
+const annotationFileName = (annotationId: string): string => {
   if (!/^[a-z0-9-]+$/.test(annotationId)) {
     throw new InvalidAnnotationError("The annotation identity is invalid.");
   }
 
-  const annotationDirectory = resolve(
-    canonicalRepositoryPath,
-    annotationDirectoryName,
-  );
-  const filePath = resolve(annotationDirectory, `${annotationId}.md`);
-
-  if (!filePath.startsWith(`${annotationDirectory}${sep}`)) {
-    throw new InvalidAnnotationError(
-      "The annotation path escapes the Knowledge Repository.",
-    );
-  }
-
-  return filePath;
+  return `${annotationId}.md`;
 };
 
 const quote = (value: string): string => JSON.stringify(value);
@@ -84,20 +69,19 @@ const compareStrings = (left: string, right: string): number =>
 
 const isReadableAnnotationEntry = (entry: {
   name: string;
-  isFile(): boolean;
-  isSymbolicLink(): boolean;
+  kind: RepositoryArtifactEntry["kind"];
 }): boolean => {
   if (!entry.name.endsWith(".md")) {
     return false;
   }
 
-  if (entry.isSymbolicLink()) {
+  if (entry.kind === "symbolic-link") {
     throw new UnsafeAnnotationTargetError(
       "The annotation directory contains a symbolic link.",
     );
   }
 
-  return entry.isFile();
+  return entry.kind === "file";
 };
 
 const isValidLocator = (locator: SourceLocator): boolean =>
@@ -108,6 +92,69 @@ const isValidLocator = (locator: SourceLocator): boolean =>
   Number.isInteger(locator.end) &&
   locator.end > locator.start &&
   locator.logical === logicalLocatorFor(locator);
+
+type ReadAnnotation = (
+  annotationId: string,
+) => Promise<WorkingMaterialReadOutcome>;
+
+const findAnnotationForSourceRecord = async (
+  entries: ReadonlyArray<RepositoryArtifactEntry>,
+  sourceRecordId: string,
+  readAnnotation: ReadAnnotation,
+): Promise<WorkingMaterialReadOutcome | undefined> => {
+  for (const entry of entries) {
+    if (entry.kind !== "file" || !entry.name.endsWith(".md")) {
+      continue;
+    }
+
+    const outcome = await readAnnotation(entry.name.slice(0, -3));
+
+    if (outcome.outcome === "unavailable") {
+      return outcome;
+    }
+
+    if (
+      outcome.outcome === "found" &&
+      outcome.annotation.sourceRecord.id === sourceRecordId
+    ) {
+      return outcome;
+    }
+  }
+
+  return undefined;
+};
+
+const collectAnnotationsForSourceRecord = async (
+  entries: ReadonlyArray<RepositoryArtifactEntry>,
+  sourceRecordId: string,
+  readAnnotation: ReadAnnotation,
+): Promise<
+  | StructuredAnnotation[]
+  | Extract<WorkingMaterialReadOutcome, { outcome: "unavailable" }>
+> => {
+  const annotations: StructuredAnnotation[] = [];
+
+  for (const entry of entries) {
+    if (!isReadableAnnotationEntry(entry)) {
+      continue;
+    }
+
+    const outcome = await readAnnotation(entry.name.slice(0, -3));
+
+    if (outcome.outcome === "unavailable") {
+      return outcome;
+    }
+
+    if (
+      outcome.outcome === "found" &&
+      outcome.annotation.sourceRecord.id === sourceRecordId
+    ) {
+      annotations.push(outcome.annotation);
+    }
+  }
+
+  return annotations;
+};
 
 const serializeAnnotation = (annotation: StructuredAnnotation): string =>
   [
@@ -234,113 +281,6 @@ const parseAnnotation = (contents: string): StructuredAnnotation => {
   };
 };
 
-const canonicalRepositoryPath = async (
-  repositoryPath: string,
-): Promise<string> => {
-  const stats = await lstat(repositoryPath);
-
-  if (stats.isSymbolicLink() || !stats.isDirectory()) {
-    throw new UnsafeAnnotationTargetError(
-      "The selected Knowledge Repository is not a safe directory.",
-    );
-  }
-
-  const canonicalPath = await realpath(repositoryPath);
-  const sourcesStats = await lstat(join(canonicalPath, "sources"));
-
-  if (sourcesStats.isSymbolicLink() || !sourcesStats.isDirectory()) {
-    throw new UnsafeAnnotationTargetError(
-      "The Knowledge Repository sources directory is unsafe.",
-    );
-  }
-
-  return canonicalPath;
-};
-
-const ensureAnnotationDirectory = async (
-  canonicalPath: string,
-): Promise<string> => {
-  const directoryPath = resolve(canonicalPath, annotationDirectoryName);
-
-  try {
-    const stats = await lstat(directoryPath);
-
-    if (stats.isSymbolicLink() || !stats.isDirectory()) {
-      throw new UnsafeAnnotationTargetError(
-        "The source annotation directory is unsafe.",
-      );
-    }
-  } catch (cause: unknown) {
-    if (!isErrnoException(cause) || cause.code !== "ENOENT") {
-      throw cause;
-    }
-
-    await mkdir(directoryPath);
-  }
-
-  return directoryPath;
-};
-
-const readAnnotationDirectory = async (
-  canonicalPath: string,
-): Promise<string | undefined> => {
-  const directoryPath = resolve(canonicalPath, annotationDirectoryName);
-
-  try {
-    const stats = await lstat(directoryPath);
-
-    if (stats.isSymbolicLink() || !stats.isDirectory()) {
-      throw new UnsafeAnnotationTargetError(
-        "The source annotation directory is unsafe.",
-      );
-    }
-
-    return directoryPath;
-  } catch (cause: unknown) {
-    if (isErrnoException(cause) && cause.code === "ENOENT") {
-      return undefined;
-    }
-
-    throw cause;
-  }
-};
-
-type FileFingerprint = string | undefined;
-
-const readRegularFile = async (filePath: string): Promise<Buffer> => {
-  // Open and validate the same descriptor so a path replacement cannot turn
-  // the prior safety check into a read of a different file.
-  const fileHandle = await open(
-    filePath,
-    constants.O_RDONLY | constants.O_NOFOLLOW,
-  );
-
-  try {
-    if (!(await fileHandle.stat()).isFile()) {
-      throw new UnsafeAnnotationTargetError(
-        "The source annotation target is unsafe.",
-      );
-    }
-
-    return await fileHandle.readFile();
-  } finally {
-    await fileHandle.close();
-  }
-};
-
-const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
-  try {
-    const contents = await readRegularFile(filePath);
-    return createHash("sha256").update(contents).digest("hex");
-  } catch (cause: unknown) {
-    if (isErrnoException(cause) && cause.code === "ENOENT") {
-      return undefined;
-    }
-
-    throw cause;
-  }
-};
-
 /**
  * Persists source annotations as portable Markdown Working Material. The
  * adapter canonicalizes and checks the repository path, protects the target
@@ -356,45 +296,34 @@ export const createFileBackedWorkingMaterialRepository = (
   diagnostics?: WorkingMaterialDiagnostics,
   filesystem: AtomicFileSystem = defaultAtomicFileSystem,
 ): WorkingMaterialRepository => {
+  const artifactStore = createRepositoryScopedArtifactStore({
+    artifactDirectory: annotationDirectoryName,
+    externalChangeDetail:
+      "The source annotation changed while it was being saved.",
+    filesystem,
+    requiredDirectory: "sources",
+    repositoryPath,
+    unsafeDirectoryDetail: "The source annotation directory is unsafe.",
+    unsafeFileDetail: "The source annotation target is unsafe.",
+    unsafeRepositoryDetail:
+      "The selected Knowledge Repository is not a safe directory.",
+  });
+
   const readAnnotation = async (
     annotationId: string,
   ): Promise<WorkingMaterialReadOutcome> => {
-    let canonicalPath: string;
-
     try {
-      canonicalPath = await canonicalRepositoryPath(repositoryPath);
-    } catch (cause: unknown) {
-      diagnostics?.record(
-        {
-          category: "filesystem",
-          operation: "read-repository",
-        },
-        cause,
-      );
-      return {
-        outcome: "unavailable",
-        detail: "The Knowledge Repository could not be read.",
-      };
-    }
+      const entries = await artifactStore.readDirectory("annotation.md");
 
-    try {
-      const annotationDirectory = await readAnnotationDirectory(canonicalPath);
-
-      if (annotationDirectory === undefined) {
+      if (entries === undefined) {
         return {
           outcome: "not-found",
           detail: "The source annotation was not found.",
         };
       }
 
-      await discardAbandonedTemporaryFiles(
-        annotationDirectory,
-        annotationFilePath(canonicalPath, annotationId),
-        filesystem,
-      );
-
       const contents = (
-        await readRegularFile(annotationFilePath(canonicalPath, annotationId))
+        await artifactStore.readFile(annotationFileName(annotationId))
       ).toString("utf8");
       const annotation = parseAnnotation(contents);
 
@@ -416,14 +345,18 @@ export const createFileBackedWorkingMaterialRepository = (
       diagnostics?.record(
         {
           category: "filesystem",
-          operation: "read-annotation",
+          operation: isRepositoryScopedArtifactStoreRepositoryError(cause)
+            ? "read-repository"
+            : "read-annotation",
         },
         cause,
       );
 
       return {
         outcome: "unavailable",
-        detail: "The source annotation could not be read.",
+        detail: isRepositoryScopedArtifactStoreRepositoryError(cause)
+          ? "The Knowledge Repository could not be read."
+          : "The source annotation could not be read.",
       };
     }
   };
@@ -437,84 +370,40 @@ export const createFileBackedWorkingMaterialRepository = (
         throw new InvalidAnnotationError("The source annotation is invalid.");
       }
 
-      const canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      await ensureAnnotationDirectory(canonicalPath);
-      const filePath = annotationFilePath(canonicalPath, annotation.id);
-      const existingFingerprint = await fingerprint(filePath);
-      await writeFileAtomically({
+      await artifactStore.writeFile({
         contents: serializeAnnotation(annotation),
-        externalChangeDetail:
-          "The source annotation changed while it was being saved.",
-        expectedFingerprint: existingFingerprint,
-        filePath,
-        filesystem,
-        readFingerprint: () => fingerprint(filePath),
+        expectedFingerprint: await artifactStore.fingerprint(
+          annotationFileName(annotation.id),
+        ),
+        fileName: annotationFileName(annotation.id),
       });
     },
     readAnnotation,
     readAnnotationForSourceRecord: async (
       sourceRecordId,
     ): Promise<WorkingMaterialReadOutcome> => {
-      let canonicalPath: string;
-
       try {
-        canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      } catch (cause: unknown) {
-        diagnostics?.record(
-          {
-            category: "filesystem",
-            operation: "read-repository",
-          },
-          cause,
-        );
-        return {
-          outcome: "unavailable",
-          detail: "The Knowledge Repository could not be read.",
-        };
-      }
+        const entries = await artifactStore.readDirectory("annotation.md");
 
-      try {
-        const annotationDirectory =
-          await readAnnotationDirectory(canonicalPath);
-
-        if (annotationDirectory === undefined) {
+        if (entries === undefined) {
           return {
             outcome: "not-found",
             detail: "The source annotation was not found.",
           };
         }
 
-        await discardAbandonedTemporaryFiles(
-          annotationDirectory,
-          resolve(annotationDirectory, "annotation.md"),
-          filesystem,
+        const sortedEntries = [...entries].sort((left, right) =>
+          compareStrings(left.name, right.name),
         );
 
-        const entries = (
-          await readdir(annotationDirectory, {
-            encoding: "utf8",
-            withFileTypes: true,
-          })
-        ).sort((left, right) => compareStrings(left.name, right.name));
+        const outcome = await findAnnotationForSourceRecord(
+          sortedEntries,
+          sourceRecordId,
+          readAnnotation,
+        );
 
-        for (const entry of entries) {
-          if (!entry.isFile() || !entry.name.endsWith(".md")) {
-            continue;
-          }
-
-          const annotationId = entry.name.slice(0, -3);
-          const outcome = await readAnnotation(annotationId);
-
-          if (outcome.outcome === "unavailable") {
-            return outcome;
-          }
-
-          if (
-            outcome.outcome === "found" &&
-            outcome.annotation.sourceRecord.id === sourceRecordId
-          ) {
-            return outcome;
-          }
+        if (outcome !== undefined) {
+          return outcome;
         }
 
         return {
@@ -532,79 +421,44 @@ export const createFileBackedWorkingMaterialRepository = (
         diagnostics?.record(
           {
             category: "filesystem",
-            operation: "read-annotation-for-source",
+            operation: isRepositoryScopedArtifactStoreRepositoryError(cause)
+              ? "read-repository"
+              : "read-annotation-for-source",
           },
           cause,
         );
         return {
           outcome: "unavailable",
-          detail: "The source annotation could not be read.",
+          detail: isRepositoryScopedArtifactStoreRepositoryError(cause)
+            ? "The Knowledge Repository could not be read."
+            : "The source annotation could not be read.",
         };
       }
     },
     readAnnotationsForSourceRecord: async (
       sourceRecordId,
     ): Promise<WorkingMaterialListReadOutcome> => {
-      let canonicalPath: string;
-
       try {
-        canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      } catch (cause: unknown) {
-        diagnostics?.record(
-          {
-            category: "filesystem",
-            operation: "read-repository",
-          },
-          cause,
-        );
-        return {
-          outcome: "unavailable",
-          detail: "The Knowledge Repository could not be read.",
-        };
-      }
+        const entries = await artifactStore.readDirectory("annotation.md");
 
-      try {
-        const annotationDirectory =
-          await readAnnotationDirectory(canonicalPath);
-
-        if (annotationDirectory === undefined) {
+        if (entries === undefined) {
           return {
             outcome: "not-found",
             detail: "The source annotation was not found.",
           };
         }
 
-        await discardAbandonedTemporaryFiles(
-          annotationDirectory,
-          resolve(annotationDirectory, "annotation.md"),
-          filesystem,
+        const sortedEntries = [...entries].sort((left, right) =>
+          compareStrings(left.name, right.name),
+        );
+        const annotations = await collectAnnotationsForSourceRecord(
+          sortedEntries,
+          sourceRecordId,
+          readAnnotation,
         );
 
-        const entries = (
-          await readdir(annotationDirectory, {
-            encoding: "utf8",
-            withFileTypes: true,
-          })
-        ).sort((left, right) => compareStrings(left.name, right.name));
-        const annotations: StructuredAnnotation[] = [];
-
-        for (const entry of entries) {
-          if (!isReadableAnnotationEntry(entry)) {
-            continue;
-          }
-
-          const outcome = await readAnnotation(entry.name.slice(0, -3));
-
-          if (outcome.outcome === "unavailable") {
-            return outcome;
-          }
-
-          if (
-            outcome.outcome === "found" &&
-            outcome.annotation.sourceRecord.id === sourceRecordId
-          ) {
-            annotations.push(outcome.annotation);
-          }
+        if (!Array.isArray(annotations)) {
+          return annotations;
         }
 
         return annotations.length === 0
@@ -624,13 +478,17 @@ export const createFileBackedWorkingMaterialRepository = (
         diagnostics?.record(
           {
             category: "filesystem",
-            operation: "read-annotations-for-source",
+            operation: isRepositoryScopedArtifactStoreRepositoryError(cause)
+              ? "read-repository"
+              : "read-annotations-for-source",
           },
           cause,
         );
         return {
           outcome: "unavailable",
-          detail: "The source annotation could not be read.",
+          detail: isRepositoryScopedArtifactStoreRepositoryError(cause)
+            ? "The Knowledge Repository could not be read."
+            : "The source annotation could not be read.",
         };
       }
     },

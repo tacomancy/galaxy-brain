@@ -12,7 +12,12 @@ export interface AtomicFileSystem {
   readdir: (
     path: string,
     options: { encoding: "utf8"; withFileTypes: true },
-  ) => Promise<ReadonlyArray<{ name: string; isFile(): boolean }>>;
+  ) => Promise<
+    ReadonlyArray<{
+      name: string;
+      isFile(): boolean;
+    }>
+  >;
   rename: typeof rename;
   rm: typeof rm;
   writeFile: typeof writeFile;
