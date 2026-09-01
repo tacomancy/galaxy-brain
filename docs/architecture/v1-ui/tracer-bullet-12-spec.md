@@ -1,6 +1,6 @@
 # Tracer Bullet 12: Separate Search, Ask, and Jump
 
-Status: implementation complete; human acceptance remains open.
+Status: implementation and human acceptance complete on September 1, 2026.
 
 This brief coordinates TB12 in the [delivery plan](delivery-plan.md#12-separate-search-ask-and-jump). It is an implementation entry point, not a second authority for Product Decisions, Architecture, Repository Format, Test Strategy, or accepted ADR decisions.
 
@@ -202,4 +202,4 @@ Discarded alternatives:
 
 ## Further Notes
 
-TB12 is complete only when the implementation, automated evidence, packaged S1 review, and explicit human acceptance are recorded in the delivery plan and Issue #31. The implementation and automated evidence are now recorded on this branch; the TB12 scope decision remains “in scope for V1” and the human release gate remains open.
+TB12 is complete because the implementation, automated evidence, packaged S1 review, and explicit human acceptance are recorded in the delivery plan and this specification. The TB12 scope decision remains “in scope for V1”; the human release gate was accepted on September 1, 2026 after all eight gates passed.
