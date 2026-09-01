@@ -213,6 +213,15 @@ const themeFromSnapshot = (
   snapshot: WorkbenchSessionSnapshot | undefined,
 ): WorkbenchTheme => snapshot?.theme ?? "light";
 
+const rememberSourceAnnotation = (
+  repository: { sourceAnnotation?: StructuredAnnotation },
+  annotation: StructuredAnnotation | undefined,
+): void => {
+  if (repository.sourceAnnotation === undefined && annotation !== undefined) {
+    repository.sourceAnnotation = annotation;
+  }
+};
+
 /**
  * Composes repository and machine-local session Adapters behind the
  * Workbench Session Interface. It keeps repository context in memory and
@@ -395,13 +404,13 @@ export const createWorkbenchSession = (
   const ensureSourceAnnotation = async (
     repository: SelectedRepository,
     workspace: WorkbenchWorkspace,
-  ): Promise<void> => {
+  ): Promise<StructuredAnnotation | undefined> => {
     if (
       !isContextualWorkspace(workspace) ||
       repository.context === undefined ||
       repository.sourceAnnotation !== undefined
     ) {
-      return;
+      return repository.sourceAnnotation;
     }
 
     const annotationOutcome = await knowledgeRepository.readWorkbenchAnnotation(
@@ -410,8 +419,10 @@ export const createWorkbenchSession = (
     );
 
     if (annotationOutcome.outcome === "found") {
-      repository.sourceAnnotation = annotationOutcome.annotation;
+      return annotationOutcome.annotation;
     }
+
+    return undefined;
   };
 
   const restoreSelectedRepository = async (): Promise<void> => {
@@ -519,13 +530,13 @@ export const createWorkbenchSession = (
       workbench.context = repository.context;
     }
 
-    await ensureSourceAnnotation(repository, workspace);
+    const sourceAnnotation = await ensureSourceAnnotation(
+      repository,
+      workspace,
+    );
 
-    if (
-      isContextualWorkspace(workspace) &&
-      repository.sourceAnnotation !== undefined
-    ) {
-      workbench.sourceAnnotation = repository.sourceAnnotation;
+    if (isContextualWorkspace(workspace) && sourceAnnotation !== undefined) {
+      workbench.sourceAnnotation = sourceAnnotation;
     }
 
     if (
@@ -560,6 +571,8 @@ export const createWorkbenchSession = (
         detail: "The Workbench session could not be saved.",
       };
     }
+
+    rememberSourceAnnotation(repository, sourceAnnotation);
 
     activeWorkspace = workspace;
 

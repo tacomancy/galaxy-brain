@@ -282,6 +282,87 @@ describe("Source Processing Adapter contracts", () => {
         outcome: "unavailable",
         detail: "The source annotation could not be read.",
       });
+      assert.deepEqual(
+        await repository.readAnnotationsForSourceRecord?.(
+          expectedAnnotation.sourceRecord.id,
+        ),
+        {
+          outcome: "unavailable",
+          detail: "The source annotation could not be read.",
+        },
+      );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports malformed annotation content as unavailable without exposing parser details", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const repositoryPath = join(temporaryRoot, "repository");
+    const annotationPath = join(
+      repositoryPath,
+      "sources",
+      "annotations",
+      `${expectedAnnotation.id}.md`,
+    );
+    const causes: unknown[] = [];
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      await writeFile(
+        annotationPath,
+        "not valid annotation frontmatter\n",
+        "utf8",
+      );
+      const repository = createFileBackedWorkingMaterialRepository(
+        repositoryPath,
+        { record: (cause) => causes.push(cause) },
+      );
+
+      assert.deepEqual(await repository.readAnnotation(expectedAnnotation.id), {
+        outcome: "unavailable",
+        detail: "The source annotation could not be read.",
+      });
+      assert.equal(causes.length, 1);
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports an unreadable annotation directory as unavailable", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const repositoryPath = join(temporaryRoot, "repository");
+    const causes: unknown[] = [];
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const unreadableFilesystem: AtomicFileSystem = {
+        ...defaultAtomicFileSystem,
+        readdir: async () => {
+          throw new Error("annotation directory is unreadable");
+        },
+      };
+      const repository = createFileBackedWorkingMaterialRepository(
+        repositoryPath,
+        { record: (cause) => causes.push(cause) },
+        unreadableFilesystem,
+      );
+
+      assert.deepEqual(await repository.readAnnotation(expectedAnnotation.id), {
+        outcome: "unavailable",
+        detail: "The source annotation could not be read.",
+      });
+      assert.equal(causes.length, 1);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

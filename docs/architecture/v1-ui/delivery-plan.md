@@ -688,6 +688,66 @@ The implementation entry point is the [Issue 52 recovery specification](issue-52
 
 Implementation is complete on the `codex/issue-52-recoverable-ui-state` branch. Focused S1 workflows pass for one-shot bootstrap, saved-results read, repository-open, workspace-transition, and nested Discovery-transition failures; `npm run check`, `npm run lint:complexity`, and the complete packaged workflow pass. No domain outcomes, preload capabilities, portable repository fields, or automatic retries are added.
 
+### Issue 22. Behavioral and Adapter-contract coverage
+
+Issue #22 closes the adversarial coverage gaps around S3 Source Processing,
+S5 portable Working Material and Synthesis-result Adapters, machine-local
+Workbench recovery, and the packaged S1 recovery boundary. The implementation
+uses the already confirmed public S1, S3, and S5 seams; it does not add a new
+Test Seam or inspect storage as a UI side channel.
+
+The completed slices cover invalid locators and unavailable or rejecting PDF
+and Working Material operations; invalid Synthesis previews, whole-context
+removal, provider rejection, and sanitized Model Adapter failures; malformed,
+missing, unreadable, symlinked, and externally changed portable artifacts;
+stale reading positions, unavailable remembered annotations, and rejected
+session writes; and packaged recovery for a repository change or malformed
+saved-result history. Successful repository replacement clears pending
+Synthesis and Ask operations in both the main process and renderer so a
+confirmed request cannot use a preview prepared for another repository.
+
+The remaining boundary is deliberate: provider behavior remains an external
+Adapter concern, no hidden payloads or private causes are exposed, and broader
+post-V1 artifact/history features remain deferred. The focused and full gates
+below are the implementation evidence for this issue.
+
+#### Issue 22 implementation evidence
+
+- **Red evidence:** The first packaged pending-preview workflow run reached
+  the repository replacement but failed because the test expected the raw
+  `/var` temporary path while macOS presented its canonical `/private/var`
+  path. The test was corrected to compare the independently resolved path.
+  The new contract tests cover outcomes that were already implemented on the
+  starting `main` snapshot, so their initial focused unit runs were expected
+  to be green. These are explicitly contract-coverage additions rather than
+  Red-to-Green production cycles; the meaningful red-to-green correction was
+  the packaged path assertion recorded above, not a claim that every outcome
+  was newly implemented here.
+- **Green evidence:** With Node.js `24.19.0`, the final focused verification
+  passes all configured checks, including 164 Vitest tests, MC/DC condition/decision/
+  MC/DC checks, and documentation validation. `npm run test:coverage` passed
+  at 84.85% statements, 75.47% branches, 97.23% functions, and 84.70% lines.
+  `npm run lint:complexity` passed. `npm run test:workflow` passed 35 packaged
+  specs with one intentional skip; the three Issue 22 workflows and all five
+  Issue 52 recovery variants pass independently. The explicit `npm run check`
+  gate passed formatting, linting, type checking, all 164 Vitest tests, MC/DC,
+  and documentation validation.
+- **Changed files:** The S3/S5/session contract additions are in the
+  Source Processing, Knowledge Repository, Synthesis-result, and Workbench
+  session tests. The three new S1 specs cover pending-preview invalidation,
+  malformed-result recovery, and missing-result recovery. Main and renderer
+  shell state now clear pending Synthesis and Ask operations after successful
+  repository replacement. The exact new workflow files are
+  `app/tests/workflows/issue-22-malformed-results-recovery.e2e.ts`,
+  `app/tests/workflows/issue-22-missing-result-recovery.e2e.ts`, and
+  `app/tests/workflows/issue-22-pending-preview-recovery.e2e.ts`.
+- **Code map:** No new Module or Adapter was introduced, so the code map does
+  not need a new responsibility row or seam. The existing Workbench shell and
+  bridge responsibilities remain the owning production locations.
+- **Scope:** No new Test Seam, provider integration, payload retention, or
+  portable format field was added. The three packaged Issue 22 workflows were
+  also rerun independently after the path correction and passed.
+
 ### Release-readiness implementation preparation
 
 The next work package is defined in the [V1 release-readiness specification](v1-release-readiness-spec.md). It covers the provider-free packaged-application gate and the initial MC/DC evidence gate as separate quality obligations. The specification explicitly preserves the existing S1–S5 seams, isolates mutating workflow fixtures, keeps LCOV branch coverage distinct from MC/DC, and defers signed distribution and broad product expansion.

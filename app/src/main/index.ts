@@ -889,6 +889,14 @@ const createWindow = async (): Promise<void> => {
       maybeInjectFailure("repository-create");
       const outcome = await workbenchSession.createRepository(repositoryPath);
       pendingCreateRepositoryPath = undefined;
+      if (
+        outcome.outcome === "created" ||
+        outcome.outcome === "opened" ||
+        outcome.outcome === "read-only-compatible"
+      ) {
+        pendingSynthesis = undefined;
+        pendingAsk = undefined;
+      }
       return outcome;
     } catch (cause: unknown) {
       pendingCreateRepositoryPath = repositoryPath;
@@ -921,6 +929,14 @@ const createWindow = async (): Promise<void> => {
       maybeInjectFailure("repository-open");
       const outcome = await workbenchSession.openRepository(repositoryPath);
       pendingOpenRepositoryPath = undefined;
+      if (
+        outcome.outcome === "created" ||
+        outcome.outcome === "opened" ||
+        outcome.outcome === "read-only-compatible"
+      ) {
+        pendingSynthesis = undefined;
+        pendingAsk = undefined;
+      }
       return outcome;
     } catch (cause: unknown) {
       pendingOpenRepositoryPath = repositoryPath;

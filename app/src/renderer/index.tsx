@@ -701,6 +701,16 @@ const WorkbenchShell = ({
     );
     if (outcome === undefined) return;
     setLastOutcome(outcome);
+    if (
+      outcome.outcome === "created" ||
+      outcome.outcome === "opened" ||
+      outcome.outcome === "read-only-compatible"
+    ) {
+      setSynthesisPreview(undefined);
+      setSynthesisOutcome(undefined);
+      setDiscoveryAskPreview(undefined);
+      setDiscoveryAskOutcome(undefined);
+    }
     await refreshWorkbench();
   };
 
@@ -712,6 +722,16 @@ const WorkbenchShell = ({
     );
     if (outcome === undefined) return;
     setLastOutcome(outcome);
+    if (
+      outcome.outcome === "created" ||
+      outcome.outcome === "opened" ||
+      outcome.outcome === "read-only-compatible"
+    ) {
+      setSynthesisPreview(undefined);
+      setSynthesisOutcome(undefined);
+      setDiscoveryAskPreview(undefined);
+      setDiscoveryAskOutcome(undefined);
+    }
     await refreshWorkbench();
   };
 
