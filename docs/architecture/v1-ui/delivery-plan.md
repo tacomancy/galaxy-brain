@@ -811,6 +811,18 @@ needed.
   codecs, repository formats, result-history shape, Governance persistence,
   session-state storage, and broad filesystem API exposure remain unchanged.
 
+### Section E hardening implementation preparation
+
+The remaining post-tracer-bullet implementation work is specified in the
+[Section E hardening specification](section-e-hardening-spec.md). It covers
+the open follow-ups in Issues #70–#72: separating Workbench Session from
+Source Processing artifact reads, moving transient Synthesis lifecycle state
+out of the Electron composition root, and replacing recursively nested
+Synthesis-result history with an append-only representation. The brief keeps
+the existing S1, S3, and S5 Test Seams, explicitly documents deferred work and
+discarded alternatives, and requires human approval of the Module Interface
+and durable history-layout decisions before implementation.
+
 ### Release-readiness implementation preparation
 
 The next work package is defined in the [V1 release-readiness specification](v1-release-readiness-spec.md). It covers the provider-free packaged-application gate and the MC/DC evidence/release gate as separate quality obligations. The specification explicitly preserves the existing S1–S5 seams, isolates mutating workflow fixtures, keeps LCOV branch coverage distinct from MC/DC, and defers signed distribution and broad product expansion.
