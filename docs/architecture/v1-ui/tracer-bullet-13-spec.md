@@ -1,6 +1,6 @@
 # Tracer Bullet 13: Make Atlas actionable
 
-Status: implementation-ready and implemented on `codex/tb13-atlas-actionable`.
+Status: implementation and human acceptance complete on September 1, 2026.
 
 ## Intent
 
