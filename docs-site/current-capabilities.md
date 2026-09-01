@@ -1,7 +1,7 @@
 ---
 title: Current capabilities
 summary: Versioned distinction between released, current-main, and planned Workbench behavior.
-applies_to_release: "0.18.0" # x-release-please-version
+applies_to_release: "0.19.0" # x-release-please-version
 tracks_main: true
 verified_commit: "ec31abc"
 reviewed_on: "2026-09-01"
@@ -21,7 +21,7 @@ This page was reviewed on **2026-09-01** against the following two baselines:
 
 | Baseline                 | Marker                                                                                                 | Meaning                                                                                                                               |
 | ------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Latest published release | [0.18.0 release notes](../app/CHANGELOG.md)                                                           | The version identified by the application package, changelog, and support policy.                                                     | <!-- x-release-please-version -->
+| Latest published release | [0.19.0 release notes](../app/CHANGELOG.md)                                                           | The version identified by the application package, changelog, and support policy.                                                     | <!-- x-release-please-version -->
 | Current `main` snapshot  | [`ec31abc`](https://github.com/tacomancy/galaxy-brain/commit/ec31abc) | The `main` revision reviewed for this page; later commits may change current-main behavior without changing the release claims above. |
 
 The support classes used below are deliberate:
@@ -35,9 +35,9 @@ The support classes used below are deliberate:
   current `main` surface. Architecture and issue descriptions are plans, not
   user instructions.
 
-## Latest published release: 0.18.0 <!-- x-release-please-version -->
+## Latest published release: 0.19.0 <!-- x-release-please-version -->
 
-The latest published release is **0.18.0**. <!-- x-release-please-version --> Its desktop-supported baseline is
+The latest published release is **0.19.0**. <!-- x-release-please-version --> Its desktop-supported baseline is
 the accepted TB1–TB7 Workbench behavior. The 0.15.0 release also contains the
 TB8 file-backed implementation, but that work remains module-only because the
 published release has no desktop persistence or rollback workflow.
