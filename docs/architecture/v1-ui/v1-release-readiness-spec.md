@@ -5,7 +5,9 @@ provider-free packaged-app workflow, local governance/recovery workflows, and
 initial mixed condition/decision coverage (MC/DC) evaluator are implemented.
 This brief remains the bounded work plan for the remaining release evidence;
 it is not a replacement for the V1 victory checklist, which remains the
-release decision authority.
+release decision authority. The remaining Section C privacy/non-retention
+work is detailed in the [provider-free privacy and non-retention packaged-gate
+specification](provider-free-privacy-gate-spec.md).
 
 ## Governing documentation
 
@@ -213,8 +215,10 @@ before implementation continues.
 
 The following checks are intentionally not inferred from automated output:
 
-1. **Privacy and non-retention:** launch the exact packaged application tested
-   by `npm run test:provider-free` with no real credentials configured. Create
+1. **Privacy and non-retention:** implement and verify the bounded work in the
+   [provider-free privacy and non-retention packaged-gate
+   specification](provider-free-privacy-gate-spec.md), then launch the exact
+   packaged application tested by `npm run test:provider-free` with no real credentials configured. Create
    or open an isolated temporary repository, prepare a Synthesis preview, and
    confirm that the exact payload is visible only on the confirmation surface.
    Confirm that declining or receiving `agent-provider-unavailable` leaves no

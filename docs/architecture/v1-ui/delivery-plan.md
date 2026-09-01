@@ -791,7 +791,11 @@ documentation/test-only portion. The remaining release work is the broader
 provider-free evidence checklist, security/privacy obligations outside this
 slice, MC/DC evidence for changed registered decisions, and human acceptance
 of other release behaviors. The linked-PDF slice's six-gate human acceptance
-was completed on August 31, 2026.
+was completed on August 31, 2026. The remaining Section C privacy/non-retention
+work is prepared in the [provider-free privacy and non-retention packaged-gate
+specification](provider-free-privacy-gate-spec.md); its documentation review
+and spec-generation prerequisite is explicit, and implementation/human
+acceptance remain pending.
 
 ### Provider-free linked-PDF release gate completion record — August 31, 2026
 
