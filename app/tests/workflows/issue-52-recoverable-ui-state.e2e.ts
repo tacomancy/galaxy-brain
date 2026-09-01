@@ -71,7 +71,7 @@ describe("Issue 52 recoverable Workbench failures", () => {
         { recursive: true },
       );
       const dialog = await browser.electron.mock("dialog", "showOpenDialog");
-      await dialog.mockResolvedValue({
+      await dialog.mockResolvedValueOnce({
         canceled: false,
         filePaths: [repositoryPath],
       });

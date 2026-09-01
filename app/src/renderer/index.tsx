@@ -207,6 +207,9 @@ const WorkbenchShell = ({
     initialAuthoring.outcome === "available",
   );
   const shouldFocusSelectedContextAction = useRef(false);
+  const bridgeOperationDepth = useRef(0);
+  const bridgeFailureVersion = useRef(0);
+  const bridgeRootOperation = useRef<string | undefined>(undefined);
   const [lastOutcome, setLastOutcome] = useState<
     | RepositoryOperationOutcome
     | WorkbenchContextSelectionOutcome
@@ -225,18 +228,40 @@ const WorkbenchShell = ({
     operation: string,
     action: () => Promise<T>,
   ): Promise<T | undefined> => {
+    const isRootOperation = bridgeOperationDepth.current === 0;
+    const failureVersionAtStart = bridgeFailureVersion.current;
+    if (isRootOperation) {
+      bridgeRootOperation.current = operation;
+    }
+    const retry = async (): Promise<void> => {
+      await runBridgeOperation(operation, action);
+    };
+    bridgeOperationDepth.current += 1;
     try {
       const result = await action();
-      bridgeRetry.current = undefined;
-      setBridgeFailure(undefined);
+      if (
+        isRootOperation &&
+        bridgeFailureVersion.current === failureVersionAtStart
+      ) {
+        bridgeRetry.current = undefined;
+        bridgeRootOperation.current = undefined;
+        setBridgeFailure(undefined);
+      }
       return result;
     } catch {
-      const retry = async (): Promise<void> => {
-        await runBridgeOperation(operation, action);
-      };
-      bridgeRetry.current = retry;
-      setBridgeFailure({ operation });
+      bridgeFailureVersion.current += 1;
+      if (isRootOperation) {
+        bridgeRetry.current = retry;
+      }
+      setBridgeFailure({
+        operation: bridgeRootOperation.current ?? operation,
+      });
       return undefined;
+    } finally {
+      bridgeOperationDepth.current -= 1;
+      if (isRootOperation && bridgeOperationDepth.current === 0) {
+        bridgeRootOperation.current = undefined;
+      }
     }
   };
   const [synthesisPreview, setSynthesisPreview] = useState<

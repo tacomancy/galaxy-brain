@@ -103,6 +103,14 @@ const isSynthesisConfirmation = (
 const isPositiveInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
+let injectedFailureConsumed = false;
+
+const mainDiagnosticCauses: Array<{
+  operation: string;
+  timestamp: string;
+  cause: unknown;
+}> = [];
+
 // A custom secure scheme lets packaged renderer assets load without exposing
 // a broad file:// surface to the sandboxed renderer.
 protocol.registerSchemesAsPrivileged([
@@ -124,7 +132,15 @@ const recordMainDiagnostic = (
   operation: string,
   phase: "bridge" | "window",
   category: "unexpected-rejection" | "startup-failure",
+  cause?: unknown,
 ): void => {
+  const timestamp = new Date().toISOString();
+  if (cause !== undefined) {
+    mainDiagnosticCauses.push({ operation, timestamp, cause });
+    if (mainDiagnosticCauses.length > 100) {
+      mainDiagnosticCauses.shift();
+    }
+  }
   // Keep diagnostics deliberately structured and non-sensitive. The renderer
   // receives only a safe generic recovery outcome, never this record or the
   // underlying exception.
@@ -134,7 +150,7 @@ const recordMainDiagnostic = (
       operation,
       phase,
       category,
-      timestamp: new Date().toISOString(),
+      timestamp,
     }),
   );
 };
@@ -201,7 +217,6 @@ const createWindow = async (): Promise<void> => {
   const configuredFailure = failureArgument?.slice(
     "--galaxy-brain-test-failure=".length,
   );
-  let injectedFailureConsumed = false;
   const maybeInjectFailure = (operation: string): void => {
     if (configuredFailure !== operation || injectedFailureConsumed) {
       return;
@@ -551,6 +566,8 @@ const createWindow = async (): Promise<void> => {
     },
   });
 
+  let pendingOpenRepositoryPath: string | undefined;
+
   const registerIpcHandler = (
     channel: string,
     handler: (
@@ -561,8 +578,8 @@ const createWindow = async (): Promise<void> => {
     ipcMain.handle(channel, async (event, ...args) => {
       try {
         return await handler(event, ...args);
-      } catch {
-        recordMainDiagnostic(channel, "bridge", "unexpected-rejection");
+      } catch (cause: unknown) {
+        recordMainDiagnostic(channel, "bridge", "unexpected-rejection", cause);
         throw new Error("Workbench operation could not be completed.");
       }
     });
@@ -823,18 +840,31 @@ const createWindow = async (): Promise<void> => {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
-    const selection = await dialog.showOpenDialog(mainWindow, {
-      buttonLabel: "Open Repository",
-      message: "Choose a Knowledge Repository to open.",
-      properties: ["openDirectory"],
-    });
+    let repositoryPath = pendingOpenRepositoryPath;
+    if (repositoryPath === undefined) {
+      const selection = await dialog.showOpenDialog(mainWindow, {
+        buttonLabel: "Open Repository",
+        message: "Choose a Knowledge Repository to open.",
+        properties: ["openDirectory"],
+      });
 
-    if (selection.canceled || selection.filePaths[0] === undefined) {
-      return { outcome: "canceled" as const };
+      if (selection.canceled || selection.filePaths[0] === undefined) {
+        return { outcome: "canceled" as const };
+      }
+
+      repositoryPath = selection.filePaths[0];
     }
 
-    maybeInjectFailure("repository-open");
-    return workbenchSession.openRepository(selection.filePaths[0]);
+    try {
+      pendingOpenRepositoryPath = repositoryPath;
+      maybeInjectFailure("repository-open");
+      const outcome = await workbenchSession.openRepository(repositoryPath);
+      pendingOpenRepositoryPath = undefined;
+      return outcome;
+    } catch (cause: unknown) {
+      pendingOpenRepositoryPath = repositoryPath;
+      throw cause;
+    }
   });
 
   registerIpcHandler(
