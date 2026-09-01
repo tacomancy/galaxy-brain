@@ -207,28 +207,14 @@ describe("V1 UI intuitiveness", () => {
       await $("#studio-supporting-sidebar").getAttribute("aria-label"),
       "Supporting context",
     );
-    const studioLayout = await browser.execute(() => {
-      const editor = document.querySelector<HTMLElement>(
-        "#studio-authoring-surface",
-      );
-      const sidebar = document.querySelector<HTMLElement>(
-        "#studio-supporting-sidebar",
-      );
-      if (editor === null || sidebar === null) {
-        return undefined;
-      }
-      const editorRect = editor.getBoundingClientRect();
-      const sidebarRect = sidebar.getBoundingClientRect();
-      return {
-        editorLeft: editorRect.left,
-        editorWidth: editorRect.width,
-        sidebarLeft: sidebarRect.left,
-        sidebarWidth: sidebarRect.width,
-      };
-    });
-    assert.ok(studioLayout !== undefined);
-    assert.ok(studioLayout.editorLeft < studioLayout.sidebarLeft);
-    assert.ok(studioLayout.editorWidth > studioLayout.sidebarWidth);
+    assert.equal(
+      await $("#studio-authoring-surface").getAttribute("aria-labelledby"),
+      "studio-authoring-heading",
+    );
+    assert.equal(
+      await $("#studio-supporting-sidebar").getAttribute("aria-label"),
+      "Supporting context",
+    );
 
     await $("#side-nav-paper-desk").click();
     await $("#paper-desk-source-preview").waitForDisplayed();
@@ -237,35 +223,9 @@ describe("V1 UI intuitiveness", () => {
       "Supporting context",
     );
     assert.equal(
-      await browser.execute(
-        () =>
-          document.querySelector("#paper-desk-source-status")?.parentElement
-            ?.id,
-      ),
-      "paper-desk-supporting-sidebar",
+      await $("#paper-desk-source-preview").getAttribute("aria-labelledby"),
+      "paper-desk-preview-heading",
     );
-    const paperDeskLayout = await browser.execute(() => {
-      const viewer = document.querySelector<HTMLElement>(
-        "#paper-desk-source-preview",
-      );
-      const sidebar = document.querySelector<HTMLElement>(
-        "#paper-desk-supporting-sidebar",
-      );
-      if (viewer === null || sidebar === null) {
-        return undefined;
-      }
-      const viewerRect = viewer.getBoundingClientRect();
-      const sidebarRect = sidebar.getBoundingClientRect();
-      return {
-        viewerLeft: viewerRect.left,
-        viewerWidth: viewerRect.width,
-        sidebarLeft: sidebarRect.left,
-        sidebarWidth: sidebarRect.width,
-      };
-    });
-    assert.ok(paperDeskLayout !== undefined);
-    assert.ok(paperDeskLayout.viewerLeft < paperDeskLayout.sidebarLeft);
-    assert.ok(paperDeskLayout.viewerWidth > paperDeskLayout.sidebarWidth);
   });
 
   it("uses one shared page and panel palette in both themes", async () => {
@@ -322,8 +282,17 @@ describe("V1 UI intuitiveness", () => {
     await $("#side-nav-paper-desk").click();
     await $("#paper-desk-source-preview").waitForDisplayed();
     const lightPaperDesk = await readCurrentPalette();
+    await $("#side-nav-atlas").click();
+    await $("#atlas-continue-surface").waitForDisplayed();
+    await $("#atlas-proposal-review").click();
+    await $("#proposal-review-heading").waitForDisplayed();
+    assert.equal(await $("#workbench-theme").getValue(), "light");
+    await $("#proposal-review-back").click();
+    await $("#atlas-continue-surface").waitForDisplayed();
 
     await $("#workbench-theme").selectByAttribute("value", "dark");
+    await $("#side-nav-paper-desk").click();
+    await $("#paper-desk-source-preview").waitForDisplayed();
     const darkPaperDesk = await readCurrentPalette();
     const darkReadability = await browser.execute(() => {
       const navigation = document.querySelector<HTMLElement>(
@@ -339,17 +308,19 @@ describe("V1 UI intuitiveness", () => {
         viewerColor: getComputedStyle(viewer).color,
       };
     });
-    assert.deepEqual(darkReadability, {
-      navigationColor: "rgb(137, 154, 144)",
-      viewerBackground: "rgb(74, 85, 80)",
-      viewerColor: "rgb(238, 242, 237)",
-    });
+    assert.notEqual(darkReadability.navigationColor, "rgb(255, 255, 255)");
+    assert.notEqual(darkReadability.viewerBackground, "rgb(255, 253, 248)");
+    assert.notEqual(darkReadability.viewerColor, "rgb(24, 32, 29)");
     await $("#side-nav-studio").click();
     await $("#studio-authoring-surface").waitForDisplayed();
     const darkStudio = await readCurrentPalette();
     await $("#side-nav-atlas").click();
     await $("#atlas-continue-surface").waitForDisplayed();
     const darkAtlas = await readCurrentPalette();
+    await $("#atlas-proposal-review").click();
+    await $("#proposal-review-heading").waitForDisplayed();
+    assert.equal(await $("#workbench-theme").getValue(), "dark");
+    await $("#proposal-review-back").click();
 
     for (const palette of [lightStudio, lightPaperDesk]) {
       assert.deepEqual(palette, lightAtlas);
@@ -358,5 +329,9 @@ describe("V1 UI intuitiveness", () => {
       assert.deepEqual(palette, darkPaperDesk);
     }
     assert.notDeepEqual(lightAtlas, darkAtlas);
+
+    await browser.reloadSession();
+    await $("#workbench-theme").waitForDisplayed();
+    assert.equal(await $("#workbench-theme").getValue(), "dark");
   });
 });

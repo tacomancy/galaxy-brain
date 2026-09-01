@@ -1148,7 +1148,7 @@ const WorkbenchShell = ({
             />
           </aside>
         ) : null}
-        <main id="workbench-main">{workspace}</main>
+        <div id="workbench-main">{workspace}</div>
       </div>
     </div>
   );

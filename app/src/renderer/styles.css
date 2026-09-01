@@ -12,6 +12,9 @@
   --amber-soft: #f6e2c7;
   --blue-soft: #dcebf1;
   --navigation-muted: #68716c;
+  --navigation-surface: rgba(255, 253, 248, 0.9);
+  --navigation-border: rgba(71, 105, 91, 0.2);
+  --navigation-active-ink: #294a3b;
   --viewer-surface: #fffdf8;
   --viewer-ink: #18201d;
   --viewer-highlight: #ffed96;
@@ -33,6 +36,9 @@
   --amber-soft: #5b432b;
   --blue-soft: #294651;
   --navigation-muted: #899a90;
+  --navigation-surface: rgba(37, 45, 41, 0.94);
+  --navigation-border: var(--line);
+  --navigation-active-ink: var(--moss-deep);
   --viewer-surface: #4a5550;
   --viewer-ink: #eef2ed;
   --viewer-highlight: #d9bb73;
@@ -277,7 +283,7 @@ summary:focus-visible {
   align-items: center;
   gap: 7px;
   padding: 5px 8px;
-  border: 1px solid rgba(71, 105, 91, 0.2);
+  border: 1px solid var(--navigation-border);
   border-radius: 9px;
   background: var(--panel);
   color: var(--muted);
@@ -915,7 +921,7 @@ summary:focus-visible {
   padding: 4px;
   border: 1px solid rgba(71, 105, 91, 0.2);
   border-radius: 11px;
-  background: rgba(255, 253, 248, 0.9);
+  background: var(--navigation-surface);
   box-shadow: 0 8px 24px rgba(33, 44, 39, 0.1);
   backdrop-filter: blur(12px);
 }
@@ -934,7 +940,7 @@ summary:focus-visible {
 #workspace-switcher button:hover:not(:disabled),
 #workspace-switcher button[aria-current="page"] {
   background: var(--sage);
-  color: #294a3b;
+  color: var(--navigation-active-ink);
 }
 
 #workspace-switcher button:disabled {
