@@ -28,6 +28,10 @@ import type {
   AuthoringOperationOutcome,
   AuthoringReadOutcome,
 } from "../modules/knowledge-authoring";
+import type {
+  AtlasLearningRouteEditOutcome,
+  AtlasOrientationReadOutcome,
+} from "../modules/atlas-orientation";
 
 declare global {
   interface Window {
@@ -50,6 +54,11 @@ declare global {
       undoAuthoringSemanticText(): Promise<AuthoringOperationOutcome>;
       setAuthoringMode(mode: AuthoringMode): Promise<AuthoringOperationOutcome>;
       readProposalReview(): Promise<ProposalReviewReadOutcome>;
+      readAtlasOrientation(): Promise<AtlasOrientationReadOutcome>;
+      editLearningRouteTitle(
+        routeId: string,
+        title: string,
+      ): Promise<AtlasLearningRouteEditOutcome>;
       openProposalReview(): Promise<ProposalReviewReadOutcome>;
       acceptProposalReview(): Promise<ProposalReviewApplyOutcome>;
       createRepository(): Promise<RepositoryOperationOutcome>;

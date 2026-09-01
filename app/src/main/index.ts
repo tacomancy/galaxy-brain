@@ -29,6 +29,15 @@ import { createFileBackedSourceAssetAdapter } from "../adapters/pdf/file-backed-
 import { createPdfJsAdapter } from "../adapters/pdf/pdfjs-pdf-adapter";
 import { createFileBackedSynthesisResultRepository } from "../adapters/working-material/file-backed-synthesis-result-repository";
 import { createFileBackedWorkingMaterialRepository } from "../adapters/working-material/file-backed-working-material-repository";
+import {
+  createEmptyAtlasOrientationSource,
+  createFixtureAtlasOrientationSource,
+} from "../adapters/atlas-orientation/fixture-atlas-orientation";
+import {
+  createAtlasOrientation,
+  type AtlasLearningRouteEditOutcome,
+  type AtlasOrientationReadOutcome,
+} from "../modules/atlas-orientation";
 import { createGovernance } from "../modules/governance";
 import { contentTypeFor } from "./renderer-asset-content-type";
 import {
@@ -190,6 +199,11 @@ const createWindow = async (): Promise<void> => {
   const workbenchSession = createWorkbenchSession(
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
+  );
+  const atlasOrientation = createAtlasOrientation(
+    isFixtureMode
+      ? createFixtureAtlasOrientationSource()
+      : createEmptyAtlasOrientationSource(),
   );
   let authoringRepositoryPath: string | undefined;
   let authoring: KnowledgeAuthoring | undefined;
@@ -579,6 +593,40 @@ const createWindow = async (): Promise<void> => {
     return readProposalReview();
   });
 
+  ipcMain.handle(
+    "workbench:read-atlas-orientation",
+    (event): Promise<AtlasOrientationReadOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      return atlasOrientation.read();
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:edit-learning-route-title",
+    (
+      event,
+      routeId: unknown,
+      title: unknown,
+    ): Promise<AtlasLearningRouteEditOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (
+        typeof routeId !== "string" ||
+        routeId.length === 0 ||
+        typeof title !== "string"
+      ) {
+        throw new Error("Invalid Learning Route edit.");
+      }
+
+      return atlasOrientation.editLearningRouteTitle(routeId, title);
+    },
+  );
+
   ipcMain.handle("workbench:open-proposal-review", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
@@ -901,6 +949,8 @@ const createWindow = async (): Promise<void> => {
     ipcMain.removeHandler("workbench:open-authoring-construct");
     ipcMain.removeHandler("workbench:set-authoring-mode");
     ipcMain.removeHandler("workbench:read-proposal-review");
+    ipcMain.removeHandler("workbench:read-atlas-orientation");
+    ipcMain.removeHandler("workbench:edit-learning-route-title");
     ipcMain.removeHandler("workbench:open-proposal-review");
     ipcMain.removeHandler("workbench:accept-proposal-review");
     ipcMain.removeHandler("workbench:create-repository");

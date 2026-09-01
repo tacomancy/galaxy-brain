@@ -10,7 +10,12 @@ import type {
   ProposalReviewItem,
   ProposalReviewReadOutcome,
 } from "../../modules/proposal-review";
+import type {
+  AtlasLearningRouteEditOutcome,
+  AtlasOrientationReadOutcome,
+} from "../../modules/atlas-orientation";
 import type { JSX } from "react";
+import { useState } from "react";
 
 /** Props supplied by the Workbench Session through the renderer entry point. */
 interface AtlasProps {
@@ -29,6 +34,12 @@ interface AtlasProps {
   onOpenTopicInStudio: (topicId: string) => Promise<void>;
   proposalReview: ProposalReviewReadOutcome;
   onOpenProposalReview: () => Promise<void>;
+  orientation: AtlasOrientationReadOutcome;
+  onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
+  onEditLearningRouteTitle: (
+    routeId: string,
+    title: string,
+  ) => Promise<AtlasLearningRouteEditOutcome>;
 }
 
 const AtlasHeader = (): JSX.Element => (
@@ -223,6 +234,220 @@ const NeedsJudgmentCard = ({
   </section>
 );
 
+interface AtlasOrientationCardsProps {
+  orientation: AtlasOrientationReadOutcome;
+  onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
+  onEditLearningRouteTitle: (
+    routeId: string,
+    title: string,
+  ) => Promise<AtlasLearningRouteEditOutcome>;
+}
+
+const AtlasOrientationCards = ({
+  orientation,
+  onOpenSourceRecordInPaperDesk,
+  onEditLearningRouteTitle,
+}: AtlasOrientationCardsProps): JSX.Element | null => {
+  const [editingRouteId, setEditingRouteId] = useState<string | undefined>();
+  const [routeTitleDraft, setRouteTitleDraft] = useState("");
+  const [routeOutcome, setRouteOutcome] = useState<string | undefined>();
+
+  if (orientation.outcome !== "available") {
+    return null;
+  }
+
+  const { metrics, learningRoutes, generatedRelationships } =
+    orientation.overview;
+  const routeBeingEdited = learningRoutes.find(
+    (route) => route.id === editingRouteId,
+  );
+
+  const beginRouteEdit = (routeId: string, title: string): void => {
+    setEditingRouteId(routeId);
+    setRouteTitleDraft(title);
+    setRouteOutcome(undefined);
+  };
+
+  const cancelRouteEdit = (): void => {
+    setEditingRouteId(undefined);
+    setRouteTitleDraft("");
+    setRouteOutcome(undefined);
+  };
+
+  const saveRouteEdit = async (): Promise<void> => {
+    if (editingRouteId === undefined) {
+      return;
+    }
+
+    const outcome = await onEditLearningRouteTitle(
+      editingRouteId,
+      routeTitleDraft,
+    );
+    if (outcome.outcome === "updated") {
+      setEditingRouteId(undefined);
+      setRouteTitleDraft("");
+      setRouteOutcome("Learning Route updated for this Workbench session.");
+      return;
+    }
+
+    setRouteOutcome(outcome.detail);
+  };
+
+  return (
+    <>
+      {metrics.map((metric) => (
+        <section
+          id="atlas-traceable-metric"
+          className="atlas-support-card metric-card"
+          key={metric.id}
+          aria-labelledby="atlas-metric-heading"
+        >
+          <span className="card-kicker">Traceable metric</span>
+          <div className="card-header-row">
+            <div>
+              <h2 id="atlas-metric-heading">{metric.label}</h2>
+              <p id="atlas-metric-value" className="metric-value">
+                {metric.value}
+              </p>
+            </div>
+            <span className="status-pill">Defined</span>
+          </div>
+          <p id="atlas-metric-definition" className="support-copy">
+            {metric.definition}
+          </p>
+          <p className="support-label">Source items</p>
+          <ul id="atlas-metric-source-items" className="source-item-list">
+            {metric.sourceItems.map((sourceItem) => (
+              <li key={sourceItem.id}>{sourceItem.title}</li>
+            ))}
+          </ul>
+          <button
+            id="atlas-metric-open-source"
+            className="button button-secondary"
+            type="button"
+            onClick={() =>
+              onOpenSourceRecordInPaperDesk(metric.action.sourceRecordId)
+            }
+          >
+            {metric.action.label}
+          </button>
+        </section>
+      ))}
+
+      {learningRoutes.map((route) => (
+        <section
+          id="atlas-learning-route"
+          className="atlas-support-card route-card"
+          key={route.id}
+          aria-labelledby="atlas-learning-route-heading"
+        >
+          <span className="card-kicker">Learning Route</span>
+          <div className="card-header-row">
+            <div>
+              <h2 id="atlas-learning-route-heading">{route.title}</h2>
+              <p id="atlas-learning-route-owner" className="ownership-label">
+                Human-authored
+              </p>
+            </div>
+            <span className="status-pill">Human-owned</span>
+          </div>
+          <ol id="atlas-learning-route-steps" className="route-step-list">
+            {route.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          {routeBeingEdited?.id === route.id ? (
+            <div className="route-edit-form">
+              <label htmlFor="atlas-learning-route-title">Route title</label>
+              <input
+                id="atlas-learning-route-title"
+                value={routeTitleDraft}
+                onChange={(event) => setRouteTitleDraft(event.target.value)}
+              />
+              <div className="action-row action-row-compact">
+                <button
+                  id="atlas-learning-route-save"
+                  className="button button-primary"
+                  type="button"
+                  onClick={() => void saveRouteEdit()}
+                >
+                  Save route title
+                </button>
+                <button
+                  id="atlas-learning-route-cancel"
+                  className="button button-quiet"
+                  type="button"
+                  onClick={cancelRouteEdit}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              id="atlas-learning-route-edit"
+              className="button button-secondary"
+              type="button"
+              onClick={() => beginRouteEdit(route.id, route.title)}
+            >
+              Edit route
+            </button>
+          )}
+          {routeOutcome === undefined ? null : (
+            <p id="atlas-learning-route-outcome" role="status">
+              {routeOutcome}
+            </p>
+          )}
+        </section>
+      ))}
+
+      {generatedRelationships.map((relationship) => (
+        <section
+          id="atlas-generated-relationship"
+          className="atlas-support-card generated-relationship-card"
+          key={relationship.id}
+          aria-labelledby="atlas-generated-relationship-heading"
+        >
+          <span className="card-kicker">Generated Relationship suggestion</span>
+          <div className="card-header-row">
+            <div>
+              <h2 id="atlas-generated-relationship-heading">
+                {relationship.sourceTopicTitle} →{" "}
+                {relationship.targetTopicTitle}
+              </h2>
+              <p
+                id="atlas-generated-relationship-type"
+                className="support-copy"
+              >
+                Suggested relationship: {relationship.relationship}
+              </p>
+            </div>
+            <span className="generated-status-pill">
+              Not Governed Knowledge
+            </span>
+          </div>
+          <p
+            id="atlas-generated-relationship-evidence"
+            className="support-copy"
+          >
+            Evidence: {relationship.evidence}
+          </p>
+          <button
+            id="atlas-generated-relationship-open-source"
+            className="button button-secondary"
+            type="button"
+            onClick={() =>
+              onOpenSourceRecordInPaperDesk(relationship.sourceRecordId)
+            }
+          >
+            Inspect source evidence
+          </button>
+        </section>
+      ))}
+    </>
+  );
+};
+
 interface ContextSelectionCardProps {
   contexts: WorkbenchContext[];
   onSelectWorkbenchContext: (
@@ -310,6 +535,9 @@ export const Atlas = ({
   onOpenTopicInStudio,
   proposalReview,
   onOpenProposalReview,
+  orientation,
+  onOpenSourceRecordInPaperDesk,
+  onEditLearningRouteTitle,
 }: AtlasProps): JSX.Element => {
   // This is an invariant of the fresh-session Interface. Failing loudly keeps
   // a mismatched composition from looking like a valid Atlas screen.
@@ -363,6 +591,11 @@ export const Atlas = ({
                 onOpenProposalReview={onOpenProposalReview}
               />
             ) : null}
+            <AtlasOrientationCards
+              orientation={orientation}
+              onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
+              onEditLearningRouteTitle={onEditLearningRouteTitle}
+            />
           </div>
         )}
       </div>
