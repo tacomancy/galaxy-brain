@@ -8,12 +8,21 @@ import { PaperDesk } from "./paper-desk/PaperDesk";
 import { ProposalReview } from "./proposal-review/ProposalReview";
 import { Studio } from "./studio/Studio";
 import { WorkspaceSwitcher } from "./workspace-switcher/WorkspaceSwitcher";
+import { Discovery } from "./discovery/Discovery";
 import type {
   AuthoringConstruct,
   AuthoringMode,
   AuthoringOperationOutcome,
   AuthoringReadOutcome,
 } from "../modules/knowledge-authoring";
+import type {
+  AskPreview,
+  ConfirmAskOutcome,
+  DiscoveryContextCandidate,
+  DiscoveryJumpOutcome,
+  DiscoverySearchOutcome,
+  PrepareAskOutcome,
+} from "../modules/discovery";
 import type {
   ProposalReviewApplyOutcome,
   ProposalReviewReadOutcome,
@@ -146,6 +155,27 @@ const WorkbenchShell = ({
   const [restoreOutcome, setRestoreOutcome] = useState<
     RestoreSynthesisResultOutcome | undefined
   >();
+  const [discoverySearchOutcome, setDiscoverySearchOutcome] = useState<
+    DiscoverySearchOutcome | undefined
+  >();
+  const [discoveryAskContextCandidates, setDiscoveryAskContextCandidates] =
+    useState<DiscoveryContextCandidate[]>([]);
+  const [selectedDiscoveryAskContextIds, setSelectedDiscoveryAskContextIds] =
+    useState<string[]>([]);
+  const [discoveryAskPreview, setDiscoveryAskPreview] = useState<
+    AskPreview | undefined
+  >();
+  const [discoveryAskOutcome, setDiscoveryAskOutcome] = useState<
+    | ConfirmAskOutcome
+    | {
+        outcome: "unsupported" | "invalid-prompt" | "repository-unavailable";
+        detail: string;
+      }
+    | undefined
+  >();
+  const [discoveryJumpOutcome, setDiscoveryJumpOutcome] = useState<
+    DiscoveryJumpOutcome | undefined
+  >();
   const [proposalReview, setProposalReview] =
     useState<ProposalReviewReadOutcome>(initialProposalReview);
   const [atlasOrientation, setAtlasOrientation] =
@@ -162,6 +192,18 @@ const WorkbenchShell = ({
   const [proposalReviewApplyOutcome, setProposalReviewApplyOutcome] = useState<
     ProposalReviewApplyOutcome | undefined
   >();
+
+  useEffect(() => {
+    if (workbench.repositoryPath === undefined) {
+      return;
+    }
+    void window.workbench.discoveryAskContextCandidates().then((outcome) => {
+      setDiscoveryAskContextCandidates(
+        outcome.outcome === "available" ? outcome.candidates : [],
+      );
+      setSelectedDiscoveryAskContextIds([]);
+    });
+  }, [workbench.repositoryPath]);
 
   const clearSourceStatus = (): void => {
     setSourceStatus(undefined);
@@ -258,6 +300,98 @@ const WorkbenchShell = ({
     setAuthoring(
       authoringReadFromOperation(await window.workbench.setAuthoringMode(mode)),
     );
+  };
+
+  const searchDiscovery = async (query: string): Promise<void> => {
+    setDiscoveryAskPreview(undefined);
+    setDiscoveryAskOutcome(undefined);
+    setDiscoveryJumpOutcome(undefined);
+    setDiscoverySearchOutcome(await window.workbench.discoverySearch(query));
+  };
+
+  const prepareAsk = async (prompt: string): Promise<void> => {
+    setDiscoverySearchOutcome(undefined);
+    setDiscoveryAskOutcome(undefined);
+    setDiscoveryJumpOutcome(undefined);
+    const outcome: PrepareAskOutcome = await window.workbench.prepareAsk({
+      prompt,
+      contextItemIds: selectedDiscoveryAskContextIds,
+    });
+    setDiscoveryAskPreview(
+      outcome.outcome === "preview-ready" ? outcome.preview : undefined,
+    );
+    if (outcome.outcome !== "preview-ready") {
+      setDiscoveryAskOutcome(outcome);
+    }
+  };
+
+  const toggleDiscoveryAskContextItem = (itemId: string): void => {
+    setSelectedDiscoveryAskContextIds((current) =>
+      current.includes(itemId)
+        ? current.filter((id) => id !== itemId)
+        : [...current, itemId],
+    );
+  };
+
+  const removeAskContextItem = async (itemId: string): Promise<void> => {
+    const outcome = await window.workbench.removeAskContextItem(itemId);
+    if (outcome.outcome === "preview-ready") {
+      setDiscoveryAskPreview(outcome.preview);
+      return;
+    }
+    setDiscoveryAskPreview(undefined);
+    setDiscoveryAskOutcome(outcome);
+  };
+
+  const confirmAsk = async (
+    confirmation: "confirmed" | "declined" | "canceled",
+  ): Promise<void> => {
+    setDiscoveryAskOutcome(await window.workbench.confirmAsk(confirmation));
+    setDiscoveryAskPreview(undefined);
+  };
+
+  const jumpDiscovery = async (command: string): Promise<void> => {
+    setDiscoverySearchOutcome(undefined);
+    setDiscoveryAskPreview(undefined);
+    setDiscoveryAskOutcome(undefined);
+    const outcome = await window.workbench.discoveryJump(command);
+    setDiscoveryJumpOutcome(outcome);
+    if (outcome.outcome !== "resolved") {
+      return;
+    }
+    if (outcome.target.kind === "workspace") {
+      applyWorkspaceTransition(
+        await window.workbench.switchWorkspace(outcome.target.workspace),
+      );
+    } else if (outcome.target.kind === "topic") {
+      applyWorkspaceTransition(
+        await window.workbench.openTopicInStudio(outcome.target.id),
+      );
+    } else if (outcome.target.kind === "source-record") {
+      applyWorkspaceTransition(
+        await window.workbench.openSourceRecordInPaperDesk(outcome.target.id),
+      );
+    } else if (
+      outcome.target.kind === "structured-annotation" &&
+      outcome.target.sourceRecordId !== undefined
+    ) {
+      applyWorkspaceTransition(
+        await window.workbench.openSourceRecordInPaperDesk(
+          outcome.target.sourceRecordId,
+        ),
+      );
+    } else if (
+      outcome.target.kind === "saved-synthesis-result" &&
+      outcome.target.targetTopicId !== undefined
+    ) {
+      applyWorkspaceTransition(
+        await window.workbench.openTopicInStudio(outcome.target.targetTopicId),
+      );
+    } else {
+      applyWorkspaceTransition(
+        await window.workbench.switchWorkspace("studio"),
+      );
+    }
   };
 
   const closeAuthoringDraft = (): void => {
@@ -577,7 +711,28 @@ const WorkbenchShell = ({
     );
   })();
 
-  return <div id="workbench-shell">{workspace}</div>;
+  return (
+    <div id="workbench-shell">
+      {workbench.repositoryStatus === "selected" ? (
+        <Discovery
+          askContextCandidates={discoveryAskContextCandidates}
+          askOutcome={discoveryAskOutcome}
+          askPreview={discoveryAskPreview}
+          jumpOutcome={discoveryJumpOutcome}
+          searchOutcome={discoverySearchOutcome}
+          selectedAskContextIds={selectedDiscoveryAskContextIds}
+          onConfirmAsk={confirmAsk}
+          onJump={jumpDiscovery}
+          onOpenSearchResult={jumpDiscovery}
+          onPrepareAsk={prepareAsk}
+          onToggleAskContextItem={toggleDiscoveryAskContextItem}
+          onRemoveAskContextItem={removeAskContextItem}
+          onSearch={searchDiscovery}
+        />
+      ) : null}
+      {workspace}
+    </div>
+  );
 };
 
 void window.workbench.openFreshWorkbench().then(async (workbench) => {

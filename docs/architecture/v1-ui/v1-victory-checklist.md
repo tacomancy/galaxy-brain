@@ -3,7 +3,7 @@
 Status: draft release checklist. TB15 and TB16 are merged and accepted, and the
 provider-free release gate now has focused packaged-workflow evidence for its
 local governance and recovery behaviors, while the linked-PDF packaging
-boundary, privacy review, MC/DC release-candidate rule, TB12–TB14 implementation
+boundary, privacy review, MC/DC release-candidate rule, TB13–TB14 implementation
 and acceptance, and release-readiness dispositions below remain open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
@@ -116,10 +116,10 @@ Passing checks on one pull request is not enough unless the repository requires 
 
 These remaining planned bullets must not remain ambiguous. The scope decision below records whether each item belongs in V1; implementation, verification, and human acceptance remain separate release gates. Record the decision in the delivery plan and relevant spec or product decision.
 
-- [x] TB12, “Separate Search, Ask, and Jump,” is in scope for V1; implementation, verification, and human acceptance remain required in [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31).
+- [x] TB12, “Separate Search, Ask, and Jump,” is in scope for V1; implementation, verification, and human acceptance completed on September 1, 2026 in [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31).
 - [x] TB13, “Make Atlas actionable,” is in scope for V1; implementation, verification, and human acceptance remain required in [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
 - [x] TB14, “Keep learning progress human-owned,” is in scope for V1; implementation, verification, and human acceptance remain required in [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
-- [ ] TB12–TB14 implementation, verification, and human acceptance are complete for V1.
+- [ ] TB13–TB14 implementation, verification, and human acceptance are complete for V1; TB12 completed all three gates on September 1, 2026.
 
 If any of TB12–TB14 is required for V1, review the governing documentation and create a guidance-compliant implementation spec before implementation begins. If deferred, document the boundary clearly rather than leaving an unimplemented tracer bullet implied by the release label.
 
@@ -143,7 +143,7 @@ If any of TB12–TB14 is required for V1, review the governing documentation and
 - [ ] Provider-free core release gate passed.
 - [x] TB15 integrated and accepted in PR #104 on August 31, 2026.
 - [x] TB16 integrated and accepted in PR #106 on August 31, 2026.
-- [x] TB12–TB14 are classified as in scope for V1; implementation and acceptance remain open.
+- [x] TB12–TB14 are classified as in scope for V1; TB12 implementation and acceptance completed on September 1, 2026, while TB13–TB14 remain open.
 - [ ] Distribution and release-operations outcome recorded.
 - [ ] Post-TB hardening and whole-release human acceptance complete or explicitly deferred with residual risks accepted.
 - [ ] Security, supply-chain, and repository-control gates passed.
@@ -167,6 +167,7 @@ Evidence links or notes: __________________________________________________
 - [Delivery Plan](delivery-plan.md)
 - [TB15 specification](tracer-bullet-15-spec.md)
 - [TB16 specification](tracer-bullet-16-spec.md)
+- [TB12 specification](tracer-bullet-12-spec.md)
 - [V1 release operations specification](v1-release-operations-spec.md)
 - [Open GitHub issues](https://github.com/tacomancy/galaxy-brain/issues?q=is%3Aissue%20state%3Aopen)
 - [Post-TB quality hardening, Issue #21](https://github.com/tacomancy/galaxy-brain/issues/21)

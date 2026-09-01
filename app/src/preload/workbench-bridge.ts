@@ -43,6 +43,14 @@ import type {
   LearningOperationOutcome,
   LearningReadOutcome,
 } from "../modules/learning";
+import type {
+  ConfirmAskOutcome,
+  DiscoveryJumpOutcome,
+  DiscoveryContextCandidate,
+  DiscoverySearchOutcome,
+  PrepareAskRequest,
+  PrepareAskOutcome,
+} from "../modules/discovery";
 
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
@@ -121,6 +129,22 @@ contextBridge.exposeInMainWorld("workbench", {
     ipcRenderer.invoke("workbench:switch-workspace", workspace),
   openSavedAnnotation: (): Promise<ReadingPositionOutcome> =>
     ipcRenderer.invoke("workbench:open-saved-annotation"),
+  discoverySearch: (query: string): Promise<DiscoverySearchOutcome> =>
+    ipcRenderer.invoke("workbench:discovery-search", query),
+  discoveryAskContextCandidates: (): Promise<
+    | { outcome: "available"; candidates: DiscoveryContextCandidate[] }
+    | { outcome: "repository-unavailable"; detail: string }
+  > => ipcRenderer.invoke("workbench:discovery-context-candidates"),
+  prepareAsk: (request: PrepareAskRequest): Promise<PrepareAskOutcome> =>
+    ipcRenderer.invoke("workbench:prepare-ask", request),
+  removeAskContextItem: (itemId: string): Promise<PrepareAskOutcome> =>
+    ipcRenderer.invoke("workbench:remove-ask-context-item", itemId),
+  confirmAsk: (
+    confirmation: "confirmed" | "declined" | "canceled",
+  ): Promise<ConfirmAskOutcome> =>
+    ipcRenderer.invoke("workbench:confirm-ask", confirmation),
+  discoveryJump: (command: string): Promise<DiscoveryJumpOutcome> =>
+    ipcRenderer.invoke("workbench:discovery-jump", command),
   prepareSynthesis: (
     includeAllContext: boolean,
   ): Promise<PrepareSynthesisOutcome> =>
