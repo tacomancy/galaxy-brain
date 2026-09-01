@@ -47,6 +47,18 @@ describe("Review a Synthesis request", () => {
       await $("#studio-synthesis-include-all-context").click();
       await $("#studio-synthesis-prepare").click();
       await $("#studio-synthesis-preview").waitForDisplayed();
+      assert.match(
+        (await $("#studio-synthesis-preview").getAttribute("class")) ?? "",
+        /\bdiscovery-result\b/u,
+      );
+      assert.match(
+        (await $("#studio-synthesis-preview dl").getAttribute("class")) ?? "",
+        /\bdiscovery-preview-details\b/u,
+      );
+      assert.match(
+        (await $("#studio-synthesis-context").getAttribute("class")) ?? "",
+        /\bdiscovery-context-list\b/u,
+      );
 
       assert.equal(
         await $("#studio-synthesis-summary").getText(),
@@ -113,6 +125,13 @@ describe("Review a Synthesis request", () => {
           timeoutMsg: "The Synthesis decline outcome did not appear.",
         },
       );
+      await browser.waitUntil(
+        async () => !(await $("#studio-synthesis-preview").isExisting()),
+        {
+          timeout: 5_000,
+          timeoutMsg: "The declined Synthesis preview remained actionable.",
+        },
+      );
 
       await $("#studio-synthesis-prepare").click();
       await $("#studio-synthesis-preview").waitForDisplayed();
@@ -137,6 +156,7 @@ describe("Review a Synthesis request", () => {
         await $("#studio-synthesis-outcome").getAttribute("role"),
         "status",
       );
+      assert.equal(await $("#studio-synthesis-preview").isExisting(), false);
 
       await $("#studio-synthesis-prepare").click();
       await $("#studio-synthesis-preview").waitForDisplayed();
@@ -155,6 +175,7 @@ describe("Review a Synthesis request", () => {
         await $("#studio-synthesis-outcome").getText(),
         "Synthesis requires a configured Agent Provider.",
       );
+      assert.equal(await $("#studio-synthesis-preview").isExisting(), false);
 
       await $("#studio-synthesis-results").waitForDisplayed();
       assert.equal(

@@ -932,6 +932,8 @@ const WorkbenchShell = ({
   const confirmSynthesis = async (
     confirmation: "confirmed" | "declined" | "canceled",
   ): Promise<void> => {
+    setSynthesisPreview(undefined);
+    setSynthesisOutcome(undefined);
     await runBridgeOperation("confirm-synthesis", async () => {
       setSynthesisOutcome(
         await window.workbench.confirmSynthesis(confirmation),
