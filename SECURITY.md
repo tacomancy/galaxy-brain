@@ -15,7 +15,7 @@ are documented in [SUPPORT.md](SUPPORT.md).
 | Version | Supported |
 | --- | --- |
 | `main` | Yes |
-| Latest published release (`0.18.0`) | Yes |
+| Latest published release (`0.18.0`) | Yes | <!-- x-release-please-version -->
 | Older versions | No |
 
 ## Reporting a vulnerability

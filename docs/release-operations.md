@@ -90,6 +90,13 @@ The selected V1 support policy covers the latest published release and the
 current `main` development line for security reports. Public version metadata,
 `SECURITY.md`, release notes, and the release manifest must agree.
 
+The Release Please workflow owns the release-version markers in `SECURITY.md`
+and the [Current Capabilities](../docs-site/current-capabilities.md) page. It
+updates those annotated markers as part of the generated release pull request;
+do not hand-edit them independently. The capabilities page's reviewed commit,
+review date, and support claims remain human-owned because a version bump does
+not prove that the current `main` snapshot has been reviewed.
+
 ## Rollback and recovery
 
 Rollback means returning to a previously built application package. It does
