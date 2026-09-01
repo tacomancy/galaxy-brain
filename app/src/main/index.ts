@@ -120,6 +120,25 @@ protocol.registerSchemesAsPrivileged([
 // handler only once prevents duplicate protocol registrations in that path.
 let isRendererProtocolInstalled = false;
 
+const recordMainDiagnostic = (
+  operation: string,
+  phase: "bridge" | "window",
+  category: "unexpected-rejection" | "startup-failure",
+): void => {
+  // Keep diagnostics deliberately structured and non-sensitive. The renderer
+  // receives only a safe generic recovery outcome, never this record or the
+  // underlying exception.
+  console.error(
+    "Galaxy Brain diagnostic",
+    JSON.stringify({
+      operation,
+      phase,
+      category,
+      timestamp: new Date().toISOString(),
+    }),
+  );
+};
+
 /**
  * Serves packaged renderer assets through the allow-listed custom scheme.
  * Requests outside the renderer root are rejected before any file is read.
@@ -176,6 +195,21 @@ const createWindow = async (): Promise<void> => {
   const isProviderUnavailableTestMode = process.argv.includes(
     "--galaxy-brain-test-mode=provider-unavailable",
   );
+  const failureArgument = process.argv.find((argument) =>
+    argument.startsWith("--galaxy-brain-test-failure="),
+  );
+  const configuredFailure = failureArgument?.slice(
+    "--galaxy-brain-test-failure=".length,
+  );
+  let injectedFailureConsumed = false;
+  const maybeInjectFailure = (operation: string): void => {
+    if (configuredFailure !== operation || injectedFailureConsumed) {
+      return;
+    }
+    injectedFailureConsumed = true;
+    throw new Error(`Injected ${operation} failure.`);
+  };
+  maybeInjectFailure("create-window");
   const isFixtureMode =
     isSilentTestMode || isHumanReviewMode || isProviderUnavailableTestMode;
   const starterRoot = app.isPackaged
@@ -485,6 +519,7 @@ const createWindow = async (): Promise<void> => {
   };
   const readSynthesisResults =
     async (): Promise<SynthesisResultListReadOutcome> => {
+      maybeInjectFailure("synthesis-results-read");
       const workbench = await workbenchSession.openFreshWorkbench();
 
       if (workbench.repositoryPath === undefined) {
@@ -516,18 +551,36 @@ const createWindow = async (): Promise<void> => {
     },
   });
 
+  const registerIpcHandler = (
+    channel: string,
+    handler: (
+      event: Electron.IpcMainInvokeEvent,
+      ...args: unknown[]
+    ) => unknown,
+  ): void => {
+    ipcMain.handle(channel, async (event, ...args) => {
+      try {
+        return await handler(event, ...args);
+      } catch {
+        recordMainDiagnostic(channel, "bridge", "unexpected-rejection");
+        throw new Error("Workbench operation could not be completed.");
+      }
+    });
+  };
+
   // IPC is operation-specific and the sender is checked before the Module is
   // invoked, keeping renderer input from becoming arbitrary main-process
   // authority.
-  ipcMain.handle("workbench:open-fresh", (event) => {
+  registerIpcHandler("workbench:open-fresh", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
+    maybeInjectFailure("bootstrap");
     return workbenchSession.openFreshWorkbench();
   });
 
-  ipcMain.handle("workbench:read-source-availability", (event) => {
+  registerIpcHandler("workbench:read-source-availability", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -535,7 +588,7 @@ const createWindow = async (): Promise<void> => {
     return readSourceAvailability();
   });
 
-  ipcMain.handle("workbench:relink-source", async (event) => {
+  registerIpcHandler("workbench:relink-source", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -543,7 +596,7 @@ const createWindow = async (): Promise<void> => {
     return relinkSource();
   });
 
-  ipcMain.handle("workbench:read-theme", (event) => {
+  registerIpcHandler("workbench:read-theme", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -551,7 +604,7 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.readTheme();
   });
 
-  ipcMain.handle("workbench:set-theme", (event, theme: unknown) => {
+  registerIpcHandler("workbench:set-theme", (event, theme: unknown) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -563,7 +616,7 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.setTheme(theme);
   });
 
-  ipcMain.handle("workbench:read-authoring-draft", (event) => {
+  registerIpcHandler("workbench:read-authoring-draft", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -571,7 +624,7 @@ const createWindow = async (): Promise<void> => {
     return readAuthoringDraft();
   });
 
-  ipcMain.handle("workbench:open-authoring-draft", (event) => {
+  registerIpcHandler("workbench:open-authoring-draft", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -579,7 +632,7 @@ const createWindow = async (): Promise<void> => {
     return readAuthoringDraft();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:edit-authoring-semantic-text",
     (event, nextText: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -594,7 +647,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:undo-authoring-semantic-text", (event) => {
+  registerIpcHandler("workbench:undo-authoring-semantic-text", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -602,7 +655,7 @@ const createWindow = async (): Promise<void> => {
     return undoAuthoringSemanticText();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:open-authoring-construct",
     (event, construct: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -624,7 +677,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:set-authoring-mode", (event, mode: unknown) => {
+  registerIpcHandler("workbench:set-authoring-mode", (event, mode: unknown) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -636,7 +689,7 @@ const createWindow = async (): Promise<void> => {
     return setAuthoringMode(mode);
   });
 
-  ipcMain.handle("workbench:read-proposal-review", (event) => {
+  registerIpcHandler("workbench:read-proposal-review", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -644,7 +697,7 @@ const createWindow = async (): Promise<void> => {
     return readProposalReview();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:read-atlas-orientation",
     (event): Promise<AtlasOrientationReadOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -655,7 +708,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:edit-learning-route-title",
     (
       event,
@@ -678,7 +731,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:read-learning-progress",
     (event): Promise<LearningReadOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -689,7 +742,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:confirm-learning-progress",
     (event, suggestionId: unknown): Promise<LearningOperationOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -704,7 +757,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:correct-learning-progress",
     (
       event,
@@ -727,7 +780,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:open-proposal-review", (event) => {
+  registerIpcHandler("workbench:open-proposal-review", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -735,7 +788,7 @@ const createWindow = async (): Promise<void> => {
     return readProposalReview();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:accept-proposal-review",
     (event): Promise<ProposalReviewApplyOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -746,7 +799,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:create-repository", async (event) => {
+  registerIpcHandler("workbench:create-repository", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -761,10 +814,11 @@ const createWindow = async (): Promise<void> => {
       return { outcome: "canceled" as const };
     }
 
+    maybeInjectFailure("repository-create");
     return workbenchSession.createRepository(selection.filePaths[0]);
   });
 
-  ipcMain.handle("workbench:open-repository", async (event) => {
+  registerIpcHandler("workbench:open-repository", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -779,34 +833,39 @@ const createWindow = async (): Promise<void> => {
       return { outcome: "canceled" as const };
     }
 
+    maybeInjectFailure("repository-open");
     return workbenchSession.openRepository(selection.filePaths[0]);
   });
 
-  ipcMain.handle("workbench:select-context", (event, selection: unknown) => {
-    if (event.sender !== mainWindow.webContents) {
-      throw new Error("Untrusted Workbench bridge sender.");
-    }
+  registerIpcHandler(
+    "workbench:select-context",
+    (event, selection: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
 
-    if (
-      typeof selection !== "object" ||
-      selection === null ||
-      !("topicId" in selection) ||
-      !("sourceRecordId" in selection) ||
-      typeof selection.topicId !== "string" ||
-      selection.topicId.length === 0 ||
-      typeof selection.sourceRecordId !== "string" ||
-      selection.sourceRecordId.length === 0
-    ) {
-      throw new Error("Invalid Workbench context selection.");
-    }
+      if (
+        typeof selection !== "object" ||
+        selection === null ||
+        !("topicId" in selection) ||
+        !("sourceRecordId" in selection) ||
+        typeof selection.topicId !== "string" ||
+        selection.topicId.length === 0 ||
+        typeof selection.sourceRecordId !== "string" ||
+        selection.sourceRecordId.length === 0
+      ) {
+        throw new Error("Invalid Workbench context selection.");
+      }
 
-    return workbenchSession.selectWorkbenchContext({
-      topicId: selection.topicId,
-      sourceRecordId: selection.sourceRecordId,
-    });
-  });
+      maybeInjectFailure("context-selection");
+      return workbenchSession.selectWorkbenchContext({
+        topicId: selection.topicId,
+        sourceRecordId: selection.sourceRecordId,
+      });
+    },
+  );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:open-topic-in-studio",
     (event, topicId: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -817,11 +876,12 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Workbench topic transition.");
       }
 
+      maybeInjectFailure("workspace-transition");
       return workbenchSession.openTopicInStudio(topicId);
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:open-source-record-in-paper-desk",
     (event, sourceRecordId: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -832,23 +892,28 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Workbench Source Record transition.");
       }
 
+      maybeInjectFailure("source-navigation");
       return workbenchSession.openSourceRecordInPaperDesk(sourceRecordId);
     },
   );
 
-  ipcMain.handle("workbench:switch-workspace", (event, workspace: unknown) => {
-    if (event.sender !== mainWindow.webContents) {
-      throw new Error("Untrusted Workbench bridge sender.");
-    }
+  registerIpcHandler(
+    "workbench:switch-workspace",
+    (event, workspace: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
 
-    if (!isWorkbenchWorkspace(workspace)) {
-      throw new Error("Invalid Workbench workspace transition.");
-    }
+      if (!isWorkbenchWorkspace(workspace)) {
+        throw new Error("Invalid Workbench workspace transition.");
+      }
 
-    return workbenchSession.switchWorkspace(workspace);
-  });
+      maybeInjectFailure("workspace-transition");
+      return workbenchSession.switchWorkspace(workspace);
+    },
+  );
 
-  ipcMain.handle("workbench:open-saved-annotation", (event) => {
+  registerIpcHandler("workbench:open-saved-annotation", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -856,7 +921,7 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.openSavedAnnotation();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:discovery-search",
     async (event, query: unknown): Promise<DiscoverySearchOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -872,14 +937,17 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:discovery-context-candidates", async (event) => {
-    if (event.sender !== mainWindow.webContents) {
-      throw new Error("Untrusted Workbench bridge sender.");
-    }
-    return (await discoveryFor()).readAskContextCandidates();
-  });
+  registerIpcHandler(
+    "workbench:discovery-context-candidates",
+    async (event) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      return (await discoveryFor()).readAskContextCandidates();
+    },
+  );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:prepare-ask",
     async (event, request: unknown): Promise<PrepareAskOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -919,7 +987,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:remove-ask-context-item",
     async (event, itemId: unknown): Promise<PrepareAskOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -951,7 +1019,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:confirm-ask",
     async (event, confirmation: unknown): Promise<ConfirmAskOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -989,7 +1057,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:discovery-jump",
     async (event, command: unknown): Promise<DiscoveryJumpOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -1005,7 +1073,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:prepare-synthesis",
     async (event, includeAllContext: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -1032,7 +1100,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:remove-synthesis-context-item",
     async (event, annotationId: unknown): Promise<PrepareSynthesisOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -1071,7 +1139,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:confirm-synthesis",
     async (event, confirmation: unknown): Promise<ConfirmSynthesisOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -1119,7 +1187,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:read-synthesis-results", async (event) => {
+  registerIpcHandler("workbench:read-synthesis-results", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -1127,7 +1195,7 @@ const createWindow = async (): Promise<void> => {
     return readSynthesisResults();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:restore-synthesis-result",
     async (
       event,
@@ -1145,6 +1213,8 @@ const createWindow = async (): Promise<void> => {
       ) {
         throw new Error("Invalid Synthesis result restore.");
       }
+
+      maybeInjectFailure("synthesis-result-restore");
 
       const workbench = await workbenchSession.openFreshWorkbench();
 
@@ -1240,9 +1310,40 @@ const createWindow = async (): Promise<void> => {
   await mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
 
+// Window startup recovery keeps the application usable when loading fails and
+// never exposes the underlying exception through the native dialog.
+const recoverWindowStartup = async (): Promise<void> => {
+  recordMainDiagnostic("create-window", "window", "startup-failure");
+  const result = await dialog.showMessageBox({
+    type: "error",
+    title: "Galaxy Brain couldn't start",
+    message: "Galaxy Brain couldn't start",
+    detail:
+      "The Workbench could not finish loading. Retry the application or quit safely.",
+    buttons: ["Retry", "Quit"],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  });
+
+  if (result.response === 0) {
+    // A failed load may have registered handlers on a still-open window;
+    // destroy it first so the retry can recreate the one-window composition.
+    BrowserWindow.getAllWindows().forEach((window) => window.destroy());
+    await createWindow().catch(recoverWindowStartup);
+    return;
+  }
+
+  app.quit();
+};
+
+const startWindow = async (): Promise<void> => {
+  await createWindow().catch(recoverWindowStartup);
+};
+
 // Wait for Electron's lifecycle before creating windows or registering window
 // content that depends on the ready application state.
-app.whenReady().then(createWindow);
+app.whenReady().then(() => void startWindow());
 
 app.on("window-all-closed", () => {
   // macOS conventionally keeps the application alive until explicitly quit.
@@ -1255,6 +1356,6 @@ app.on("activate", () => {
   // Recreate the window when the user reactivates the app after closing it on
   // macOS, while preserving the normal single-window behavior.
   if (BrowserWindow.getAllWindows().length === 0) {
-    void createWindow();
+    void startWindow();
   }
 });

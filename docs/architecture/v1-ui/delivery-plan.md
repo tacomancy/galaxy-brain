@@ -682,6 +682,12 @@ At S1, add one behavior per cycle for keyboard-only completion of a critical wor
 
 The implementation entry point is the [TB16 specification](tracer-bullet-16-spec.md). Its explicit preparation task was to review the governing documentation, define the eight bounded incremental slices and their confirmed S1 seam, document independently known values, deferred work, discarded alternatives, and final acceptance evidence, and obtain human confirmation before implementation began. The user authorized all TB16 slices on August 31, 2026 and deferred human acceptance until the complete TB16 implementation was ready. Implementation completed with automated evidence recorded in the spec, including the dark-theme contrast and below-header control-layout correction. The user completed Steps 1–8 and explicitly accepted TB16 on August 31, 2026; PR #106 is merged and closed.
 
+### Issue 52. Recoverable desktop bootstrap and bridge failures
+
+The implementation entry point is the [Issue 52 recovery specification](issue-52-recoverable-ui-state-spec.md). Its preparation task confirmed that TB12, TB13, and TB14 were merged into `main`, retained S1 as the only new evidence seam, and defined safe renderer recovery, stable retry descriptors, optional saved-results recovery, structured main-process diagnostics, and native startup Retry/Quit handling.
+
+Implementation is complete on the `codex/issue-52-recoverable-ui-state` branch. Focused S1 workflows pass for one-shot bootstrap, saved-results read, repository-open, and workspace-transition failures; `npm run check`, `npm run lint:complexity`, and the complete packaged workflow pass. No domain outcomes, preload capabilities, portable repository fields, or automatic retries are added.
+
 ### Release-readiness implementation preparation
 
 The next work package is defined in the [V1 release-readiness specification](v1-release-readiness-spec.md). It covers the provider-free packaged-application gate and the initial MC/DC evidence gate as separate quality obligations. The specification explicitly preserves the existing S1–S5 seams, isolates mutating workflow fixtures, keeps LCOV branch coverage distinct from MC/DC, and defers signed distribution and broad product expansion.
