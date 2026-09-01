@@ -146,6 +146,11 @@ const sessionStateArgumentPrefix = "--galaxy-brain-session-state=";
 const sourceAssetsArgumentPrefix = "--galaxy-brain-source-assets=";
 const configuredTestMode = process.env.GALAXY_BRAIN_WDIO_TEST_MODE ?? "silent";
 const testModeArgument = `--galaxy-brain-test-mode=${configuredTestMode}`;
+const configuredFailure = process.env.GALAXY_BRAIN_WDIO_FAILURE;
+const failureArgument =
+  configuredFailure === undefined
+    ? undefined
+    : `--galaxy-brain-test-failure=${configuredFailure}`;
 const desktopArtifactDirectory =
   process.env.GALAXY_BRAIN_WDIO_ARTIFACT_DIR ??
   mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-artifacts-"));
@@ -193,6 +198,7 @@ export const config: Options.Testrunner &
         appBinaryPath: packagedBinary,
         appArgs: [
           testModeArgument,
+          ...(failureArgument === undefined ? [] : [failureArgument]),
           `${sessionStateArgumentPrefix}${join(
             testSessionStateRoot,
             "workbench-session.json",

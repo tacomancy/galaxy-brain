@@ -103,6 +103,8 @@ const isSynthesisConfirmation = (
 const isPositiveInteger = (value: unknown): value is number =>
   typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
+let injectedFailureConsumed = false;
+
 // A custom secure scheme lets packaged renderer assets load without exposing
 // a broad file:// surface to the sandboxed renderer.
 protocol.registerSchemesAsPrivileged([
@@ -119,6 +121,70 @@ protocol.registerSchemesAsPrivileged([
 // Forge can recreate the main process during development. Registering the
 // handler only once prevents duplicate protocol registrations in that path.
 let isRendererProtocolInstalled = false;
+
+const recordMainDiagnostic = (
+  operation: string,
+  phase: "bridge" | "window",
+  category: "unexpected-rejection" | "startup-failure",
+): void => {
+  const timestamp = new Date().toISOString();
+  // Keep diagnostics deliberately structured and non-sensitive. The renderer
+  // receives only a safe generic recovery outcome, never this record or the
+  // underlying exception.
+  console.error(
+    "Galaxy Brain diagnostic",
+    JSON.stringify({
+      operation,
+      phase,
+      category,
+      timestamp,
+    }),
+  );
+};
+
+const workbenchIpcChannels = [
+  "workbench:open-fresh",
+  "workbench:read-source-availability",
+  "workbench:relink-source",
+  "workbench:read-theme",
+  "workbench:set-theme",
+  "workbench:read-authoring-draft",
+  "workbench:open-authoring-draft",
+  "workbench:edit-authoring-semantic-text",
+  "workbench:undo-authoring-semantic-text",
+  "workbench:open-authoring-construct",
+  "workbench:set-authoring-mode",
+  "workbench:read-proposal-review",
+  "workbench:read-atlas-orientation",
+  "workbench:edit-learning-route-title",
+  "workbench:read-learning-progress",
+  "workbench:confirm-learning-progress",
+  "workbench:correct-learning-progress",
+  "workbench:open-proposal-review",
+  "workbench:accept-proposal-review",
+  "workbench:create-repository",
+  "workbench:open-repository",
+  "workbench:select-context",
+  "workbench:open-topic-in-studio",
+  "workbench:open-source-record-in-paper-desk",
+  "workbench:switch-workspace",
+  "workbench:open-saved-annotation",
+  "workbench:discovery-search",
+  "workbench:discovery-context-candidates",
+  "workbench:prepare-ask",
+  "workbench:remove-ask-context-item",
+  "workbench:confirm-ask",
+  "workbench:discovery-jump",
+  "workbench:prepare-synthesis",
+  "workbench:remove-synthesis-context-item",
+  "workbench:confirm-synthesis",
+  "workbench:read-synthesis-results",
+  "workbench:restore-synthesis-result",
+] as const;
+
+const removeWorkbenchIpcHandlers = (): void => {
+  workbenchIpcChannels.forEach((channel) => ipcMain.removeHandler(channel));
+};
 
 /**
  * Serves packaged renderer assets through the allow-listed custom scheme.
@@ -176,6 +242,20 @@ const createWindow = async (): Promise<void> => {
   const isProviderUnavailableTestMode = process.argv.includes(
     "--galaxy-brain-test-mode=provider-unavailable",
   );
+  const failureArgument = process.argv.find((argument) =>
+    argument.startsWith("--galaxy-brain-test-failure="),
+  );
+  const configuredFailure = failureArgument?.slice(
+    "--galaxy-brain-test-failure=".length,
+  );
+  const maybeInjectFailure = (operation: string): void => {
+    if (configuredFailure !== operation || injectedFailureConsumed) {
+      return;
+    }
+    injectedFailureConsumed = true;
+    throw new Error(`Injected ${operation} failure.`);
+  };
+  maybeInjectFailure("create-window");
   const isFixtureMode =
     isSilentTestMode || isHumanReviewMode || isProviderUnavailableTestMode;
   const starterRoot = app.isPackaged
@@ -371,6 +451,7 @@ const createWindow = async (): Promise<void> => {
       sourceRecord: workbench.context.sourceRecord,
     });
   };
+  let pendingReplacementReference: string | undefined;
   const relinkSource = async (): Promise<RelinkSourceOperationOutcome> => {
     const workbench = await workbenchSession.openFreshWorkbench();
 
@@ -390,39 +471,54 @@ const createWindow = async (): Promise<void> => {
       };
     }
 
-    const selection = await dialog.showOpenDialog(mainWindow, {
-      buttonLabel: "Verify and Relink PDF",
-      message: "Choose the replacement PDF for this Source Record.",
-      properties: ["openFile"],
-      filters: [{ name: "PDF documents", extensions: ["pdf"] }],
-    });
+    let replacementReference = pendingReplacementReference;
+    if (replacementReference === undefined) {
+      const selection = await dialog.showOpenDialog(mainWindow, {
+        buttonLabel: "Verify and Relink PDF",
+        message: "Choose the replacement PDF for this Source Record.",
+        properties: ["openFile"],
+        filters: [{ name: "PDF documents", extensions: ["pdf"] }],
+      });
 
-    if (selection.canceled || selection.filePaths[0] === undefined) {
-      return { outcome: "canceled" };
+      if (selection.canceled || selection.filePaths[0] === undefined) {
+        return { outcome: "canceled" };
+      }
+
+      replacementReference = selection.filePaths[0];
     }
 
-    const replacementReference = selection.filePaths[0];
-    const replacementIdentity =
-      await sourceAsset.readReferenceIdentity(replacementReference);
+    try {
+      pendingReplacementReference = replacementReference;
+      const replacementIdentity =
+        await sourceAsset.readReferenceIdentity(replacementReference);
 
-    if (replacementIdentity.outcome === "unavailable") {
-      return {
-        outcome: "source-status-unavailable",
-        sourceRecord: { ...workbench.context.sourceRecord },
-        warning: "source status unavailable",
-        detail: replacementIdentity.detail,
-      };
+      if (replacementIdentity.outcome === "unavailable") {
+        pendingReplacementReference = undefined;
+        return {
+          outcome: "source-status-unavailable",
+          sourceRecord: { ...workbench.context.sourceRecord },
+          warning: "source status unavailable",
+          detail: replacementIdentity.detail,
+        };
+      }
+
+      const outcome = await sourceProcessingFor(
+        workbench.repositoryPath,
+      ).relinkSource({
+        sourceRecord: workbench.context.sourceRecord,
+        replacementReference,
+        expectedReplacementSourceIdentity:
+          replacementIdentity.current.sourceIdentity,
+        expectedReplacementContentIdentity:
+          replacementIdentity.current.contentIdentity,
+        verificationLocator: workbench.sourceAnnotation.sourceLocator,
+      });
+      pendingReplacementReference = undefined;
+      return outcome;
+    } catch (cause: unknown) {
+      pendingReplacementReference = replacementReference;
+      throw cause;
     }
-
-    return sourceProcessingFor(workbench.repositoryPath).relinkSource({
-      sourceRecord: workbench.context.sourceRecord,
-      replacementReference,
-      expectedReplacementSourceIdentity:
-        replacementIdentity.current.sourceIdentity,
-      expectedReplacementContentIdentity:
-        replacementIdentity.current.contentIdentity,
-      verificationLocator: workbench.sourceAnnotation.sourceLocator,
-    });
   };
   let pendingSynthesis:
     { repositoryPath: string; preview: SynthesisPreview } | undefined;
@@ -485,6 +581,7 @@ const createWindow = async (): Promise<void> => {
   };
   const readSynthesisResults =
     async (): Promise<SynthesisResultListReadOutcome> => {
+      maybeInjectFailure("synthesis-results-read");
       const workbench = await workbenchSession.openFreshWorkbench();
 
       if (workbench.repositoryPath === undefined) {
@@ -516,18 +613,39 @@ const createWindow = async (): Promise<void> => {
     },
   });
 
+  let pendingOpenRepositoryPath: string | undefined;
+  let pendingCreateRepositoryPath: string | undefined;
+
+  const registerIpcHandler = (
+    channel: string,
+    handler: (
+      event: Electron.IpcMainInvokeEvent,
+      ...args: unknown[]
+    ) => unknown,
+  ): void => {
+    ipcMain.handle(channel, async (event, ...args) => {
+      try {
+        return await handler(event, ...args);
+      } catch {
+        recordMainDiagnostic(channel, "bridge", "unexpected-rejection");
+        throw new Error("Workbench operation could not be completed.");
+      }
+    });
+  };
+
   // IPC is operation-specific and the sender is checked before the Module is
   // invoked, keeping renderer input from becoming arbitrary main-process
   // authority.
-  ipcMain.handle("workbench:open-fresh", (event) => {
+  registerIpcHandler("workbench:open-fresh", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
+    maybeInjectFailure("bootstrap");
     return workbenchSession.openFreshWorkbench();
   });
 
-  ipcMain.handle("workbench:read-source-availability", (event) => {
+  registerIpcHandler("workbench:read-source-availability", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -535,7 +653,7 @@ const createWindow = async (): Promise<void> => {
     return readSourceAvailability();
   });
 
-  ipcMain.handle("workbench:relink-source", async (event) => {
+  registerIpcHandler("workbench:relink-source", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -543,7 +661,7 @@ const createWindow = async (): Promise<void> => {
     return relinkSource();
   });
 
-  ipcMain.handle("workbench:read-theme", (event) => {
+  registerIpcHandler("workbench:read-theme", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -551,7 +669,7 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.readTheme();
   });
 
-  ipcMain.handle("workbench:set-theme", (event, theme: unknown) => {
+  registerIpcHandler("workbench:set-theme", (event, theme: unknown) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -563,7 +681,7 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.setTheme(theme);
   });
 
-  ipcMain.handle("workbench:read-authoring-draft", (event) => {
+  registerIpcHandler("workbench:read-authoring-draft", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -571,7 +689,7 @@ const createWindow = async (): Promise<void> => {
     return readAuthoringDraft();
   });
 
-  ipcMain.handle("workbench:open-authoring-draft", (event) => {
+  registerIpcHandler("workbench:open-authoring-draft", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -579,7 +697,7 @@ const createWindow = async (): Promise<void> => {
     return readAuthoringDraft();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:edit-authoring-semantic-text",
     (event, nextText: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -594,7 +712,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:undo-authoring-semantic-text", (event) => {
+  registerIpcHandler("workbench:undo-authoring-semantic-text", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -602,7 +720,7 @@ const createWindow = async (): Promise<void> => {
     return undoAuthoringSemanticText();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:open-authoring-construct",
     (event, construct: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -624,7 +742,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:set-authoring-mode", (event, mode: unknown) => {
+  registerIpcHandler("workbench:set-authoring-mode", (event, mode: unknown) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -636,7 +754,7 @@ const createWindow = async (): Promise<void> => {
     return setAuthoringMode(mode);
   });
 
-  ipcMain.handle("workbench:read-proposal-review", (event) => {
+  registerIpcHandler("workbench:read-proposal-review", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -644,7 +762,7 @@ const createWindow = async (): Promise<void> => {
     return readProposalReview();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:read-atlas-orientation",
     (event): Promise<AtlasOrientationReadOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -655,7 +773,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:edit-learning-route-title",
     (
       event,
@@ -678,7 +796,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:read-learning-progress",
     (event): Promise<LearningReadOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -689,7 +807,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:confirm-learning-progress",
     (event, suggestionId: unknown): Promise<LearningOperationOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -704,7 +822,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:correct-learning-progress",
     (
       event,
@@ -727,7 +845,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:open-proposal-review", (event) => {
+  registerIpcHandler("workbench:open-proposal-review", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -735,7 +853,7 @@ const createWindow = async (): Promise<void> => {
     return readProposalReview();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:accept-proposal-review",
     (event): Promise<ProposalReviewApplyOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -746,67 +864,99 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:create-repository", async (event) => {
+  registerIpcHandler("workbench:create-repository", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
-    const selection = await dialog.showOpenDialog(mainWindow, {
-      buttonLabel: "Create Repository",
-      message: "Choose where to create the Knowledge Repository.",
-      properties: ["openDirectory", "createDirectory"],
-    });
+    let repositoryPath = pendingCreateRepositoryPath;
+    if (repositoryPath === undefined) {
+      const selection = await dialog.showOpenDialog(mainWindow, {
+        buttonLabel: "Create Repository",
+        message: "Choose where to create the Knowledge Repository.",
+        properties: ["openDirectory", "createDirectory"],
+      });
 
-    if (selection.canceled || selection.filePaths[0] === undefined) {
-      return { outcome: "canceled" as const };
+      if (selection.canceled || selection.filePaths[0] === undefined) {
+        return { outcome: "canceled" as const };
+      }
+
+      repositoryPath = selection.filePaths[0];
     }
 
-    return workbenchSession.createRepository(selection.filePaths[0]);
+    try {
+      pendingCreateRepositoryPath = repositoryPath;
+      maybeInjectFailure("repository-create");
+      const outcome = await workbenchSession.createRepository(repositoryPath);
+      pendingCreateRepositoryPath = undefined;
+      return outcome;
+    } catch (cause: unknown) {
+      pendingCreateRepositoryPath = repositoryPath;
+      throw cause;
+    }
   });
 
-  ipcMain.handle("workbench:open-repository", async (event) => {
+  registerIpcHandler("workbench:open-repository", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
-    const selection = await dialog.showOpenDialog(mainWindow, {
-      buttonLabel: "Open Repository",
-      message: "Choose a Knowledge Repository to open.",
-      properties: ["openDirectory"],
-    });
+    let repositoryPath = pendingOpenRepositoryPath;
+    if (repositoryPath === undefined) {
+      const selection = await dialog.showOpenDialog(mainWindow, {
+        buttonLabel: "Open Repository",
+        message: "Choose a Knowledge Repository to open.",
+        properties: ["openDirectory"],
+      });
 
-    if (selection.canceled || selection.filePaths[0] === undefined) {
-      return { outcome: "canceled" as const };
+      if (selection.canceled || selection.filePaths[0] === undefined) {
+        return { outcome: "canceled" as const };
+      }
+
+      repositoryPath = selection.filePaths[0];
     }
 
-    return workbenchSession.openRepository(selection.filePaths[0]);
+    try {
+      pendingOpenRepositoryPath = repositoryPath;
+      maybeInjectFailure("repository-open");
+      const outcome = await workbenchSession.openRepository(repositoryPath);
+      pendingOpenRepositoryPath = undefined;
+      return outcome;
+    } catch (cause: unknown) {
+      pendingOpenRepositoryPath = repositoryPath;
+      throw cause;
+    }
   });
 
-  ipcMain.handle("workbench:select-context", (event, selection: unknown) => {
-    if (event.sender !== mainWindow.webContents) {
-      throw new Error("Untrusted Workbench bridge sender.");
-    }
+  registerIpcHandler(
+    "workbench:select-context",
+    (event, selection: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
 
-    if (
-      typeof selection !== "object" ||
-      selection === null ||
-      !("topicId" in selection) ||
-      !("sourceRecordId" in selection) ||
-      typeof selection.topicId !== "string" ||
-      selection.topicId.length === 0 ||
-      typeof selection.sourceRecordId !== "string" ||
-      selection.sourceRecordId.length === 0
-    ) {
-      throw new Error("Invalid Workbench context selection.");
-    }
+      if (
+        typeof selection !== "object" ||
+        selection === null ||
+        !("topicId" in selection) ||
+        !("sourceRecordId" in selection) ||
+        typeof selection.topicId !== "string" ||
+        selection.topicId.length === 0 ||
+        typeof selection.sourceRecordId !== "string" ||
+        selection.sourceRecordId.length === 0
+      ) {
+        throw new Error("Invalid Workbench context selection.");
+      }
 
-    return workbenchSession.selectWorkbenchContext({
-      topicId: selection.topicId,
-      sourceRecordId: selection.sourceRecordId,
-    });
-  });
+      maybeInjectFailure("context-selection");
+      return workbenchSession.selectWorkbenchContext({
+        topicId: selection.topicId,
+        sourceRecordId: selection.sourceRecordId,
+      });
+    },
+  );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:open-topic-in-studio",
     (event, topicId: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -817,11 +967,12 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Workbench topic transition.");
       }
 
+      maybeInjectFailure("workspace-transition");
       return workbenchSession.openTopicInStudio(topicId);
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:open-source-record-in-paper-desk",
     (event, sourceRecordId: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -832,23 +983,29 @@ const createWindow = async (): Promise<void> => {
         throw new Error("Invalid Workbench Source Record transition.");
       }
 
+      maybeInjectFailure("source-navigation");
       return workbenchSession.openSourceRecordInPaperDesk(sourceRecordId);
     },
   );
 
-  ipcMain.handle("workbench:switch-workspace", (event, workspace: unknown) => {
-    if (event.sender !== mainWindow.webContents) {
-      throw new Error("Untrusted Workbench bridge sender.");
-    }
+  registerIpcHandler(
+    "workbench:switch-workspace",
+    (event, workspace: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
 
-    if (!isWorkbenchWorkspace(workspace)) {
-      throw new Error("Invalid Workbench workspace transition.");
-    }
+      if (!isWorkbenchWorkspace(workspace)) {
+        throw new Error("Invalid Workbench workspace transition.");
+      }
 
-    return workbenchSession.switchWorkspace(workspace);
-  });
+      maybeInjectFailure("discovery-jump-transition");
+      maybeInjectFailure("workspace-transition");
+      return workbenchSession.switchWorkspace(workspace);
+    },
+  );
 
-  ipcMain.handle("workbench:open-saved-annotation", (event) => {
+  registerIpcHandler("workbench:open-saved-annotation", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -856,7 +1013,7 @@ const createWindow = async (): Promise<void> => {
     return workbenchSession.openSavedAnnotation();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:discovery-search",
     async (event, query: unknown): Promise<DiscoverySearchOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -872,14 +1029,17 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:discovery-context-candidates", async (event) => {
-    if (event.sender !== mainWindow.webContents) {
-      throw new Error("Untrusted Workbench bridge sender.");
-    }
-    return (await discoveryFor()).readAskContextCandidates();
-  });
+  registerIpcHandler(
+    "workbench:discovery-context-candidates",
+    async (event) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      return (await discoveryFor()).readAskContextCandidates();
+    },
+  );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:prepare-ask",
     async (event, request: unknown): Promise<PrepareAskOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -919,7 +1079,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:remove-ask-context-item",
     async (event, itemId: unknown): Promise<PrepareAskOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -951,7 +1111,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:confirm-ask",
     async (event, confirmation: unknown): Promise<ConfirmAskOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -989,7 +1149,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:discovery-jump",
     async (event, command: unknown): Promise<DiscoveryJumpOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -1005,7 +1165,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:prepare-synthesis",
     async (event, includeAllContext: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -1032,7 +1192,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:remove-synthesis-context-item",
     async (event, annotationId: unknown): Promise<PrepareSynthesisOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -1071,7 +1231,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:confirm-synthesis",
     async (event, confirmation: unknown): Promise<ConfirmSynthesisOutcome> => {
       if (event.sender !== mainWindow.webContents) {
@@ -1119,7 +1279,7 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
-  ipcMain.handle("workbench:read-synthesis-results", async (event) => {
+  registerIpcHandler("workbench:read-synthesis-results", async (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
     }
@@ -1127,7 +1287,7 @@ const createWindow = async (): Promise<void> => {
     return readSynthesisResults();
   });
 
-  ipcMain.handle(
+  registerIpcHandler(
     "workbench:restore-synthesis-result",
     async (
       event,
@@ -1145,6 +1305,8 @@ const createWindow = async (): Promise<void> => {
       ) {
         throw new Error("Invalid Synthesis result restore.");
       }
+
+      maybeInjectFailure("synthesis-result-restore");
 
       const workbench = await workbenchSession.openFreshWorkbench();
 
@@ -1186,43 +1348,7 @@ const createWindow = async (): Promise<void> => {
 
   mainWindow.once("closed", () => {
     // The handler is scoped to this window and must not outlive it.
-    ipcMain.removeHandler("workbench:open-fresh");
-    ipcMain.removeHandler("workbench:read-source-availability");
-    ipcMain.removeHandler("workbench:relink-source");
-    ipcMain.removeHandler("workbench:read-theme");
-    ipcMain.removeHandler("workbench:set-theme");
-    ipcMain.removeHandler("workbench:read-authoring-draft");
-    ipcMain.removeHandler("workbench:open-authoring-draft");
-    ipcMain.removeHandler("workbench:edit-authoring-semantic-text");
-    ipcMain.removeHandler("workbench:undo-authoring-semantic-text");
-    ipcMain.removeHandler("workbench:open-authoring-construct");
-    ipcMain.removeHandler("workbench:set-authoring-mode");
-    ipcMain.removeHandler("workbench:read-proposal-review");
-    ipcMain.removeHandler("workbench:read-atlas-orientation");
-    ipcMain.removeHandler("workbench:edit-learning-route-title");
-    ipcMain.removeHandler("workbench:read-learning-progress");
-    ipcMain.removeHandler("workbench:confirm-learning-progress");
-    ipcMain.removeHandler("workbench:correct-learning-progress");
-    ipcMain.removeHandler("workbench:open-proposal-review");
-    ipcMain.removeHandler("workbench:accept-proposal-review");
-    ipcMain.removeHandler("workbench:create-repository");
-    ipcMain.removeHandler("workbench:open-repository");
-    ipcMain.removeHandler("workbench:select-context");
-    ipcMain.removeHandler("workbench:open-topic-in-studio");
-    ipcMain.removeHandler("workbench:open-source-record-in-paper-desk");
-    ipcMain.removeHandler("workbench:switch-workspace");
-    ipcMain.removeHandler("workbench:open-saved-annotation");
-    ipcMain.removeHandler("workbench:discovery-search");
-    ipcMain.removeHandler("workbench:discovery-context-candidates");
-    ipcMain.removeHandler("workbench:prepare-ask");
-    ipcMain.removeHandler("workbench:remove-ask-context-item");
-    ipcMain.removeHandler("workbench:confirm-ask");
-    ipcMain.removeHandler("workbench:discovery-jump");
-    ipcMain.removeHandler("workbench:prepare-synthesis");
-    ipcMain.removeHandler("workbench:remove-synthesis-context-item");
-    ipcMain.removeHandler("workbench:confirm-synthesis");
-    ipcMain.removeHandler("workbench:read-synthesis-results");
-    ipcMain.removeHandler("workbench:restore-synthesis-result");
+    removeWorkbenchIpcHandlers();
   });
 
   if (MAIN_WINDOW_WEBPACK_ENTRY.startsWith("file:")) {
@@ -1240,9 +1366,41 @@ const createWindow = async (): Promise<void> => {
   await mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 };
 
+// Window startup recovery keeps the application usable when loading fails and
+// never exposes the underlying exception through the native dialog.
+const recoverWindowStartup = async (): Promise<void> => {
+  recordMainDiagnostic("create-window", "window", "startup-failure");
+  const result = await dialog.showMessageBox({
+    type: "error",
+    title: "Galaxy Brain couldn't start",
+    message: "Galaxy Brain couldn't start",
+    detail:
+      "The Workbench could not finish loading. Retry the application or quit safely.",
+    buttons: ["Retry", "Quit"],
+    defaultId: 0,
+    cancelId: 1,
+    noLink: true,
+  });
+
+  if (result.response === 0) {
+    // A failed load may have registered handlers on a still-open window;
+    // destroy it first so the retry can recreate the one-window composition.
+    removeWorkbenchIpcHandlers();
+    BrowserWindow.getAllWindows().forEach((window) => window.destroy());
+    await createWindow().catch(() => recoverWindowStartup());
+    return;
+  }
+
+  app.quit();
+};
+
+const startWindow = async (): Promise<void> => {
+  await createWindow().catch(() => recoverWindowStartup());
+};
+
 // Wait for Electron's lifecycle before creating windows or registering window
 // content that depends on the ready application state.
-app.whenReady().then(createWindow);
+app.whenReady().then(() => void startWindow());
 
 app.on("window-all-closed", () => {
   // macOS conventionally keeps the application alive until explicitly quit.
@@ -1255,6 +1413,6 @@ app.on("activate", () => {
   // Recreate the window when the user reactivates the app after closing it on
   // macOS, while preserving the normal single-window behavior.
   if (BrowserWindow.getAllWindows().length === 0) {
-    void createWindow();
+    void startWindow();
   }
 });
