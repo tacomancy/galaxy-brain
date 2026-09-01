@@ -50,6 +50,7 @@ import {
 } from "../modules/learning";
 import { createFileBackedDiscoveryRepository } from "../adapters/discovery/file-backed-discovery-repository";
 import { createFixtureDiscoveryModelAdapter } from "../adapters/discovery/fixture-discovery-model";
+import { createInMemoryDiscoveryRepository } from "../adapters/discovery/in-memory-discovery-repository";
 import { createGovernance } from "../modules/governance";
 import { contentTypeFor } from "./renderer-asset-content-type";
 import {
@@ -63,7 +64,6 @@ import {
 import { createSourceProcessing } from "../modules/source-processing";
 import {
   createDiscovery,
-  createInMemoryDiscoveryRepository,
   type AskPreview,
   type ConfirmAskOutcome,
   type DiscoveryJumpOutcome,
@@ -872,20 +872,40 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
+  ipcMain.handle("workbench:discovery-context-candidates", async (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+    return (await discoveryFor()).readAskContextCandidates();
+  });
+
   ipcMain.handle(
     "workbench:prepare-ask",
-    async (event, prompt: unknown): Promise<PrepareAskOutcome> => {
+    async (event, request: unknown): Promise<PrepareAskOutcome> => {
       if (event.sender !== mainWindow.webContents) {
         throw new Error("Untrusted Workbench bridge sender.");
       }
-      if (typeof prompt !== "string") {
+      if (
+        typeof request !== "object" ||
+        request === null ||
+        !("prompt" in request) ||
+        !("contextItemIds" in request) ||
+        typeof request.prompt !== "string" ||
+        !Array.isArray(request.contextItemIds) ||
+        !request.contextItemIds.every((id) => typeof id === "string")
+      ) {
         return {
           outcome: "invalid-prompt",
           detail: "Enter a question before preparing an Ask request.",
         };
       }
 
-      const outcome = await (await discoveryFor()).prepareAsk({ prompt });
+      const outcome = await (
+        await discoveryFor()
+      ).prepareAsk({
+        prompt: request.prompt,
+        contextItemIds: request.contextItemIds,
+      });
       if (outcome.outcome === "preview-ready") {
         const workbench = await workbenchSession.openFreshWorkbench();
         pendingAsk = {
@@ -1193,6 +1213,7 @@ const createWindow = async (): Promise<void> => {
     ipcMain.removeHandler("workbench:switch-workspace");
     ipcMain.removeHandler("workbench:open-saved-annotation");
     ipcMain.removeHandler("workbench:discovery-search");
+    ipcMain.removeHandler("workbench:discovery-context-candidates");
     ipcMain.removeHandler("workbench:prepare-ask");
     ipcMain.removeHandler("workbench:remove-ask-context-item");
     ipcMain.removeHandler("workbench:confirm-ask");

@@ -64,7 +64,7 @@ The TB12 implementation is authorized to proceed from this brief under the user'
 The Discovery Module exposes one caller Interface with three explicit operations and discriminated, mode-specific outcomes:
 
 - `search` accepts a non-empty query and returns `found` with ordered result records or `no-match` with the normalized query. Each result includes a stable item identity, title, item kind, authority class, a short repository-derived match excerpt, and zero or more source references or Source Locators. Invalid input returns `invalid-query`.
-- `prepareAsk` accepts a non-empty human-facing prompt and an explicit selected context. It returns `preview-ready` with a concise summary, OpenAI destination, pinned model identifier, estimated request size, authority categories, cited context references, and the exact payload. It performs no external request and no repository mutation.
+- `prepareAsk` accepts a non-empty human-facing prompt and a non-empty list of explicitly selected context-item identities. It returns `preview-ready` with a concise summary, OpenAI destination, pinned model identifier, estimated request size, authority categories, cited context references, and the exact payload. It performs no external request and no repository mutation. The caller obtains selectable context candidates through the same Discovery Module and sends the final selected identities back unchanged.
 - `removeAskContextItem` accepts a pending preview and a whole context-item identity and returns a new `preview-ready` result with both the summary and exact payload regenerated. It never performs inline character redaction.
 - `confirmAsk` accepts only the final preview and one of `confirmed`, `declined`, or `canceled`. Confirmation is the only path that may call the Model Adapter. Decline and cancel return explicit no-action outcomes.
 - `jump` accepts a non-empty command or known target token and returns `resolved` with a typed Workbench destination, or `not-found` with the original command. It never calls the Model Adapter.
@@ -73,7 +73,7 @@ The exact TypeScript names may change during implementation, but the operation d
 
 ### Search behavior
 
-Search is case-insensitive substring retrieval over the selected repository's discoverable portable items. The first implementation indexes topic files, Source Records, Structured Annotations, and explicitly saved Synthesis results that are already readable through existing repository Adapters. It does not perform fuzzy matching, semantic embeddings, web search, or cross-repository discovery.
+Search is case-insensitive substring retrieval over the selected repository's discoverable portable items. The first implementation indexes topic files, every supported Source Record category, Structured Annotations, and explicitly saved JSON Synthesis results that are already readable through existing repository Adapters. It does not perform fuzzy matching, semantic embeddings, web search, or cross-repository discovery. Filesystem failures return an explicit repository-unavailable outcome rather than an empty successful result.
 
 Results are ordered by item kind priority—topic, Source Record, Structured Annotation, saved Synthesis result—then by stable item identity. A match in a title is ranked before a match in body text; ties retain the stable ordering. The result carries the authority class from the item's state and type: Core Knowledge, Source Record, or Working Material. Search does not summarize or reinterpret a match.
 
@@ -89,7 +89,7 @@ The fixture Model Adapter returns a structured Ask response with answer text, ci
 
 ### Jump behavior
 
-The first known Jump targets are the three primary Workbench destinations (`atlas`, `studio`, and `paper-desk`) and the current fixture topic and Source Record. The command matching is explicit and case-insensitive for the documented labels; it does not parse arbitrary shell commands, URLs, file paths, or natural-language questions. A resolved topic or Source Record carries the existing context-transition identity into Studio or Paper Desk. Unknown input returns `not-found` and leaves session state unchanged.
+The first known Jump targets are the three primary Workbench destinations (`atlas`, `studio`, and `paper-desk`) and discoverable topic, Source Record, Structured Annotation, and saved Synthesis result identities. The command matching is explicit and case-insensitive for the documented labels; it does not parse arbitrary shell commands, URLs, file paths, or natural-language questions. A resolved topic or saved Synthesis result carries its topic identity into Studio; a resolved Source Record or annotation carries its Source Record identity into Paper Desk. Unknown input returns `not-found` and leaves session state unchanged.
 
 ### S1 entry surface
 
@@ -97,6 +97,7 @@ The renderer adds one shared Discovery card to the selected-repository Workbench
 
 - an explicit mode control labeled Search, Ask, or Jump;
 - one labeled text input whose submit action is mode-specific;
+- an Ask context-selection list whose checked identities are sent explicitly in the preview payload;
 - mode-specific result and status regions;
 - Ask preview summary and expandable exact payload before confirmation;
 - whole-item context removal that regenerates the preview; and
@@ -144,7 +145,7 @@ S5 Adapter coverage is supporting evidence only if a production repository Disco
 4. Add failing S4 Ask preview tests for the literal prompt, exact payload, citations, authority categories, and provider destination/model; implement preparation without a Model Adapter call.
 5. Add a failing S4 context-removal test; implement whole-item removal and regenerated summary/payload.
 6. Add failing S4 Ask confirmation tests for confirmed, declined, canceled, unsupported, and provider-unavailable outcomes; reuse the existing confirmation/persistence policies and narrow fixture Model Adapter boundary.
-7. Add the S1 Discovery card and packaged workflow tests for mode visibility, Search/Jump without a provider, Ask preview/decline, unavailable/unsupported outcomes, Jump transitions, keyboard operation, accessible status, and theme readability.
+7. Add the S1 Discovery card and packaged workflow tests for mode visibility, explicit Ask context selection, Search/Jump without a provider, Ask preview/decline, unavailable/unsupported outcomes, Jump transitions, keyboard operation, accessible status, stale-result isolation, and theme readability.
 8. Run focused S4 tests, relevant S1 workflows, `npm run check`, `npm run test:coverage`, `npm run lint:complexity`, packaging, and documentation validation. Record Red/Green evidence before human acceptance.
 
 ## Testing Decisions
@@ -190,11 +191,11 @@ Discarded alternatives:
 
 ## Acceptance Gates
 
-1. S4 Search: literal fixture query returns independently expected ordered results, authority classes, and locators; no-match is explicit.
+1. S4 Search: literal fixture query returns independently expected ordered results, authority classes, and locators; saved JSON results and supported Source Record categories are discoverable; no-match and repository-unavailable states are explicit.
 2. S4 Jump: known labels resolve to typed destinations; unknown command is explicit; no provider or repository mutation occurs.
-3. S4 Ask preparation: selected mode, summary, destination, model, context, citations, and exact payload are caller-visible before any Model Adapter call.
+3. S4 Ask preparation: selected mode, explicit checked context identities, summary, destination, model, context, citations, and exact payload are caller-visible before any Model Adapter call; omitted context is unsupported rather than inferred from prompt words.
 4. S4 Ask safety: whole-context removal regenerates both preview views; decline/cancel make no call and change no local state; unsupported and provider-unavailable outcomes are explicit.
-5. S4 Ask evidence: successful fixture response preserves citations, authority distinctions, conflicts, uncertainty, and transient/no-retention behavior; explicit save reuses the existing provenance contract.
+5. S4 Ask evidence: successful fixture response preserves citations that belong to the submitted context, authority distinctions, conflicts, uncertainty, and transient/no-retention behavior; explicit save remains deferred to the existing Synthesis lifecycle.
 6. S1 packaged workflow: the shared entry surface visibly identifies the mode, remains usable without a provider, carries known targets into existing workspaces, and exposes accessible focus/status behavior in both themes.
 7. Verification: focused and full automated checks, coverage, complexity, packaging, and documentation validation pass; no unrelated TB scope is changed.
 8. Human acceptance: the user verifies the packaged workflow and explicitly accepts or rejects TB12. Implementation or passing CI must not be recorded as human acceptance.

@@ -46,7 +46,9 @@ import type {
 import type {
   ConfirmAskOutcome,
   DiscoveryJumpOutcome,
+  DiscoveryContextCandidate,
   DiscoverySearchOutcome,
+  PrepareAskRequest,
   PrepareAskOutcome,
 } from "../modules/discovery";
 
@@ -129,8 +131,12 @@ contextBridge.exposeInMainWorld("workbench", {
     ipcRenderer.invoke("workbench:open-saved-annotation"),
   discoverySearch: (query: string): Promise<DiscoverySearchOutcome> =>
     ipcRenderer.invoke("workbench:discovery-search", query),
-  prepareAsk: (prompt: string): Promise<PrepareAskOutcome> =>
-    ipcRenderer.invoke("workbench:prepare-ask", prompt),
+  discoveryAskContextCandidates: (): Promise<
+    | { outcome: "available"; candidates: DiscoveryContextCandidate[] }
+    | { outcome: "repository-unavailable"; detail: string }
+  > => ipcRenderer.invoke("workbench:discovery-context-candidates"),
+  prepareAsk: (request: PrepareAskRequest): Promise<PrepareAskOutcome> =>
+    ipcRenderer.invoke("workbench:prepare-ask", request),
   removeAskContextItem: (itemId: string): Promise<PrepareAskOutcome> =>
     ipcRenderer.invoke("workbench:remove-ask-context-item", itemId),
   confirmAsk: (

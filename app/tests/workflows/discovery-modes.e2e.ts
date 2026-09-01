@@ -52,6 +52,20 @@ describe("Use explicit Discovery modes", () => {
       );
 
       await $("#discovery-mode-ask").click();
+      await browser.waitUntil(
+        async () =>
+          (await $("#discovery-mode-ask").getAttribute("aria-selected")) ===
+          "true",
+        { timeout: 5_000, timeoutMsg: "Ask mode did not become selected." },
+      );
+      assert.equal(await $("#discovery-search-results").isDisplayed(), false);
+      await $("#discovery-ask-context-bayesian-statistics").click();
+      await $(
+        "#discovery-ask-context-annotation-bayesian-statistics-fixture-source-page-2-0-54",
+      ).click();
+      await $(
+        "#discovery-ask-context-annotation-bayesian-statistics-fixture-source-page-2-55-83",
+      ).click();
       await $("#discovery-input").setValue(
         "What does the fixture say about Bayesian inference?",
       );
@@ -77,6 +91,7 @@ describe("Use explicit Discovery modes", () => {
       ).click();
       await browser.waitUntil(
         async () =>
+          (await $("#discovery-ask-remove-bayesian-statistics").isExisting()) &&
           (await $(
             "#discovery-ask-remove-annotation-bayesian-statistics-fixture-source-page-2-0-54",
           ).isExisting()) &&

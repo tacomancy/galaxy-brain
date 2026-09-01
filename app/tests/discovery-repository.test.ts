@@ -10,15 +10,22 @@ describe("file-backed Discovery repository Adapter", () => {
     const repository = createFileBackedDiscoveryRepository(
       join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
     );
-    const items = await repository.readDiscoverableItems();
+    const outcome = await repository.readDiscoverableItems();
+    assert.equal(outcome.outcome, "available");
+    if (outcome.outcome !== "available") {
+      return;
+    }
+    const items = outcome.items;
 
     assert.deepEqual(
-      items.map(({ id, title, kind, authority }) => ({
-        id,
-        title,
-        kind,
-        authority,
-      })),
+      items
+        .filter(({ id }) => id.startsWith("bayesian-statistics"))
+        .map(({ id, title, kind, authority }) => ({
+          id,
+          title,
+          kind,
+          authority,
+        })),
       [
         {
           id: "bayesian-statistics",
@@ -32,19 +39,15 @@ describe("file-backed Discovery repository Adapter", () => {
           kind: "source-record",
           authority: "source-record",
         },
-        {
-          id: "annotation-bayesian-statistics-fixture-source-page-2-0-54",
-          title: "Bayesian statistics fixture source",
-          kind: "structured-annotation",
-          authority: "working-material",
-        },
-        {
-          id: "annotation-bayesian-statistics-fixture-source-page-2-55-83",
-          title: "Bayesian statistics fixture source",
-          kind: "structured-annotation",
-          authority: "working-material",
-        },
       ],
+    );
+    assert.equal(
+      items.find(({ kind }) => kind === "saved-synthesis-result")?.id,
+      "synthesis-result-bayesian-statistics-fixture",
+    );
+    assert.equal(
+      items.filter(({ kind }) => kind === "structured-annotation").length,
+      2,
     );
   });
 });

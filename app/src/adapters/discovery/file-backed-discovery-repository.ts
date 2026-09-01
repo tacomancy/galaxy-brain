@@ -3,12 +3,13 @@
  * allow-listed portable directories and never exposes paths through Module outcomes.
  */
 import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 import type {
   DiscoveryAuthority,
   DiscoveryItem,
   DiscoveryItemKind,
+  DiscoveryRepositoryReadOutcome,
   DiscoveryRepository,
   DiscoverySourceReference,
 } from "../../modules/discovery";
@@ -66,12 +67,16 @@ const bodyFor = (text: string): string =>
 
 const filesUnder = async (root: string): Promise<string[]> => {
   const entries = await readdir(root, { withFileTypes: true });
+  entries.sort((left, right) => left.name.localeCompare(right.name));
   const files: string[] = [];
   for (const entry of entries) {
     const path = join(root, entry.name);
     if (entry.isDirectory()) {
       files.push(...(await filesUnder(path)));
-    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".md") || entry.name.endsWith(".json"))
+    ) {
       files.push(path);
     }
   }
@@ -113,9 +118,10 @@ const sourceFor = (
 const itemFrom = (
   kind: DiscoveryItemKind,
   text: string,
+  fallbackId: string,
 ): DiscoveryItem | undefined => {
   const frontMatter = frontMatterFor(text);
-  const id = frontMatter.id;
+  const id = frontMatter.id ?? fallbackId;
   const title =
     frontMatter.title ??
     (kind === "structured-annotation"
@@ -136,12 +142,87 @@ const itemFrom = (
   };
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const sourceFromSavedResult = (
+  provenance: Record<string, unknown> | undefined,
+): DiscoveryItem["source"] => {
+  const sourceContext = provenance?.sourceContext;
+  const firstSource = Array.isArray(sourceContext)
+    ? sourceContext.find(
+        (entry): entry is Record<string, unknown> =>
+          isRecord(entry) && isRecord(entry.sourceRecord),
+      )
+    : undefined;
+  const sourceRecord = firstSource?.sourceRecord;
+  return isRecord(sourceRecord) &&
+    typeof sourceRecord.id === "string" &&
+    typeof sourceRecord.title === "string" &&
+    typeof firstSource?.sourceLocator === "string"
+    ? {
+        sourceRecordId: sourceRecord.id,
+        sourceRecordTitle: sourceRecord.title,
+        locator: firstSource.sourceLocator,
+      }
+    : undefined;
+};
+
+const targetTopicFromSavedResult = (
+  value: Record<string, unknown>,
+): DiscoveryItem["targetTopic"] => {
+  const targetTopic = value.targetTopic;
+  return isRecord(targetTopic) &&
+    typeof targetTopic.id === "string" &&
+    typeof targetTopic.title === "string"
+    ? { id: targetTopic.id, title: targetTopic.title }
+    : undefined;
+};
+
+const savedResultFrom = (text: string): DiscoveryItem | undefined => {
+  try {
+    const value: unknown = JSON.parse(text);
+    if (
+      !isRecord(value) ||
+      typeof value.id !== "string" ||
+      typeof value.title !== "string" ||
+      typeof value.text !== "string"
+    ) {
+      return undefined;
+    }
+
+    const provenance = isRecord(value.provenance)
+      ? value.provenance
+      : undefined;
+    const source = sourceFromSavedResult(provenance);
+    const targetTopic = targetTopicFromSavedResult(value);
+
+    return {
+      id: value.id,
+      title: value.title,
+      kind: "saved-synthesis-result",
+      authority: "working-material",
+      text: value.text,
+      ...(source === undefined ? {} : { source }),
+      ...(targetTopic === undefined ? {} : { targetTopic }),
+    };
+  } catch {
+    return undefined;
+  }
+};
+
 const readItemsFrom = async (
   repositoryRoot: string,
-): Promise<DiscoveryItem[]> => {
+): Promise<DiscoveryRepositoryReadOutcome> => {
   const directories: Array<{ path: string; kind: DiscoveryItemKind }> = [
     { path: join(repositoryRoot, "knowledge"), kind: "topic" },
+    { path: join(repositoryRoot, "sources", "books"), kind: "source-record" },
+    {
+      path: join(repositoryRoot, "sources", "courses"),
+      kind: "source-record",
+    },
     { path: join(repositoryRoot, "sources", "papers"), kind: "source-record" },
+    { path: join(repositoryRoot, "sources", "web"), kind: "source-record" },
     {
       path: join(repositoryRoot, "sources", "annotations"),
       kind: "structured-annotation",
@@ -156,18 +237,26 @@ const readItemsFrom = async (
   for (const directory of directories) {
     try {
       for (const path of await filesUnder(directory.path)) {
-        const item = itemFrom(directory.kind, await readFile(path, "utf8"));
+        const text = await readFile(path, "utf8");
+        const item =
+          directory.kind === "saved-synthesis-result"
+            ? savedResultFrom(text)
+            : itemFrom(directory.kind, text, basename(path, ".md"));
         if (item !== undefined) {
           items.push(item);
         }
       }
-    } catch {
-      // Optional repository roots are empty rather than a reason to block
-      // provider-free navigation. The selected repository validator remains
-      // responsible for reporting malformed repository roots.
+    } catch (cause: unknown) {
+      if (isRecord(cause) && cause.code === "ENOENT") {
+        continue;
+      }
+      return {
+        outcome: "unavailable",
+        detail: "The selected Knowledge Repository could not be read.",
+      };
     }
   }
-  return items;
+  return { outcome: "available", items };
 };
 
 /**

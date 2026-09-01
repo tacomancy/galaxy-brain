@@ -38,8 +38,10 @@ import type {
 } from "../modules/learning";
 import type {
   ConfirmAskOutcome,
+  DiscoveryContextCandidate,
   DiscoveryJumpOutcome,
   DiscoverySearchOutcome,
+  PrepareAskRequest,
   PrepareAskOutcome,
 } from "../modules/discovery";
 
@@ -93,7 +95,11 @@ declare global {
       ): Promise<WorkspaceTransitionOutcome>;
       openSavedAnnotation(): Promise<ReadingPositionOutcome>;
       discoverySearch(query: string): Promise<DiscoverySearchOutcome>;
-      prepareAsk(prompt: string): Promise<PrepareAskOutcome>;
+      discoveryAskContextCandidates(): Promise<
+        | { outcome: "available"; candidates: DiscoveryContextCandidate[] }
+        | { outcome: "repository-unavailable"; detail: string }
+      >;
+      prepareAsk(request: PrepareAskRequest): Promise<PrepareAskOutcome>;
       removeAskContextItem(itemId: string): Promise<PrepareAskOutcome>;
       confirmAsk(
         confirmation: "confirmed" | "declined" | "canceled",

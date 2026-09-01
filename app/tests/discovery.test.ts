@@ -3,9 +3,9 @@ import { strict as assert } from "node:assert";
 import { describe, it } from "vitest";
 
 import { createFixtureDiscoveryModelAdapter } from "../src/adapters/discovery/fixture-discovery-model";
+import { createInMemoryDiscoveryRepository } from "../src/adapters/discovery/in-memory-discovery-repository";
 import {
   createDiscovery,
-  createInMemoryDiscoveryRepository,
   type AskPayload,
   type DiscoveryItem,
   type DiscoveryModelAdapter,
@@ -87,6 +87,23 @@ describe("Discovery Module", () => {
     assert.deepEqual(await discovery.search("no such fixture term"), {
       outcome: "no-match",
       query: "no such fixture term",
+    });
+  });
+
+  it("exposes explicit Ask context candidates without deriving context from the prompt", async () => {
+    const discovery = createDiscovery({
+      repository: createInMemoryDiscoveryRepository(items),
+    });
+
+    assert.deepEqual(await discovery.readAskContextCandidates(), {
+      outcome: "available",
+      candidates: items.map(({ id, title, kind, authority, source }) => ({
+        id,
+        title,
+        kind,
+        authority,
+        ...(source === undefined ? {} : { source }),
+      })),
     });
   });
 
@@ -183,15 +200,71 @@ describe("Discovery Module", () => {
     assert.deepEqual(requests[0], reduced.preview.payload);
   });
 
+  it("requires explicit Ask context and rejects citations outside that context", async () => {
+    const discovery = createDiscovery({
+      repository: createInMemoryDiscoveryRepository(items),
+      model: {
+        requestAsk: async () => ({
+          outcome: "answered",
+          answer: {
+            text: "An answer.",
+            citations: [
+              {
+                itemId: items[0]!.id,
+                title: items[0]!.title,
+                authority: items[0]!.authority,
+              },
+            ],
+            uncertainty: [],
+            conflicts: [],
+          },
+        }),
+      },
+    });
+
+    assert.deepEqual(
+      await discovery.prepareAsk({
+        prompt: "What does the fixture say about Bayesian inference?",
+        contextItemIds: [],
+      }),
+      {
+        outcome: "unsupported",
+        detail: "Select at least one repository item before preparing an Ask.",
+      },
+    );
+
+    const prepared = await discovery.prepareAsk({
+      prompt: "What does the fixture say about Bayesian inference?",
+      contextItemIds: [items[2]!.id],
+    });
+    assert.equal(prepared.outcome, "preview-ready");
+    if (prepared.outcome !== "preview-ready") {
+      return;
+    }
+    assert.deepEqual(
+      await discovery.confirmAsk({
+        preview: prepared.preview,
+        confirmation: "confirmed",
+      }),
+      {
+        outcome: "operation-failed",
+        detail: "The Agent Provider returned an invalid Ask response.",
+      },
+    );
+  });
+
   it("returns unsupported and provider-unavailable outcomes without a request", async () => {
     const discovery = createDiscovery({
       repository: createInMemoryDiscoveryRepository(items),
     });
     assert.deepEqual(
-      await discovery.prepareAsk({ prompt: "What is the capital of Mars?" }),
+      await discovery.prepareAsk({
+        prompt: "What is the capital of Mars?",
+        contextItemIds: [],
+      }),
       {
         outcome: "unsupported",
-        detail: "The selected Knowledge Repository does not support this Ask.",
+        detail: "Select at least one repository item before preparing an Ask.",
       },
     );
 
@@ -231,11 +304,43 @@ describe("Discovery Module", () => {
         },
       ],
     });
-    assert.equal(outcome.outcome, "answered");
-    if (outcome.outcome !== "answered") {
+    assert.ok(
+      typeof outcome === "object" &&
+        outcome !== null &&
+        "outcome" in outcome &&
+        outcome.outcome === "answered" &&
+        "answer" in outcome,
+    );
+    if (
+      typeof outcome !== "object" ||
+      outcome === null ||
+      !("answer" in outcome)
+    ) {
       return;
     }
-    assert.equal(outcome.answer.citations[0]!.itemId, items[2]!.id);
-    assert.equal(outcome.answer.uncertainty.length, 1);
+    assert.ok(typeof outcome.answer === "object" && outcome.answer !== null);
+    if (
+      typeof outcome.answer !== "object" ||
+      outcome.answer === null ||
+      !("citations" in outcome.answer) ||
+      !("uncertainty" in outcome.answer)
+    ) {
+      return;
+    }
+    const citations = outcome.answer.citations;
+    const uncertainty = outcome.answer.uncertainty;
+    assert.ok(Array.isArray(citations));
+    assert.ok(Array.isArray(uncertainty));
+    if (
+      !Array.isArray(citations) ||
+      citations[0] === undefined ||
+      typeof citations[0] !== "object" ||
+      citations[0] === null ||
+      !("itemId" in citations[0])
+    ) {
+      return;
+    }
+    assert.equal(citations[0].itemId, items[2]!.id);
+    assert.equal(uncertainty.length, 1);
   });
 });

@@ -24,7 +24,19 @@ export interface DiscoveryItem {
   authority: DiscoveryAuthority;
   text: string;
   source?: DiscoverySourceReference;
+  targetTopic?: { id: string; title: string };
 }
+
+/** Minimal repository item projection used for explicit Ask selection. */
+export type DiscoveryContextCandidate = Pick<
+  DiscoveryItem,
+  "id" | "title" | "kind" | "authority" | "source"
+>;
+
+/** Caller-visible result of reading the selected repository for discovery. */
+export type DiscoveryRepositoryReadOutcome =
+  | { outcome: "available"; items: DiscoveryItem[] }
+  | { outcome: "unavailable"; detail: string };
 
 /** A Search result with the bounded text displayed to the caller. */
 export interface DiscoverySearchResult {
@@ -40,6 +52,7 @@ export interface DiscoverySearchResult {
 export type DiscoverySearchOutcome =
   | { outcome: "found"; query: string; results: DiscoverySearchResult[] }
   | { outcome: "no-match"; query: string }
+  | { outcome: "repository-unavailable"; detail: string }
   | { outcome: "invalid-query"; detail: string };
 
 /** The exact source-bound context sent to the external Model Adapter. */
@@ -74,6 +87,7 @@ export interface AskPreview {
 export type PrepareAskOutcome =
   | { outcome: "preview-ready"; preview: AskPreview }
   | { outcome: "unsupported"; detail: string }
+  | { outcome: "repository-unavailable"; detail: string }
   | { outcome: "invalid-prompt"; detail: string };
 
 /** A citation returned by the Model Adapter and shown with an Ask answer. */
@@ -95,8 +109,7 @@ export interface AskAnswer {
 /** Narrow Model Adapter outcomes for a confirmed Ask request. */
 export type AskModelOutcome =
   | { outcome: "answered"; answer: AskAnswer }
-  | { outcome: "agent-provider-unavailable"; detail: string }
-  | { outcome: "invalid-response"; detail: string };
+  | { outcome: "agent-provider-unavailable"; detail: string };
 
 /** The user decision at the final Ask transmission boundary. */
 export type AskConfirmation = "confirmed" | "declined" | "canceled";
@@ -112,28 +125,48 @@ export type ConfirmAskOutcome =
 export type DiscoveryJumpTarget =
   | { kind: "workspace"; workspace: "atlas" | "studio" | "paper-desk" }
   | { kind: "topic"; id: string; title: string }
-  | { kind: "source-record"; id: string; title: string };
+  | { kind: "source-record"; id: string; title: string }
+  | {
+      kind: "structured-annotation";
+      id: string;
+      title: string;
+      sourceRecordId?: string;
+    }
+  | {
+      kind: "saved-synthesis-result";
+      id: string;
+      title: string;
+      targetTopicId?: string;
+    };
 
 /** Caller-visible outcome of resolving a Jump command. */
 export type DiscoveryJumpOutcome =
   | { outcome: "resolved"; command: string; target: DiscoveryJumpTarget }
   | { outcome: "not-found"; command: string }
+  | { outcome: "repository-unavailable"; detail: string }
   | { outcome: "invalid-command"; detail: string };
 
 /** Narrow external seam for the optional Agent Provider. */
 export interface DiscoveryModelAdapter {
-  requestAsk(payload: AskPayload): Promise<AskModelOutcome>;
+  /** External data is unknown until the Module validates its response. */
+  requestAsk(payload: AskPayload): Promise<unknown>;
 }
 
 /** Repository read seam; it never writes or exposes filesystem paths. */
 export interface DiscoveryRepository {
-  readDiscoverableItems(): Promise<DiscoveryItem[]>;
+  readDiscoverableItems(): Promise<DiscoveryRepositoryReadOutcome>;
 }
 
 /** Input for preparing an evidence-bounded Ask request. */
 export interface PrepareAskInput {
   prompt: string;
-  contextItemIds?: string[];
+  contextItemIds: string[];
+}
+
+/** Serialized bridge request carrying the user's explicit Ask selection. */
+export interface PrepareAskRequest {
+  prompt: string;
+  contextItemIds: string[];
 }
 
 /** Input for removing one complete Ask context item. */
@@ -151,6 +184,10 @@ export interface ConfirmAskInput {
 /** Public S4 Module Interface for explicit Search, Ask, and Jump behavior. */
 export interface Discovery {
   search(query: string): Promise<DiscoverySearchOutcome>;
+  readAskContextCandidates(): Promise<
+    | { outcome: "available"; candidates: DiscoveryContextCandidate[] }
+    | { outcome: "repository-unavailable"; detail: string }
+  >;
   prepareAsk(input: PrepareAskInput): Promise<PrepareAskOutcome>;
   removeAskContextItem(
     input: RemoveAskContextItemInput,
@@ -216,6 +253,9 @@ const askContextFrom = (item: DiscoveryItem): AskContextItem => ({
 const copiedItem = (item: DiscoveryItem): DiscoveryItem => ({
   ...item,
   ...(item.source === undefined ? {} : { source: { ...item.source } }),
+  ...(item.targetTopic === undefined
+    ? {}
+    : { targetTopic: { ...item.targetTopic } }),
 });
 
 const payloadSizeFor = (payload: AskPayload): number =>
@@ -252,6 +292,43 @@ const previewFor = (
   };
 };
 
+const workspaceTargetFor = (value: string): DiscoveryJumpTarget | undefined => {
+  const targets: Record<string, DiscoveryJumpTarget> = {
+    atlas: { kind: "workspace", workspace: "atlas" },
+    studio: { kind: "workspace", workspace: "studio" },
+    "paper desk": { kind: "workspace", workspace: "paper-desk" },
+    "paper-desk": { kind: "workspace", workspace: "paper-desk" },
+  };
+  return targets[value];
+};
+
+const itemTargetFor = (item: DiscoveryItem): DiscoveryJumpTarget => {
+  switch (item.kind) {
+    case "topic":
+      return { kind: "topic", id: item.id, title: item.title };
+    case "source-record":
+      return { kind: "source-record", id: item.id, title: item.title };
+    case "structured-annotation":
+      return {
+        kind: "structured-annotation",
+        id: item.id,
+        title: item.title,
+        ...(item.source === undefined
+          ? {}
+          : { sourceRecordId: item.source.sourceRecordId }),
+      };
+    case "saved-synthesis-result":
+      return {
+        kind: "saved-synthesis-result",
+        id: item.id,
+        title: item.title,
+        ...(item.targetTopic === undefined
+          ? {}
+          : { targetTopicId: item.targetTopic.id }),
+      };
+  }
+};
+
 const parseJump = (
   command: string,
   items: DiscoveryItem[],
@@ -264,54 +341,110 @@ const parseJump = (
     };
   }
 
-  const workspace =
-    value === "atlas"
-      ? "atlas"
-      : value === "studio"
-        ? "studio"
-        : value === "paper desk" || value === "paper-desk"
-          ? "paper-desk"
-          : undefined;
-  if (workspace !== undefined) {
-    return {
-      outcome: "resolved",
-      command,
-      target: { kind: "workspace", workspace },
-    };
+  const target = workspaceTargetFor(value);
+  if (target !== undefined) {
+    return { outcome: "resolved", command, target };
   }
 
   const item = items.find(
     (candidate) =>
-      (candidate.kind === "topic" || candidate.kind === "source-record") &&
-      (normalized(candidate.title) === value ||
-        normalized(candidate.id) === value),
+      normalized(candidate.title) === value ||
+      normalized(candidate.id) === value,
   );
-  if (item?.kind === "topic") {
-    return {
-      outcome: "resolved",
-      command,
-      target: { kind: "topic", id: item.id, title: item.title },
-    };
-  }
-  if (item?.kind === "source-record") {
-    return {
-      outcome: "resolved",
-      command,
-      target: { kind: "source-record", id: item.id, title: item.title },
-    };
-  }
-
-  return { outcome: "not-found", command };
+  return item === undefined
+    ? { outcome: "not-found", command }
+    : { outcome: "resolved", command, target: itemTargetFor(item) };
 };
 
-const validAnswer = (answer: AskAnswer): boolean =>
-  answer.text.trim().length > 0 &&
-  answer.citations.every(
-    (citation) =>
-      citation.itemId.trim().length > 0 && citation.title.trim().length > 0,
-  ) &&
-  answer.uncertainty.every((item) => item.trim().length > 0) &&
-  answer.conflicts.every((item) => item.trim().length > 0);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isAuthority = (value: unknown): value is DiscoveryAuthority =>
+  value === "core-knowledge" ||
+  value === "source-record" ||
+  value === "working-material";
+
+const isSourceReference = (value: unknown): value is DiscoverySourceReference =>
+  isRecord(value) &&
+  typeof value.sourceRecordId === "string" &&
+  value.sourceRecordId.length > 0 &&
+  typeof value.sourceRecordTitle === "string" &&
+  value.sourceRecordTitle.length > 0 &&
+  (value.locator === undefined ||
+    (typeof value.locator === "string" && value.locator.length > 0));
+
+const validAnswer = (
+  value: unknown,
+  context: AskContextItem[],
+): value is AskAnswer => {
+  if (!isRecord(value)) {
+    return false;
+  }
+  if (
+    typeof value.text !== "string" ||
+    value.text.trim().length === 0 ||
+    !Array.isArray(value.citations) ||
+    !Array.isArray(value.uncertainty) ||
+    !Array.isArray(value.conflicts)
+  ) {
+    return false;
+  }
+
+  return (
+    value.citations.every((citation): citation is AskCitation => {
+      if (
+        !isRecord(citation) ||
+        typeof citation.itemId !== "string" ||
+        typeof citation.title !== "string" ||
+        citation.itemId.trim().length === 0 ||
+        citation.title.trim().length === 0 ||
+        !isAuthority(citation.authority)
+      ) {
+        return false;
+      }
+      const source = citation.source;
+      return (
+        context.some((item) => item.id === citation.itemId) &&
+        (source === undefined || isSourceReference(source))
+      );
+    }) &&
+    value.uncertainty.every(
+      (item): item is string =>
+        typeof item === "string" && item.trim().length > 0,
+    ) &&
+    value.conflicts.every(
+      (item): item is string =>
+        typeof item === "string" && item.trim().length > 0,
+    )
+  );
+};
+
+const modelOutcomeFrom = (
+  value: unknown,
+  context: AskContextItem[],
+): ConfirmAskOutcome => {
+  if (!isRecord(value) || typeof value.outcome !== "string") {
+    return {
+      outcome: "operation-failed",
+      detail: "The Agent Provider returned an invalid Ask response.",
+    };
+  }
+  if (value.outcome === "agent-provider-unavailable") {
+    return typeof value.detail === "string"
+      ? { outcome: value.outcome, detail: value.detail }
+      : {
+          outcome: "operation-failed",
+          detail: "The Agent Provider returned an invalid Ask response.",
+        };
+  }
+  if (value.outcome === "answered" && validAnswer(value.answer, context)) {
+    return { outcome: "answered", answer: value.answer };
+  }
+  return {
+    outcome: "operation-failed",
+    detail: "The Agent Provider returned an invalid Ask response.",
+  };
+};
 
 /**
  * Creates the S4 Discovery Module and keeps repository policy out of the UI.
@@ -324,8 +457,19 @@ export const createDiscovery = ({
   destination = defaultDestination,
   modelName = defaultModelName,
 }: DiscoveryDependencies): Discovery => {
-  const readItems = async (): Promise<DiscoveryItem[]> =>
-    (await repository.readDiscoverableItems()).map(copiedItem);
+  const readItems = async (): Promise<DiscoveryRepositoryReadOutcome> => {
+    try {
+      const outcome = await repository.readDiscoverableItems();
+      return outcome.outcome === "available"
+        ? { outcome: "available", items: outcome.items.map(copiedItem) }
+        : outcome;
+    } catch {
+      return {
+        outcome: "unavailable",
+        detail: "The selected Knowledge Repository could not be read.",
+      };
+    }
+  };
 
   const prepareAsk = async ({
     prompt,
@@ -339,24 +483,23 @@ export const createDiscovery = ({
       };
     }
 
-    const items = await readItems();
-    const selected =
-      contextItemIds === undefined
-        ? items.filter((item) =>
-            trimmedPrompt
-              .toLocaleLowerCase()
-              .split(/\s+/u)
-              .some(
-                (word) =>
-                  word.length > 3 &&
-                  `${item.title} ${item.text}`
-                    .toLocaleLowerCase()
-                    .includes(word),
-              ),
-          )
-        : contextItemIds
-            .map((id) => items.find((item) => item.id === id))
-            .filter((item): item is DiscoveryItem => item !== undefined);
+    if (contextItemIds.length === 0) {
+      return {
+        outcome: "unsupported",
+        detail: "Select at least one repository item before preparing an Ask.",
+      };
+    }
+
+    const repositoryOutcome = await readItems();
+    if (repositoryOutcome.outcome === "unavailable") {
+      return {
+        outcome: "repository-unavailable",
+        detail: repositoryOutcome.detail,
+      };
+    }
+    const selected = contextItemIds
+      .map((id) => repositoryOutcome.items.find((item) => item.id === id))
+      .filter((item): item is DiscoveryItem => item !== undefined);
 
     const context = selected.map(askContextFrom);
     if (context.length === 0) {
@@ -380,7 +523,14 @@ export const createDiscovery = ({
         };
       }
 
-      const items = await readItems();
+      const repositoryOutcome = await readItems();
+      if (repositoryOutcome.outcome === "unavailable") {
+        return {
+          outcome: "repository-unavailable",
+          detail: repositoryOutcome.detail,
+        };
+      }
+      const items = repositoryOutcome.items;
       const results = items
         .filter((item) =>
           `${item.title} ${item.text}`
@@ -405,6 +555,28 @@ export const createDiscovery = ({
       return results.length === 0
         ? { outcome: "no-match", query: trimmedQuery }
         : { outcome: "found", query: trimmedQuery, results };
+    },
+
+    readAskContextCandidates: async () => {
+      const repositoryOutcome = await readItems();
+      if (repositoryOutcome.outcome === "unavailable") {
+        return {
+          outcome: "repository-unavailable",
+          detail: repositoryOutcome.detail,
+        };
+      }
+      return {
+        outcome: "available",
+        candidates: repositoryOutcome.items.map(
+          ({ id, title, kind, authority, source }) => ({
+            id,
+            title,
+            kind,
+            authority,
+            ...(source === undefined ? {} : { source: { ...source } }),
+          }),
+        ),
+      };
     },
 
     prepareAsk,
@@ -449,29 +621,27 @@ export const createDiscovery = ({
         };
       }
 
-      const outcome = await model.requestAsk(preview.payload);
-      if (outcome.outcome === "answered" && !validAnswer(outcome.answer)) {
+      let outcome: unknown;
+      try {
+        outcome = await model.requestAsk(preview.payload);
+      } catch {
         return {
-          outcome: "invalid-response",
-          detail: "The Agent Provider returned an invalid Ask response.",
+          outcome: "operation-failed",
+          detail: "The Agent Provider request failed.",
         };
       }
-
-      return outcome;
+      return modelOutcomeFrom(outcome, preview.context);
     },
 
-    jump: async (command): Promise<DiscoveryJumpOutcome> =>
-      parseJump(command, await readItems()),
+    jump: async (command): Promise<DiscoveryJumpOutcome> => {
+      const repositoryOutcome = await readItems();
+      if (repositoryOutcome.outcome === "unavailable") {
+        return {
+          outcome: "repository-unavailable",
+          detail: repositoryOutcome.detail,
+        };
+      }
+      return parseJump(command, repositoryOutcome.items);
+    },
   };
 };
-
-/**
- * Creates the deterministic repository Adapter used by S4 tests and fixture composition.
- * @param items Independently defined repository items exposed to Discovery.
- * @returns A read-only Discovery repository Adapter.
- */
-export const createInMemoryDiscoveryRepository = (
-  items: DiscoveryItem[],
-): DiscoveryRepository => ({
-  readDiscoverableItems: async () => items.map(copiedItem),
-});
