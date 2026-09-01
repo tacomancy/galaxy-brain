@@ -5,16 +5,20 @@ import { describe, it } from "vitest";
 import {
   evaluateMCDC,
   formatMCDCReport,
+  findChangedDecisionIds,
   type MCDCManifest,
 } from "../../tools/mcdc";
+import { readChangedFiles } from "../../tools/mcdc-git";
+import { findMissingImplementationFiles } from "../../tools/mcdc-files";
 
 const validManifest: MCDCManifest = {
-  version: 1,
+  version: 2,
   decisions: [
     {
       id: "decision.test",
       owner: "test",
       description: "test decision",
+      implementationFiles: ["src/test-decision.ts"],
       conditions: ["first", "second"],
       cases: [
         { id: "all", conditions: [true, true], outcome: true },
@@ -105,5 +109,115 @@ describe("MC/DC evaluator", () => {
     assert.equal(result.decisionCoverage, false);
     assert.equal(result.mcdcCoverage, false);
     assert.match(formatMCDCReport(result), /Decision coverage: FAIL/);
+  });
+
+  it("rejects a decision without an implementation mapping", () => {
+    const invalidManifest: MCDCManifest = {
+      ...validManifest,
+      decisions: [{ ...validDecision, implementationFiles: [] }],
+    };
+
+    const result = evaluateMCDC(invalidManifest);
+
+    assert.equal(result.mcdcCoverage, false);
+    assert.match(
+      formatMCDCReport(result),
+      /At least one implementation file must be registered/,
+    );
+  });
+
+  it("rejects an empty implementation path", () => {
+    const invalidManifest: MCDCManifest = {
+      ...validManifest,
+      decisions: [{ ...validDecision, implementationFiles: [""] }],
+    };
+
+    const result = evaluateMCDC(invalidManifest);
+
+    assert.equal(result.mcdcCoverage, false);
+    assert.match(
+      formatMCDCReport(result),
+      /Implementation file paths must not be empty/,
+    );
+  });
+
+  it("rejects an implementation path outside the app package", () => {
+    const invalidManifest: MCDCManifest = {
+      ...validManifest,
+      decisions: [
+        {
+          ...validDecision,
+          implementationFiles: ["/tmp/not-an-app-file", "../outside.ts"],
+        },
+      ],
+    };
+
+    const result = evaluateMCDC(invalidManifest);
+
+    assert.equal(result.mcdcCoverage, false);
+    assert.match(
+      formatMCDCReport(result),
+      /Implementation file paths must be app-relative/,
+    );
+  });
+
+  it("identifies registered decisions whose implementation files changed", () => {
+    assert.deepEqual(
+      findChangedDecisionIds(validManifest, ["src/test-decision.ts"]),
+      ["decision.test"],
+    );
+  });
+
+  it("does not select decisions for unrelated changes", () => {
+    assert.deepEqual(
+      findChangedDecisionIds(validManifest, ["src/unrelated.ts"]),
+      [],
+    );
+  });
+
+  it("normalizes repository-relative implementation paths", () => {
+    assert.deepEqual(
+      findChangedDecisionIds(validManifest, ["app/src/test-decision.ts"]),
+      ["decision.test"],
+    );
+  });
+
+  it("reviews every current decision when the manifest changes", () => {
+    assert.deepEqual(
+      findChangedDecisionIds(validManifest, ["app/tools/mcdc-decisions.json"]),
+      ["decision.test"],
+    );
+  });
+
+  it("reads changed files through the operation-specific Git seam", async () => {
+    const changedFiles = await readChangedFiles(
+      "origin/main",
+      async (baseRef) => {
+        assert.equal(baseRef, "origin/main");
+        return "app/src/changed.ts\n\n docs/changed.md\n";
+      },
+    );
+
+    assert.deepEqual(changedFiles, ["app/src/changed.ts", "docs/changed.md"]);
+  });
+
+  it("rejects a manifest mapping to a missing implementation file", async () => {
+    const missingFiles = await findMissingImplementationFiles(
+      validManifest,
+      async (path) => path !== "src/test-decision.ts",
+    );
+
+    assert.deepEqual(missingFiles, ["decision.test: src/test-decision.ts"]);
+  });
+
+  it("preserves non-missing filesystem failures", async () => {
+    await assert.rejects(
+      findMissingImplementationFiles(validManifest, async () => {
+        throw Object.assign(new Error("permission denied"), {
+          code: "EACCES",
+        });
+      }),
+      /permission denied/,
+    );
   });
 });

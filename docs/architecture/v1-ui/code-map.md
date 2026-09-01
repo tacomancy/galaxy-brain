@@ -53,8 +53,8 @@ The renderer never imports main-process code or privileged Adapters. Preload exp
 | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------- |
 | [`app/tests/workflows/v1-provider-free-gate.e2e.ts`](../../../app/tests/workflows/v1-provider-free-gate.e2e.ts)     | Named silent S1 packaged-app gate for local create/open and unavailable-provider behavior | `npm run test:provider-free`                 |
 | [`app/tests/workflows/provider-free-privacy.e2e.ts`](../../../app/tests/workflows/provider-free-privacy.e2e.ts)     | Silent S1 privacy/non-retention gate for declined Ask payloads and isolated canary scans  | `npm run test:provider-free`                 |
-| [`app/tools/mcdc.ts`](../../../app/tools/mcdc.ts) and [`app/tools/check-mcdc.ts`](../../../app/tools/check-mcdc.ts) | Framework-independent MC/DC evaluator and command-line gate                               | `npm run test:mcdc` and `npm run check:mcdc` |
-| [`app/tools/mcdc-decisions.json`](../../../app/tools/mcdc-decisions.json)                                           | Independently authored initial Governance and Source Processing decision manifest         | Consumed by `check:mcdc`                     |
+| [`app/tools/mcdc.ts`](../../../app/tools/mcdc.ts), [`app/tools/check-mcdc.ts`](../../../app/tools/check-mcdc.ts), [`app/tools/mcdc-git.ts`](../../../app/tools/mcdc-git.ts), and [`app/tools/mcdc-files.ts`](../../../app/tools/mcdc-files.ts) | Framework-independent MC/DC evaluator, base-aware changed-decision release gate, and narrow Git/filesystem validation Adapters | `npm run test:mcdc` and `npm run check:mcdc -- --base-ref <git-revision>` |
+| [`app/tools/mcdc-decisions.json`](../../../app/tools/mcdc-decisions.json)                                           | Independently authored initial Governance and Source Processing decision manifest with implementation-file mappings | Consumed by `check:mcdc` |
 
 ## Application Modules
 

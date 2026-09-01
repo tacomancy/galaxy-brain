@@ -4,8 +4,10 @@ Status: draft release checklist. TB12–TB16, the provider-free release gate,
 Issue #52 recovery, and Issue #22 behavioral-contract coverage are merged and
 accepted for their recorded scopes. The Section C privacy/non-retention gate
 is implemented, human-accepted, and complete for its bounded scope. The MC/DC
-release-candidate rule, Issue #23 follow-up approval, remaining architecture
-hardening, and other release-readiness dispositions below remain open.
+release-candidate rule is implemented on the C1 branch and awaits its final
+integrated-release evidence; Issue #23 follow-up approval, remaining
+architecture hardening, and other release-readiness dispositions below remain
+open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
@@ -71,7 +73,7 @@ Track MC/DC as an explicit quality work item alongside, rather than folded into,
 - [x] Add independently authored truth-table cases that exercise each condition as both `true` and `false` and provide an independence pair showing that each condition changes the decision outcome.
 - [x] Add dedicated `test:mcdc` and `check:mcdc` gates that report condition coverage, decision coverage, and MC/DC witnesses separately and fail when a registered decision lacks required evidence.
 - [x] Define and document the short-circuit/reachability boundary, explicit exemptions, and the boundary between Module MC/DC evidence and renderer/UI workflow coverage in the [V1 release-readiness specification](v1-release-readiness-spec.md).
-- [ ] Require MC/DC evidence for changed registered decisions before declaring the V1 release candidate complete; do not infer MC/DC from LCOV line or branch data.
+- [x] Require MC/DC evidence for changed registered decisions before declaring the V1 release candidate complete; CI runs `npm run check:mcdc -- --base-ref origin/${GITHUB_BASE_REF}`, using manifest implementation-file mappings and independently authored witnesses rather than inferring MC/DC from LCOV line or branch data.
 
 The initial scope is deliberately limited to dense, consequential domain decisions. Expanding the manifest to every conditional, including presentation-only UI conditions, is deferred until a concrete risk or requirement justifies it.
 
