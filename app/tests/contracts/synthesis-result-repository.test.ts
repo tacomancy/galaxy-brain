@@ -257,6 +257,42 @@ describe("Synthesis result Repository Adapter", () => {
     }
   });
 
+  it("rejects moving the current result pointer to an older version", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-version-order-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+
+      await repository.saveResult(result);
+
+      await assert.rejects(
+        repository.saveResult({
+          ...result,
+          resultVersion: 1,
+          text: "An attempted rollback must not replace the current result.",
+        }),
+        /cannot move backwards/u,
+      );
+
+      assert.deepEqual(await repository.readResult?.(result.id), {
+        outcome: "found",
+        result: normalizedResult,
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it("preserves the previous result when atomic replacement fails", async () => {
     const temporaryRoot = await mkdtemp(
       join(tmpdir(), "galaxy-brain-synthesis-"),

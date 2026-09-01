@@ -568,12 +568,16 @@ export const createFileBackedSynthesisResultRepository = (
     const resultName = resultFileName(result.id);
     const currentVersion = result.resultVersion ?? 1;
     const pointerFingerprint = await artifactStore.fingerprint(resultName);
+    let existingCurrentVersion: number | undefined;
     let legacyPriorResults = result.priorResults ?? [];
 
     if (pointerFingerprint !== undefined) {
       const existing = await readJson(() => artifactStore.readFile(resultName));
       if (isRecord(existing) && existing.schema === pointerSchema) {
-        await readPointer(result.id, () => artifactStore.readFile(resultName));
+        const pointer = await readPointer(result.id, () =>
+          artifactStore.readFile(resultName),
+        );
+        existingCurrentVersion = pointer.current_version;
       } else if (isSynthesisSavedResult(existing)) {
         legacyPriorResults = existing.priorResults ?? legacyPriorResults;
       } else {
@@ -581,6 +585,15 @@ export const createFileBackedSynthesisResultRepository = (
           "The Synthesis result pointer is invalid.",
         );
       }
+    }
+
+    if (
+      existingCurrentVersion !== undefined &&
+      currentVersion < existingCurrentVersion
+    ) {
+      throw new InvalidSynthesisResultError(
+        "The current Synthesis result version cannot move backwards.",
+      );
     }
 
     for (const prior of legacyPriorResults) {
