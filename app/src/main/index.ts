@@ -8,7 +8,7 @@
  * and IPC handling remains behind narrow, validated seams.
  */
 import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
-import { appendFile, readFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { basename, dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -105,6 +105,7 @@ const isPositiveInteger = (value: unknown): value is number =>
 
 let injectedFailureConsumed = false;
 let mainDiagnosticPath: string | undefined;
+let mainDiagnosticWrite = Promise.resolve();
 
 // A custom secure scheme lets packaged renderer assets load without exposing
 // a broad file:// surface to the sandboxed renderer.
@@ -139,34 +140,52 @@ const recordMainDiagnostic = (
   operation: string,
   phase: MainDiagnosticPhase,
   category: MainDiagnosticCategory,
+  cause?: unknown,
 ): void => {
   const timestamp = new Date().toISOString();
+  const safeCause =
+    cause instanceof Error
+      ? {
+          name: cause.name,
+          code:
+            "code" in cause && typeof cause.code === "string"
+              ? cause.code
+              : undefined,
+        }
+      : cause === undefined
+        ? undefined
+        : { name: typeof cause };
+  const record = { operation, phase, category, timestamp };
   // Keep diagnostics deliberately structured and non-sensitive. The renderer
   // receives only a safe generic recovery outcome, never this record or the
   // underlying exception.
   console.error(
     "Galaxy Brain diagnostic",
-    JSON.stringify({
-      operation,
-      phase,
-      category,
-      timestamp,
-    }),
+    JSON.stringify({ ...record, cause: safeCause }),
   );
   if (mainDiagnosticPath !== undefined) {
-    void appendFile(
-      mainDiagnosticPath,
-      `${JSON.stringify({ operation, phase, category, timestamp })}\n`,
-      "utf8",
-    ).catch(() => undefined);
+    const diagnosticPath = mainDiagnosticPath;
+    mainDiagnosticWrite = mainDiagnosticWrite.then(async () => {
+      try {
+        await mkdir(dirname(diagnosticPath), { recursive: true });
+        await appendFile(diagnosticPath, `${JSON.stringify(record)}\n`, "utf8");
+      } catch {
+        console.error("Galaxy Brain diagnostic write failed");
+      }
+    });
   }
 };
 
 type SanitizedOperationDiagnostic = { operation: string };
 
 const mainOperationDiagnostics = (phase: MainDiagnosticPhase) => ({
-  record: (diagnostic: SanitizedOperationDiagnostic): void => {
-    recordMainDiagnostic(diagnostic.operation, phase, "sanitized-operation");
+  record: (diagnostic: SanitizedOperationDiagnostic, cause?: unknown): void => {
+    recordMainDiagnostic(
+      diagnostic.operation,
+      phase,
+      "sanitized-operation",
+      cause,
+    );
   },
 });
 
@@ -662,8 +681,8 @@ const createWindow = async (): Promise<void> => {
     ipcMain.handle(channel, async (event, ...args) => {
       try {
         return await handler(event, ...args);
-      } catch {
-        recordMainDiagnostic(channel, "bridge", "unexpected-rejection");
+      } catch (cause: unknown) {
+        recordMainDiagnostic(channel, "bridge", "unexpected-rejection", cause);
         throw new Error("Workbench operation could not be completed.");
       }
     });

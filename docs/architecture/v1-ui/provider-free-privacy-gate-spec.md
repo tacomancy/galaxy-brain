@@ -299,6 +299,11 @@ tests/contracts/synthesis-result-repository.test.ts` first failed the new
   evidence surface; any future support process needs its own privacy decision.
 - Real provider transmission and production provider configuration remain
   outside this provider-free gate.
+- A packaged explicit save-with-prompt/context flow is deferred because the
+  current fixture-mode UI exposes no deterministic save action. The existing
+  S3/S5 contract tests remain the evidence for its approved saved shape; a
+  future packaged save surface must add an isolated workflow before that
+  behavior is promoted to a packaged privacy claim.
 
 ## Discarded alternatives and rationale
 

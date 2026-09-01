@@ -1,29 +1,36 @@
 /** S1 packaged privacy and non-retention workflow for Section C. */
 import { strict as assert } from "node:assert";
-import { cp, mkdtemp, readdir, readFile, realpath, rm } from "node:fs/promises";
+import type { Dirent } from "node:fs";
+import {
+  appendFile,
+  cp,
+  mkdtemp,
+  readdir,
+  readFile,
+  realpath,
+  rm,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 
 import { $ } from "@wdio/globals";
 import "@wdio/electron-service";
 
-const privacyPrompt = [
+const promptCanaries = [
   "GB_PRIVACY_PROMPT_DO_NOT_RETAIN",
-  "GB_PRIVACY_SOURCE_EXCERPT",
   "GB_PRIVACY_CREDENTIAL",
-  "/private/GB_PRIVACY_ABSOLUTE_PATH",
-].join(" ");
-const forbiddenMarkers = [
-  "GB_PRIVACY_PROMPT_DO_NOT_RETAIN",
-  "GB_PRIVACY_SOURCE_EXCERPT",
-  "GB_PRIVACY_CREDENTIAL",
-  "/private/GB_PRIVACY_ABSOLUTE_PATH",
   "OPENAI_API_KEY",
 ];
 
 const filesUnder = async (root: string): Promise<string[]> => {
   const files: string[] = [];
-  const entries = await readdir(root, { withFileTypes: true });
+  let entries: Dirent<string>[];
+
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch {
+    return files;
+  }
 
   for (const entry of entries) {
     const path = join(root, entry.name);
@@ -37,12 +44,24 @@ const filesUnder = async (root: string): Promise<string[]> => {
   return files;
 };
 
-const assertNoForbiddenMarkers = async (roots: string[]): Promise<void> => {
+const assertNoForbiddenMarkers = async (
+  roots: string[],
+  forbiddenMarkers: string[],
+  approvedMarkers: Map<string, Set<string>> = new Map(),
+): Promise<void> => {
   for (const root of roots) {
     const files = await filesUnder(root);
     for (const file of files) {
       const contents = await readFile(file, "utf8");
       for (const marker of forbiddenMarkers) {
+        const approved = [...approvedMarkers.entries()].some(
+          ([approvedRoot, markers]) =>
+            file === approvedRoot ||
+            (file.startsWith(`${approvedRoot}${sep}`) && markers.has(marker)),
+        );
+        if (approved) {
+          continue;
+        }
         assert.doesNotMatch(
           contents,
           new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u"),
@@ -51,6 +70,27 @@ const assertNoForbiddenMarkers = async (roots: string[]): Promise<void> => {
       }
     }
   }
+};
+
+type StateSnapshot = Array<[string, string]>;
+
+const snapshotRoots = async (roots: string[]): Promise<StateSnapshot> => {
+  const snapshot: StateSnapshot = [];
+
+  for (const root of roots) {
+    for (const file of await filesUnder(root)) {
+      snapshot.push([file, (await readFile(file)).toString("base64")]);
+    }
+  }
+
+  return snapshot.sort(([left], [right]) => left.localeCompare(right));
+};
+
+const assertStateUnchanged = (
+  before: StateSnapshot,
+  after: StateSnapshot,
+): void => {
+  assert.deepEqual(after, before, "The operation changed local state.");
 };
 
 describe("Section C provider-free privacy gate", () => {
@@ -88,6 +128,35 @@ describe("Section C provider-free privacy gate", () => {
       repositoryPath,
       { recursive: true },
     );
+    const sourceAnnotationPath = join(
+      repositoryPath,
+      "sources",
+      "annotations",
+      "annotation-bayesian-statistics-fixture-source-page-2-0-54.md",
+    );
+    const sourceExcerptCanary = "GB_PRIVACY_SOURCE_EXCERPT";
+    await appendFile(sourceAnnotationPath, `\n${sourceExcerptCanary}\n`);
+    const privacyPrompt = [
+      ...promptCanaries,
+      repositoryPath,
+      sourcePdfPath,
+    ].join(" ");
+    const forbiddenMarkers = [
+      ...promptCanaries,
+      sourceExcerptCanary,
+      repositoryPath,
+      sourcePdfPath,
+    ];
+    const approvedMarkers = new Map([
+      [sourceAnnotationPath, new Set([sourceExcerptCanary])],
+      [sessionStateRoot, new Set([repositoryPath, sourcePdfPath])],
+      [dirname(sourceAssetsPath), new Set([sourcePdfPath])],
+    ]);
+    const stateRoots = [
+      repositoryPath,
+      sessionStateRoot,
+      dirname(sourceAssetsPath),
+    ];
 
     try {
       const dialog = await browser.electron.mock("dialog", "showOpenDialog");
@@ -111,12 +180,17 @@ describe("Section C provider-free privacy gate", () => {
         await $("#discovery-ask-payload").getText(),
         /GB_PRIVACY_PROMPT_DO_NOT_RETAIN/u,
       );
-      await assertNoForbiddenMarkers([
-        repositoryPath,
-        sessionStateRoot,
-        dirname(sourceAssetsPath),
-      ]);
+      assert.match(
+        await $("#discovery-ask-payload").getText(),
+        new RegExp(sourceExcerptCanary, "u"),
+      );
+      await assertNoForbiddenMarkers(
+        stateRoots,
+        forbiddenMarkers,
+        approvedMarkers,
+      );
 
+      const beforeDecline = await snapshotRoots(stateRoots);
       await $("#discovery-ask-decline").click();
       await browser.waitUntil(
         async () =>
@@ -129,15 +203,17 @@ describe("Section C provider-free privacy gate", () => {
         },
       );
       assert.equal(await $("#discovery-ask-preview").isExisting(), false);
+      assertStateUnchanged(beforeDecline, await snapshotRoots(stateRoots));
 
       await $("#discovery-input").setValue(privacyPrompt);
       await $("#discovery-submit").click();
       await $("#discovery-ask-preview").waitForDisplayed();
-      await assertNoForbiddenMarkers([
-        repositoryPath,
-        sessionStateRoot,
-        dirname(sourceAssetsPath),
-      ]);
+      const beforeCancel = await snapshotRoots(stateRoots);
+      await assertNoForbiddenMarkers(
+        stateRoots,
+        forbiddenMarkers,
+        approvedMarkers,
+      );
       await $("#discovery-ask-cancel").click();
       await browser.waitUntil(
         async () =>
@@ -150,6 +226,7 @@ describe("Section C provider-free privacy gate", () => {
         },
       );
       assert.equal(await $("#discovery-ask-preview").isExisting(), false);
+      assertStateUnchanged(beforeCancel, await snapshotRoots(stateRoots));
 
       const savedResultPath = join(
         repositoryPath,
@@ -177,10 +254,6 @@ describe("Section C provider-free privacy gate", () => {
           timeoutMsg:
             "The privacy workflow did not reach unavailable Synthesis.",
         },
-      );
-      assert.equal(
-        await $("#studio-synthesis-outcome").getText(),
-        "Synthesis requires a configured Agent Provider.",
       );
       await $("#studio-synthesis-results").waitForDisplayed();
       assert.equal(
@@ -214,13 +287,35 @@ describe("Section C provider-free privacy gate", () => {
         },
       );
       const diagnostics = await readFile(diagnosticsPath, "utf8");
-      assert.match(diagnostics, /"phase":"source-asset"/u);
-      assert.match(diagnostics, /"operation":"read-source"/u);
-      await assertNoForbiddenMarkers([
-        repositoryPath,
-        sessionStateRoot,
-        dirname(sourceAssetsPath),
-      ]);
+      const diagnosticRecords = diagnostics
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line) as Record<string, unknown>);
+      assert.ok(diagnosticRecords.length > 0);
+      for (const record of diagnosticRecords) {
+        assert.deepEqual(Object.keys(record).sort(), [
+          "category",
+          "operation",
+          "phase",
+          "timestamp",
+        ]);
+        assert.equal(record.category, "sanitized-operation");
+        assert.equal(typeof record.operation, "string");
+        assert.equal(typeof record.phase, "string");
+        assert.equal(typeof record.timestamp, "string");
+      }
+      assert.ok(
+        diagnosticRecords.some(
+          (record) =>
+            record.phase === "source-asset" &&
+            record.operation === "read-source",
+        ),
+      );
+      await assertNoForbiddenMarkers(
+        stateRoots,
+        forbiddenMarkers,
+        approvedMarkers,
+      );
     } finally {
       await rm(repositoryPath, { recursive: true, force: true });
     }

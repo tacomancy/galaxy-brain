@@ -24,7 +24,11 @@ import type {
   SynthesisSavedResult,
 } from "../../modules/source-processing";
 
-/** Sanitized operational metadata retained by the main-process diagnostic sink. */
+/**
+ * Sanitized operational metadata retained by the main-process diagnostic sink.
+ * The optional cause is available only to that sink for internal diagnostics;
+ * it is never part of a caller outcome or serialized record.
+ */
 export type SynthesisResultDiagnostic = {
   category: "filesystem";
   operation: "read-repository" | "read-result" | "read-results";
@@ -32,7 +36,7 @@ export type SynthesisResultDiagnostic = {
 
 /** Internal sink for sanitized metadata that must not enter caller outcomes. */
 export interface SynthesisResultDiagnostics {
-  record(diagnostic: SynthesisResultDiagnostic): void;
+  record(diagnostic: SynthesisResultDiagnostic, cause?: unknown): void;
 }
 
 const resultDirectoryName = join("scratch", "synthesis-results");
@@ -336,11 +340,14 @@ export const createFileBackedSynthesisResultRepository = (
 
     try {
       canonicalPath = await canonicalRepositoryPath(repositoryPath);
-    } catch {
-      diagnostics?.record({
-        category: "filesystem",
-        operation: "read-repository",
-      });
+    } catch (cause: unknown) {
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-repository",
+        },
+        cause,
+      );
       return {
         outcome: "unavailable",
         detail: "The Knowledge Repository could not be read.",
@@ -376,10 +383,13 @@ export const createFileBackedSynthesisResultRepository = (
         };
       }
 
-      diagnostics?.record({
-        category: "filesystem",
-        operation: "read-result",
-      });
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-result",
+        },
+        cause,
+      );
       return {
         outcome: "unavailable",
         detail: "The Synthesis result could not be read.",
@@ -415,11 +425,14 @@ export const createFileBackedSynthesisResultRepository = (
 
       try {
         canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      } catch {
-        diagnostics?.record({
-          category: "filesystem",
-          operation: "read-repository",
-        });
+      } catch (cause: unknown) {
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-repository",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Knowledge Repository could not be read.",
@@ -448,11 +461,14 @@ export const createFileBackedSynthesisResultRepository = (
           encoding: "utf8",
           withFileTypes: true,
         });
-      } catch {
-        diagnostics?.record({
-          category: "filesystem",
-          operation: "read-results",
-        });
+      } catch (cause: unknown) {
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-results",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Synthesis results could not be read.",
@@ -490,11 +506,14 @@ export const createFileBackedSynthesisResultRepository = (
               resultId,
             ),
           );
-        } catch {
-          diagnostics?.record({
-            category: "filesystem",
-            operation: "read-result",
-          });
+        } catch (cause: unknown) {
+          diagnostics?.record(
+            {
+              category: "filesystem",
+              operation: "read-result",
+            },
+            cause,
+          );
           return {
             outcome: "unavailable",
             detail: "The Synthesis results could not be read.",

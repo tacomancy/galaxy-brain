@@ -22,7 +22,11 @@ import type {
   WorkingMaterialRepository,
 } from "../../modules/source-processing";
 
-/** Sanitized operational metadata retained by the main-process diagnostic sink. */
+/**
+ * Sanitized operational metadata retained by the main-process diagnostic sink.
+ * The optional cause is available only to that sink for internal diagnostics;
+ * it is never part of a caller outcome or serialized record.
+ */
 export type WorkingMaterialDiagnostic = {
   category: "filesystem";
   operation:
@@ -34,7 +38,7 @@ export type WorkingMaterialDiagnostic = {
 
 /** Internal sink for sanitized metadata that must not enter caller outcomes. */
 export interface WorkingMaterialDiagnostics {
-  record(diagnostic: WorkingMaterialDiagnostic): void;
+  record(diagnostic: WorkingMaterialDiagnostic, cause?: unknown): void;
 }
 
 const annotationDirectoryName = join("sources", "annotations");
@@ -359,11 +363,14 @@ export const createFileBackedWorkingMaterialRepository = (
 
     try {
       canonicalPath = await canonicalRepositoryPath(repositoryPath);
-    } catch {
-      diagnostics?.record({
-        category: "filesystem",
-        operation: "read-repository",
-      });
+    } catch (cause: unknown) {
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-repository",
+        },
+        cause,
+      );
       return {
         outcome: "unavailable",
         detail: "The Knowledge Repository could not be read.",
@@ -406,10 +413,13 @@ export const createFileBackedWorkingMaterialRepository = (
         };
       }
 
-      diagnostics?.record({
-        category: "filesystem",
-        operation: "read-annotation",
-      });
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-annotation",
+        },
+        cause,
+      );
 
       return {
         outcome: "unavailable",
@@ -449,11 +459,14 @@ export const createFileBackedWorkingMaterialRepository = (
 
       try {
         canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      } catch {
-        diagnostics?.record({
-          category: "filesystem",
-          operation: "read-repository",
-        });
+      } catch (cause: unknown) {
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-repository",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Knowledge Repository could not be read.",
@@ -516,10 +529,13 @@ export const createFileBackedWorkingMaterialRepository = (
           };
         }
 
-        diagnostics?.record({
-          category: "filesystem",
-          operation: "read-annotation-for-source",
-        });
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-annotation-for-source",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The source annotation could not be read.",
@@ -533,11 +549,14 @@ export const createFileBackedWorkingMaterialRepository = (
 
       try {
         canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      } catch {
-        diagnostics?.record({
-          category: "filesystem",
-          operation: "read-repository",
-        });
+      } catch (cause: unknown) {
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-repository",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Knowledge Repository could not be read.",
@@ -602,10 +621,13 @@ export const createFileBackedWorkingMaterialRepository = (
           };
         }
 
-        diagnostics?.record({
-          category: "filesystem",
-          operation: "read-annotations-for-source",
-        });
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-annotations-for-source",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The source annotation could not be read.",

@@ -1,13 +1,13 @@
 # V1 release-readiness specification
 
-Status: implementation in progress on `codex/provider-free-release-gate`. The
-provider-free packaged-app workflow, local governance/recovery workflows, and
-initial mixed condition/decision coverage (MC/DC) evaluator are implemented.
-This brief remains the bounded work plan for the remaining release evidence;
-it is not a replacement for the V1 victory checklist, which remains the
-release decision authority. The Section C privacy/non-retention
-implementation and human acceptance are recorded in the [provider-free
-privacy and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md).
+Status: the provider-free packaged-app workflow, local governance/recovery
+workflows, initial mixed condition/decision coverage (MC/DC) evaluator, and
+the bounded Section C privacy/non-retention gate are implemented and accepted
+on `codex/section-c-privacy-gate`. This brief remains the bounded work plan
+for the remaining release evidence; it is not a replacement for the V1
+victory checklist, which remains the release decision authority. The Section
+C evidence is recorded in the [provider-free privacy and non-retention
+packaged-gate specification](provider-free-privacy-gate-spec.md).
 
 ## Governing documentation
 
@@ -82,8 +82,12 @@ Provider-free behavior uses the existing seams:
   a checked-in decision manifest and independently authored cases. It reports
   evidence; it does not become an application Module or alter runtime behavior.
 
-No new UI, repository format, PDF engine, Agent Provider, or storage channel is
-selected by this brief.
+No new UI, repository format, PDF engine, or Agent Provider is selected by
+this brief. Section C explicitly selects one private, machine-local
+`diagnostics.jsonl` output beside session state for sanitized operational
+metadata only; it is not repository content, is not exposed to the renderer,
+and is outside the portable Repository Format. Its cleanup, encryption, and
+support-bundle policy remain deferred.
 
 ## Independently known evidence
 
