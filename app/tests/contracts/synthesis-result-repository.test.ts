@@ -126,7 +126,12 @@ describe("Synthesis result Repository Adapter", () => {
         outcome: "unavailable",
         detail: "The Knowledge Repository could not be read.",
       });
+      assert.deepEqual(await repository.readResults?.(), {
+        outcome: "unavailable",
+        detail: "The Knowledge Repository could not be read.",
+      });
       assert.deepEqual(diagnostics, [
+        { category: "filesystem", operation: "read-repository" },
         { category: "filesystem", operation: "read-repository" },
       ]);
       assert.doesNotMatch(

@@ -111,7 +111,27 @@ describe("Source Processing Adapter contracts", () => {
         outcome: "unavailable",
         detail: "The Knowledge Repository could not be read.",
       });
+      assert.deepEqual(
+        await repository.readAnnotationForSourceRecord(
+          expectedAnnotation.sourceRecord.id,
+        ),
+        {
+          outcome: "unavailable",
+          detail: "The Knowledge Repository could not be read.",
+        },
+      );
+      assert.deepEqual(
+        await repository.readAnnotationsForSourceRecord?.(
+          expectedAnnotation.sourceRecord.id,
+        ),
+        {
+          outcome: "unavailable",
+          detail: "The Knowledge Repository could not be read.",
+        },
+      );
       assert.deepEqual(diagnostics, [
+        { category: "filesystem", operation: "read-repository" },
+        { category: "filesystem", operation: "read-repository" },
         { category: "filesystem", operation: "read-repository" },
       ]);
       assert.doesNotMatch(
@@ -389,7 +409,16 @@ describe("Source Processing Adapter contracts", () => {
         outcome: "unavailable",
         detail: "The source annotation could not be read.",
       });
-      assert.equal(causes.length, 1);
+      assert.deepEqual(
+        await repository.readAnnotationForSourceRecord(
+          expectedAnnotation.sourceRecord.id,
+        ),
+        {
+          outcome: "unavailable",
+          detail: "The source annotation could not be read.",
+        },
+      );
+      assert.equal(causes.length, 2);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

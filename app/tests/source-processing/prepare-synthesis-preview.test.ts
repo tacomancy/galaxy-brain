@@ -58,6 +58,52 @@ const synthesisInput = {
   },
 };
 
+const savedSynthesisResult: SynthesisSavedResult = {
+  id: "synthesis-result-bayesian-statistics-fixture",
+  state: "working-material",
+  title: "Bayesian statistics synthesis",
+  text: "Bayesian inference updates prior belief with evidence.",
+  targetTopic: synthesisInput.targetTopic,
+  provenance: {
+    attribution: "agent-generated",
+    provider: "OpenAI API",
+    model: "fixture-pinned-model",
+    generatedAt: "2026-08-27T20:30:00.000Z",
+    operation: "synthesize-into-topic",
+    sourceContext: [],
+  },
+  resultVersion: 2,
+  priorResults: [
+    {
+      id: "synthesis-result-bayesian-statistics-fixture",
+      state: "working-material",
+      title: "Earlier Bayesian statistics synthesis",
+      text: "An earlier synthesis.",
+      targetTopic: synthesisInput.targetTopic,
+      provenance: {
+        attribution: "agent-generated",
+        provider: "OpenAI API",
+        model: "fixture-pinned-model",
+        generatedAt: "2026-08-27T20:00:00.000Z",
+        operation: "synthesize-into-topic",
+        sourceContext: [],
+      },
+      resultVersion: 1,
+    },
+  ],
+  contextSnapshotVersion: 1,
+  contextSnapshot: [
+    {
+      annotationId: expectedAnnotation.id,
+      sourceRecord: expectedAnnotation.sourceRecord,
+      sourceLocator: expectedAnnotation.sourceLocator.logical,
+      sourceIdentity: "source-identity-bayesian-statistics-v1",
+      contentIdentity: "content-identity-bayesian-statistics-v1",
+      summary: "Selected Bayesian statistics source claim.",
+    },
+  ],
+};
+
 describe("Synthesize selected evidence", () => {
   it("prepares an exact preview from the selected source claim", async () => {
     const sourceProcessing = createSourceProcessing({
@@ -546,6 +592,154 @@ describe("Synthesize selected evidence", () => {
       preview.preview.payload.context[0]?.text,
       expectedAnnotation.text,
     );
+  });
+
+  it("records causes across Synthesis failure boundaries", async () => {
+    const causes: unknown[] = [];
+    let identityThrows = true;
+    let modelThrows = true;
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      sourceIdentity: {
+        readIdentity: async () => {
+          if (identityThrows) {
+            throw new Error("private identity backend details");
+          }
+
+          return {
+            outcome: "available" as const,
+            sourceIdentity: "source-identity-bayesian-statistics-v1",
+            contentIdentity: "content-identity-bayesian-statistics-v1",
+          };
+        },
+      },
+      model: {
+        requestSynthesis: async () => {
+          if (modelThrows) {
+            throw new Error("private provider response details");
+          }
+
+          return {
+            outcome: "draft-proposal" as const,
+            draft: {
+              title: "Regenerated Bayesian statistics synthesis",
+              text: "A regenerated synthesis.",
+            },
+          };
+        },
+      },
+      results: {
+        saveResult: async () => {
+          throw new Error("private result persistence details");
+        },
+      },
+      diagnostics: {
+        record: (_diagnostic, cause) => causes.push(cause),
+      },
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    const saveInput = {
+      resultId: savedSynthesisResult.id,
+      preview: preview.preview,
+      draft: {
+        title: savedSynthesisResult.title,
+        text: savedSynthesisResult.text,
+      },
+      generatedAt: "2026-08-27T20:30:00.000Z",
+      includePromptAndContext: true,
+    };
+    assert.equal(
+      (await sourceProcessing.saveSynthesisResult(saveInput)).outcome,
+      "operation-failed",
+    );
+    identityThrows = false;
+    assert.equal(
+      (await sourceProcessing.saveSynthesisResult(saveInput)).outcome,
+      "operation-failed",
+    );
+    identityThrows = true;
+    assert.equal(
+      (
+        await sourceProcessing.refreshSynthesisContext({
+          result: savedSynthesisResult,
+          refreshedAt: "2026-08-27T21:00:00.000Z",
+        })
+      ).outcome,
+      "operation-failed",
+    );
+    identityThrows = false;
+    assert.equal(
+      (
+        await sourceProcessing.refreshSynthesisContext({
+          result: savedSynthesisResult,
+          refreshedAt: "2026-08-27T21:00:00.000Z",
+        })
+      ).outcome,
+      "operation-failed",
+    );
+    assert.equal(
+      (
+        await sourceProcessing.regenerateSynthesisResult({
+          previousResult: savedSynthesisResult,
+          preview: preview.preview,
+          confirmation: "confirmed",
+          generatedAt: "2026-08-27T21:00:00.000Z",
+        })
+      ).outcome,
+      "operation-failed",
+    );
+    modelThrows = false;
+    assert.equal(
+      (
+        await sourceProcessing.regenerateSynthesisResult({
+          previousResult: savedSynthesisResult,
+          preview: preview.preview,
+          confirmation: "confirmed",
+          generatedAt: "2026-08-27T21:00:00.000Z",
+        })
+      ).outcome,
+      "operation-failed",
+    );
+    assert.equal(
+      (
+        await sourceProcessing.restoreSynthesisResult({
+          currentResult: savedSynthesisResult,
+          version: 1,
+        })
+      ).outcome,
+      "operation-failed",
+    );
+    assert.equal(
+      (
+        await sourceProcessing.editSynthesisResult({
+          result: savedSynthesisResult,
+          title: "Edited Bayesian statistics synthesis",
+          text: savedSynthesisResult.text,
+          editedAt: "2026-08-27T21:30:00.000Z",
+        })
+      ).outcome,
+      "operation-failed",
+    );
+    assert.deepEqual(causes, [
+      new Error("private identity backend details"),
+      new Error("private result persistence details"),
+      new Error("private identity backend details"),
+      new Error("private result persistence details"),
+      new Error("private provider response details"),
+      new Error("private result persistence details"),
+      new Error("private result persistence details"),
+      new Error("private result persistence details"),
+    ]);
   });
 
   it("returns the draft transiently without automatically saving it", async () => {
