@@ -1,11 +1,13 @@
 # V1 release-readiness specification
 
-Status: implementation in progress on `codex/provider-free-release-gate`. The
-provider-free packaged-app workflow, local governance/recovery workflows, and
-initial mixed condition/decision coverage (MC/DC) evaluator are implemented.
-This brief remains the bounded work plan for the remaining release evidence;
-it is not a replacement for the V1 victory checklist, which remains the
-release decision authority.
+Status: the provider-free packaged-app workflow, local governance/recovery
+workflows, initial mixed condition/decision coverage (MC/DC) evaluator, and
+the bounded Section C privacy/non-retention gate are implemented and accepted
+on `codex/section-c-privacy-gate`. This brief remains the bounded work plan
+for the remaining release evidence; it is not a replacement for the V1
+victory checklist, which remains the release decision authority. The Section
+C evidence is recorded in the [provider-free privacy and non-retention
+packaged-gate specification](provider-free-privacy-gate-spec.md).
 
 ## Governing documentation
 
@@ -80,8 +82,12 @@ Provider-free behavior uses the existing seams:
   a checked-in decision manifest and independently authored cases. It reports
   evidence; it does not become an application Module or alter runtime behavior.
 
-No new UI, repository format, PDF engine, Agent Provider, or storage channel is
-selected by this brief.
+No new UI, repository format, PDF engine, or Agent Provider is selected by
+this brief. Section C explicitly selects one private, machine-local
+`diagnostics.jsonl` output beside session state for sanitized operational
+metadata only; it is not repository content, is not exposed to the renderer,
+and is outside the portable Repository Format. Its cleanup, encryption, and
+support-bundle policy remain deferred.
 
 ## Independently known evidence
 
@@ -195,9 +201,12 @@ relink verification, and S1/S5 evidence for available, unavailable, changed,
 failed-relink, and successful-relink states. The MC/DC evaluator is included
 in the changed-lines coverage surface so new quality logic cannot bypass that
 PR gate. The linked-PDF slice's visible human review and local-only privacy
-boundary are accepted; the broader provider-free checklist, distribution,
-security, and whole-release obligations remain open. The six-gate human
-acceptance and explicit approval were recorded on August 31, 2026.
+boundary are accepted; the Section C privacy/non-retention gate is also
+implemented and human-accepted for its bounded scope. The broader
+provider-free checklist, distribution, security, and whole-release obligations
+remain open. The linked-PDF six-gate human acceptance was recorded on August
+31, 2026, and the Section C seven-gate human acceptance was recorded on
+September 1, 2026.
 Implementation is complete only when that evidence passes, coverage and
 complexity evidence is current, the code map and release documents are
 current, and the provider-free packaged workflow is ready for a visible human
@@ -213,15 +222,13 @@ before implementation continues.
 
 The following checks are intentionally not inferred from automated output:
 
-1. **Privacy and non-retention:** launch the exact packaged application tested
-   by `npm run test:provider-free` with no real credentials configured. Create
-   or open an isolated temporary repository, prepare a Synthesis preview, and
-   confirm that the exact payload is visible only on the confirmation surface.
-   Confirm that declining or receiving `agent-provider-unavailable` leaves no
-   new request, response, hidden payload, credential, or absolute private path
-   in the repository, session-state file, or application diagnostics. Use
-   explicit searches such as `grep -R -n -E "OPENAI_API_KEY|sk-[A-Za-z0-9]"
-   <temporary-root>`; do not paste a real secret into the test.
+1. **Privacy and non-retention — completed:** the bounded implementation in
+   the [provider-free privacy and non-retention packaged-gate
+   specification](provider-free-privacy-gate-spec.md) passed its seven-gate
+   human review on September 1, 2026. The owner inspected the exact packaged
+   application, visible Ask confirmation surface, decline/cancel and
+   unavailable-provider outcomes, isolated repository/session/source-assets
+   state, and explicit canary searches without using real credentials.
 2. **Production PDF boundary:** do not mark the linked-PDF checklist item
    complete from the current fixture preview. It remains deferred until a
    production PDF-backed packaged path exists and the missing/changed asset

@@ -1,7 +1,8 @@
 /**
  * Filesystem persistence Adapter. It keeps explicitly saved result versions
  * and provenance in portable Working Material while validating repository
- * containment and retaining storage failures for main-process diagnostics.
+ * containment and reporting only sanitized storage-failure metadata to
+ * main-process diagnostics.
  */
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
@@ -23,9 +24,19 @@ import type {
   SynthesisSavedResult,
 } from "../../modules/source-processing";
 
-/** Internal sink for causes that must not enter caller-visible outcomes. */
+/**
+ * Sanitized operational metadata retained by the main-process diagnostic sink.
+ * The optional cause is available only to that sink for internal diagnostics;
+ * it is never part of a caller outcome or serialized record.
+ */
+export type SynthesisResultDiagnostic = {
+  category: "filesystem";
+  operation: "read-repository" | "read-result" | "read-results";
+};
+
+/** Internal sink for sanitized metadata that must not enter caller outcomes. */
 export interface SynthesisResultDiagnostics {
-  record(cause: unknown): void;
+  record(diagnostic: SynthesisResultDiagnostic, cause?: unknown): void;
 }
 
 const resultDirectoryName = join("scratch", "synthesis-results");
@@ -313,7 +324,7 @@ const readResultFile = async (
 /**
  * Creates storage for explicitly saved Synthesis results as Working Material.
  * @param repositoryPath The selected Knowledge Repository path.
- * @param diagnostics Optional sink for non-public storage causes.
+ * @param diagnostics Optional sink for sanitized operational metadata.
  * @param filesystem The filesystem Adapter used for safe persistence.
  * @returns The Synthesis result repository Adapter.
  */
@@ -330,7 +341,13 @@ export const createFileBackedSynthesisResultRepository = (
     try {
       canonicalPath = await canonicalRepositoryPath(repositoryPath);
     } catch (cause: unknown) {
-      diagnostics?.record(cause);
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-repository",
+        },
+        cause,
+      );
       return {
         outcome: "unavailable",
         detail: "The Knowledge Repository could not be read.",
@@ -366,7 +383,13 @@ export const createFileBackedSynthesisResultRepository = (
         };
       }
 
-      diagnostics?.record(cause);
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-result",
+        },
+        cause,
+      );
       return {
         outcome: "unavailable",
         detail: "The Synthesis result could not be read.",
@@ -403,7 +426,13 @@ export const createFileBackedSynthesisResultRepository = (
       try {
         canonicalPath = await canonicalRepositoryPath(repositoryPath);
       } catch (cause: unknown) {
-        diagnostics?.record(cause);
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-repository",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Knowledge Repository could not be read.",
@@ -433,7 +462,13 @@ export const createFileBackedSynthesisResultRepository = (
           withFileTypes: true,
         });
       } catch (cause: unknown) {
-        diagnostics?.record(cause);
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-results",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Synthesis results could not be read.",
@@ -449,6 +484,10 @@ export const createFileBackedSynthesisResultRepository = (
 
         if (entry.isSymbolicLink()) {
           diagnostics?.record(
+            {
+              category: "filesystem",
+              operation: "read-result",
+            },
             new UnsafeSynthesisResultTargetError(
               "The Synthesis result directory contains a symbolic link.",
             ),
@@ -472,7 +511,13 @@ export const createFileBackedSynthesisResultRepository = (
             ),
           );
         } catch (cause: unknown) {
-          diagnostics?.record(cause);
+          diagnostics?.record(
+            {
+              category: "filesystem",
+              operation: "read-result",
+            },
+            cause,
+          );
           return {
             outcome: "unavailable",
             detail: "The Synthesis results could not be read.",

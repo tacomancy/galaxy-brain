@@ -26,6 +26,7 @@ const packagedBinary = join(
 // Keep isolated session-state files for each workflow worker so a reload
 // exercises persistence while parallel specs remain independent.
 const testSessionStateRoot = mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-"));
+process.env.GALAXY_BRAIN_WDIO_SESSION_STATE_ROOT = testSessionStateRoot;
 const isWdioLauncher = process.env.WDIO_WORKER_ID === undefined;
 const sourceAssetRootEnvironmentVariable =
   "GALAXY_BRAIN_WDIO_SOURCE_ASSET_ROOT";

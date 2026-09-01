@@ -22,9 +22,23 @@ import type {
   WorkingMaterialRepository,
 } from "../../modules/source-processing";
 
-/** Internal sink for causes that must not enter caller-visible outcomes. */
+/**
+ * Sanitized operational metadata retained by the main-process diagnostic sink.
+ * The optional cause is available only to that sink for internal diagnostics;
+ * it is never part of a caller outcome or serialized record.
+ */
+export type WorkingMaterialDiagnostic = {
+  category: "filesystem";
+  operation:
+    | "read-repository"
+    | "read-annotation"
+    | "read-annotation-for-source"
+    | "read-annotations-for-source";
+};
+
+/** Internal sink for sanitized metadata that must not enter caller outcomes. */
 export interface WorkingMaterialDiagnostics {
-  record(cause: unknown): void;
+  record(diagnostic: WorkingMaterialDiagnostic, cause?: unknown): void;
 }
 
 const annotationDirectoryName = join("sources", "annotations");
@@ -330,9 +344,10 @@ const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
 /**
  * Persists source annotations as portable Markdown Working Material. The
  * adapter canonicalizes and checks the repository path, protects the target
- * against external changes, and preserves read failures for diagnostics.
+ * against external changes, and reports only sanitized read-failure metadata
+ * to an optional diagnostic sink.
  * @param repositoryPath The selected Knowledge Repository path.
- * @param diagnostics Optional sink for non-public storage causes.
+ * @param diagnostics Optional sink for sanitized operational metadata.
  * @param filesystem The filesystem Adapter used for safe persistence.
  * @returns The Working Material repository Adapter.
  */
@@ -349,7 +364,13 @@ export const createFileBackedWorkingMaterialRepository = (
     try {
       canonicalPath = await canonicalRepositoryPath(repositoryPath);
     } catch (cause: unknown) {
-      diagnostics?.record(cause);
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-repository",
+        },
+        cause,
+      );
       return {
         outcome: "unavailable",
         detail: "The Knowledge Repository could not be read.",
@@ -392,7 +413,13 @@ export const createFileBackedWorkingMaterialRepository = (
         };
       }
 
-      diagnostics?.record(cause);
+      diagnostics?.record(
+        {
+          category: "filesystem",
+          operation: "read-annotation",
+        },
+        cause,
+      );
 
       return {
         outcome: "unavailable",
@@ -433,7 +460,13 @@ export const createFileBackedWorkingMaterialRepository = (
       try {
         canonicalPath = await canonicalRepositoryPath(repositoryPath);
       } catch (cause: unknown) {
-        diagnostics?.record(cause);
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-repository",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Knowledge Repository could not be read.",
@@ -496,7 +529,13 @@ export const createFileBackedWorkingMaterialRepository = (
           };
         }
 
-        diagnostics?.record(cause);
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-annotation-for-source",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The source annotation could not be read.",
@@ -511,7 +550,13 @@ export const createFileBackedWorkingMaterialRepository = (
       try {
         canonicalPath = await canonicalRepositoryPath(repositoryPath);
       } catch (cause: unknown) {
-        diagnostics?.record(cause);
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-repository",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The Knowledge Repository could not be read.",
@@ -576,7 +621,13 @@ export const createFileBackedWorkingMaterialRepository = (
           };
         }
 
-        diagnostics?.record(cause);
+        diagnostics?.record(
+          {
+            category: "filesystem",
+            operation: "read-annotations-for-source",
+          },
+          cause,
+        );
         return {
           outcome: "unavailable",
           detail: "The source annotation could not be read.",

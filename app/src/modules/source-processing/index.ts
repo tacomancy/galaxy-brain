@@ -549,9 +549,30 @@ export interface SourceProcessingDependencies {
   diagnostics?: SourceProcessingDiagnostics;
 }
 
-/** Internal diagnostic sink; causes stay outside caller-visible outcomes. */
+/**
+ * Sanitized operational metadata retained by the main-process diagnostic sink.
+ * The optional cause is passed only to the owning diagnostic sink so it can
+ * preserve safe internal error classification; it is never part of a caller
+ * outcome or serialized record.
+ */
+export type SourceProcessingDiagnostic = {
+  category: "source-processing";
+  operation:
+    | "resolve-source-passage"
+    | "save-source-claim"
+    | "request-synthesis"
+    | "read-source-context"
+    | "save-synthesis-result"
+    | "check-synthesis-context"
+    | "refresh-synthesis-context"
+    | "regenerate-synthesis-result"
+    | "restore-synthesis-result"
+    | "edit-synthesis-result";
+};
+
+/** Internal sink for sanitized metadata; causes stay outside caller outcomes. */
 export interface SourceProcessingDiagnostics {
-  record(cause: unknown): void;
+  record(diagnostic: SourceProcessingDiagnostic, cause?: unknown): void;
 }
 
 type SourceStatusUnavailableOutcome = Extract<
@@ -714,6 +735,19 @@ const buildSavedSynthesisResult = (
 export const createSourceProcessing = (
   dependencies: SourceProcessingDependencies,
 ): SourceProcessing => {
+  const recordDiagnostic = (
+    operation: SourceProcessingDiagnostic["operation"],
+    cause?: unknown,
+  ): void => {
+    dependencies.diagnostics?.record(
+      {
+        category: "source-processing",
+        operation,
+      },
+      cause,
+    );
+  };
+
   const checkSourceAvailability = async (
     input: CheckSourceAvailabilityInput,
   ): Promise<CheckSourceAvailabilityOutcome> => {
@@ -854,7 +888,7 @@ export const createSourceProcessing = (
     try {
       sourceSelection = await dependencies.pdf.readSelection(input);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("resolve-source-passage", cause);
       return {
         outcome: "operation-failed",
         detail: "The source passage could not be resolved.",
@@ -890,7 +924,7 @@ export const createSourceProcessing = (
     try {
       await dependencies.workingMaterial.saveAnnotation(annotation);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("save-source-claim", cause);
       return {
         outcome: "operation-failed",
         detail: "The source claim could not be saved as Working Material.",
@@ -963,7 +997,7 @@ export const createSourceProcessing = (
     try {
       return await dependencies.model.requestSynthesis(input.preview.payload);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("request-synthesis", cause);
       return {
         outcome: "operation-failed",
         detail: "The Synthesis request could not be completed.",
@@ -995,7 +1029,7 @@ export const createSourceProcessing = (
           item.sourceRecord.id,
         );
       } catch (cause: unknown) {
-        dependencies.diagnostics?.record(cause);
+        recordDiagnostic("read-source-context", cause);
         return {
           outcome: "operation-failed",
           detail: "The Synthesis source context could not be checked.",
@@ -1043,7 +1077,7 @@ export const createSourceProcessing = (
     try {
       await dependencies.results.saveResult(result);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("save-synthesis-result", cause);
       return {
         outcome: "operation-failed",
         detail: "The Synthesis result could not be saved.",
@@ -1078,7 +1112,7 @@ export const createSourceProcessing = (
           snapshot.sourceRecord.id,
         );
       } catch (cause: unknown) {
-        dependencies.diagnostics?.record(cause);
+        recordDiagnostic("check-synthesis-context", cause);
         return {
           outcome: "source-status-unavailable",
           result: input.result,
@@ -1140,7 +1174,7 @@ export const createSourceProcessing = (
           snapshot.sourceRecord.id,
         );
       } catch (cause: unknown) {
-        dependencies.diagnostics?.record(cause);
+        recordDiagnostic("refresh-synthesis-context", cause);
         return {
           outcome: "operation-failed",
           detail: "The Synthesis source context could not be checked.",
@@ -1185,7 +1219,7 @@ export const createSourceProcessing = (
     try {
       await dependencies.results.saveResult(refreshedResult);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("save-synthesis-result", cause);
       return {
         outcome: "operation-failed",
         detail: "The Synthesis result could not be saved.",
@@ -1231,7 +1265,7 @@ export const createSourceProcessing = (
         input.preview.payload,
       );
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("request-synthesis", cause);
       return {
         outcome: "operation-failed",
         detail: "The Synthesis request could not be completed.",
@@ -1270,7 +1304,7 @@ export const createSourceProcessing = (
     try {
       await dependencies.results.saveResult(regeneratedResult);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("regenerate-synthesis-result", cause);
       return {
         outcome: "operation-failed",
         detail: "The Synthesis result could not be regenerated.",
@@ -1311,7 +1345,7 @@ export const createSourceProcessing = (
     try {
       await dependencies.results.saveResult(result);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("restore-synthesis-result", cause);
       return {
         outcome: "operation-failed",
         detail: "The Synthesis result version could not be restored.",
@@ -1366,7 +1400,7 @@ export const createSourceProcessing = (
     try {
       await dependencies.results.saveResult(editedResult);
     } catch (cause: unknown) {
-      dependencies.diagnostics?.record(cause);
+      recordDiagnostic("edit-synthesis-result", cause);
       return {
         outcome: "operation-failed",
         detail: "The Synthesis result could not be edited.",
