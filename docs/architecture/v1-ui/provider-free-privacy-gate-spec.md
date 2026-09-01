@@ -1,8 +1,10 @@
 # Provider-free privacy and non-retention packaged-gate specification
 
-Status: implementation preparation on `codex/section-c-privacy-gate`; the
-scope below is a draft until the human owner confirms it. No Section C
-checklist item is complete from this document alone.
+Status: implementation complete on `codex/section-c-privacy-gate`; the
+automated evidence below is recorded, but the human owner must still inspect
+the exact packaged application before the Section C checklist item can be
+marked complete. No Section C checklist item is complete from this document
+alone.
 
 This brief addresses the remaining unchecked item in Section C of the [V1
 victory checklist](v1-victory-checklist.md): confirm, in the exact packaged
@@ -18,19 +20,19 @@ Before writing behavior tests or implementation code, explicitly complete
 these tasks:
 
 1. [x] Review the accepted [Product Decisions](product-decisions.md),
-   [Architecture](architecture.md), [Repository Format](repository-format.md),
-   [Test Strategy](test-strategy.md), [V1 release-readiness specification](v1-release-readiness-spec.md),
-   the [provider-free PDF gate](provider-free-pdf-gate-spec.md), the current
-   [code map](code-map.md), and the relevant TB7, TB12, TB15, and TB16 delivery
-   records.
+       [Architecture](architecture.md), [Repository Format](repository-format.md),
+       [Test Strategy](test-strategy.md), [V1 release-readiness specification](v1-release-readiness-spec.md),
+       the [provider-free PDF gate](provider-free-pdf-gate-spec.md), the current
+       [code map](code-map.md), and the relevant TB7, TB12, TB15, and TB16 delivery
+       records.
 2. [x] Confirm that this is a release-evidence and boundary-hardening work
-   package, not a new Repository Format, provider, diagnostics product, or
-   public distribution decision.
+       package, not a new Repository Format, provider, diagnostics product, or
+       public distribution decision.
 3. [ ] Confirm the approved storage/display boundaries, fixture markers,
-   vertical path, and acceptance evidence in this brief before the first Red
-   cycle.
+       vertical path, and acceptance evidence in this brief before the first Red
+       cycle.
 4. [ ] Create the first behavior test at a confirmed S3, S5, or S1 seam and
-   begin implementation only after the owner confirms the bounded plan.
+       begin implementation only after the owner confirms the bounded plan.
 
 The explicit to-do before implementation is therefore: review the governing
 documentation and generate/confirm this guidance-compliant specification;
@@ -119,14 +121,14 @@ and deterministic canary values:
 
 ## Approved persistence/display matrix
 
-| Surface | Allowed | Forbidden |
-| --- | --- | --- |
-| Pending confirmation surface | Exact payload, selected context, prompt, provider/model details needed for review | Hidden or uninspectable additions after approval; automatic persistence |
-| Knowledge Repository | Explicitly saved Working Material/Proposal/result and its documented provenance | Credentials, machine-local paths, hidden payloads, unsaved prompts/responses, raw diagnostics |
-| Workbench session state | Selected repository path, active workspace, selected context, reading position, theme | Provider payloads, prompts, responses, source excerpts, credentials, raw exceptions |
-| Private source-assets store | Linked path and validated source/content identities | PDF bytes, page text, prompts, credentials, provider payloads, raw exceptions |
-| Retained diagnostics | Sanitized category/operation and safe domain outcome | Absolute paths, credentials, source excerpts, prompts, request/response bodies, raw sensitive exceptions |
-| Renderer bridge/state | Domain outcomes and approved display data | Private filesystem paths, storage records, credentials, raw causes, hidden payloads |
+| Surface                      | Allowed                                                                               | Forbidden                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Pending confirmation surface | Exact payload, selected context, prompt, provider/model details needed for review     | Hidden or uninspectable additions after approval; automatic persistence                                  |
+| Knowledge Repository         | Explicitly saved Working Material/Proposal/result and its documented provenance       | Credentials, machine-local paths, hidden payloads, unsaved prompts/responses, raw diagnostics            |
+| Workbench session state      | Selected repository path, active workspace, selected context, reading position, theme | Provider payloads, prompts, responses, source excerpts, credentials, raw exceptions                      |
+| Private source-assets store  | Linked path and validated source/content identities                                   | PDF bytes, page text, prompts, credentials, provider payloads, raw exceptions                            |
+| Retained diagnostics         | Sanitized category/operation and safe domain outcome                                  | Absolute paths, credentials, source excerpts, prompts, request/response bodies, raw sensitive exceptions |
+| Renderer bridge/state        | Domain outcomes and approved display data                                             | Private filesystem paths, storage records, credentials, raw causes, hidden payloads                      |
 
 ## Module ownership and vertical path
 
@@ -217,6 +219,42 @@ files elsewhere on the machine.
 Each slice follows one Red-to-Green cycle at its confirmed seam. No later
 slice is implemented speculatively, and no checklist status is promoted from
 automated output alone.
+
+## Implementation record — September 1, 2026
+
+The bounded implementation is complete on this branch:
+
+- S3 Source Processing now records only fixed operation metadata when PDF,
+  model, source-context, or result operations fail; provider errors and
+  payloads never enter the caller-facing outcome or diagnostic record.
+- S5 Working Material and Synthesis Result Adapters now translate filesystem
+  failures into fixed category/operation metadata; raw paths, errno text, and
+  exception messages are not retained by their diagnostic sinks.
+- Public S3/S5 regression tests use independently authored path and provider
+  canaries and passed 30/30 focused tests. The initial Red runs captured the
+  raw path/provider exceptions; the Green runs captured only the approved
+  metadata.
+- The S1 `provider-free-privacy.e2e.ts` workflow runs in the existing silent
+  packaged harness. It displays a deterministic Ask payload, declines it, and
+  scans isolated repository, session-state, and source-asset roots for prompt,
+  credential, and API-key canaries without printing the canary content.
+- `npm run test:provider-free` passes all three named workflows, including the
+  unavailable-provider baseline, linked-PDF status workflow, and privacy
+  workflow. `npm run test:workflow` passes 33 packaged specs with one expected
+  skip, followed by all five Issue #52 recovery runs.
+- `npm run check` passes formatting, lint, typecheck, 150 unit tests, MC/DC,
+  documentation tests, and documentation checks. `npm run test:coverage`
+  passes at 83.93% statements, 74.43% branches, 97.23% functions, and 83.77%
+  lines; `npm run lint:complexity` also passes.
+- The exact automated package is the unsigned macOS arm64 package produced by
+  `npm run package` under Node.js `24.19.0` for application version `0.16.0`.
+  Human review must launch that package (or the package rebuilt by the named
+  gate from the same branch) with no real credentials configured.
+
+The packaged baseline workflow supplies unavailable-provider evidence, while
+the new privacy workflow supplies canary-based post-decline evidence. The
+remaining work is the visible human inspection of the confirmation surface,
+repository/session/diagnostic state, and the documented manual searches.
 
 ## Explicit deferrals
 

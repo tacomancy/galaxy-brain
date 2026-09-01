@@ -56,7 +56,7 @@ Verify the packaged macOS Workbench against a real file-backed Knowledge Reposit
 - [x] Complete human acceptance of the packaged linked-PDF status/relink workflow and confirm that private paths and source payloads remain within the approved main-process boundary.
 - [x] Show a clear unavailable-provider state without blocking provider-free
       workflows; the named packaged gate reports `agent-provider-unavailable`.
-- [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy. Follow the [provider-free privacy and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md); this remains an explicit human inspection of packaged logs, session state, repository artifacts, and the confirmation surface.
+- [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy. The implementation and automated evidence are recorded in the [provider-free privacy and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md); completion remains an explicit human inspection of packaged logs, session state, repository artifacts, and the confirmation surface.
 
 This gate proves the packaged application behavior. It does not by itself prove that an unsigned development `.app` is a supported end-user distribution.
 

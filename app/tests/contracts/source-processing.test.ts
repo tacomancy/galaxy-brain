@@ -96,6 +96,33 @@ const assertWorkingMaterialContract = async (
 };
 
 describe("Source Processing Adapter contracts", () => {
+  it("retains only sanitized diagnostics when the repository path is unavailable", async () => {
+    const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-s5-"));
+    const repositoryPath = join(temporaryRoot, "GB_PRIVACY_ABSOLUTE_PATH");
+    const diagnostics: unknown[] = [];
+
+    try {
+      const repository = createFileBackedWorkingMaterialRepository(
+        repositoryPath,
+        { record: (diagnostic) => diagnostics.push(diagnostic) },
+      );
+
+      assert.deepEqual(await repository.readAnnotation(expectedAnnotation.id), {
+        outcome: "unavailable",
+        detail: "The Knowledge Repository could not be read.",
+      });
+      assert.deepEqual(diagnostics, [
+        { category: "filesystem", operation: "read-repository" },
+      ]);
+      assert.doesNotMatch(
+        JSON.stringify(diagnostics),
+        /GB_PRIVACY_ABSOLUTE_PATH/u,
+      );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
   it("resolves the literal TB5 PDF fixture passage", async () => {
     assert.deepEqual(
       await createFixturePdfAdapter().readSelection({

@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB14 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB14 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; the Section C provider-free privacy/non-retention implementation and automated acceptance are complete on September 1, 2026, with final human acceptance pending; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -8,11 +8,11 @@ Scope note: the release gate proves the provider-free core V1 workflow. Agentic 
 
 Decision recorded on August 31, 2026: TB12, TB13, and TB14 are in scope for V1. TB12, TB13, and TB14 implementation, verification, and human acceptance completed on September 1, 2026.
 
-| Tracer bullet | V1 scope decision | Required completion evidence | Tracker |
-| --- | --- | --- | --- |
-| TB12 — Separate Search, Ask, and Jump | In scope for V1 | [Guidance-compliant implementation brief](tracer-bullet-12-spec.md), S4/S1 behavior evidence, and human acceptance | [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31) |
-| TB13 — Make Atlas actionable | In scope for V1 | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
-| TB14 — Keep learning progress human-owned | In scope for V1 | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
+| Tracer bullet                             | V1 scope decision | Required completion evidence                                                                                       | Tracker                                                          |
+| ----------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| TB12 — Separate Search, Ask, and Jump     | In scope for V1   | [Guidance-compliant implementation brief](tracer-bullet-12-spec.md), S4/S1 behavior evidence, and human acceptance | [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31) |
+| TB13 — Make Atlas actionable              | In scope for V1   | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance                                | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
+| TB14 — Keep learning progress human-owned | In scope for V1   | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance                                | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
 
 The implementation briefs must be completed before the Red-to-Green cycle begins. Until those records and acceptance evidence exist, the three items remain open V1 work rather than completed checklist gates.
 
@@ -862,6 +862,29 @@ eight human acceptance results are recorded in the specification; the human
 owner accepted the selected developer-only scope on August 31, 2026. Section D
 is complete for that scope, while the existing unsigned local package must not
 be described as an end-user distribution.
+
+### Section C provider-free privacy/non-retention implementation record — September 1, 2026
+
+The implementation entry point was the [provider-free privacy and non-retention
+packaged-gate specification](provider-free-privacy-gate-spec.md), after the
+governing documentation review and guidance-compliant spec task. S3 and S5
+diagnostic sinks now retain fixed operation metadata only, and public
+regressions prove that provider errors and absolute filesystem paths do not
+cross those boundaries. The silent S1 workflow
+[`provider-free-privacy.e2e.ts`](../../../app/tests/workflows/provider-free-privacy.e2e.ts)
+declines a deterministic Ask prompt and scans isolated repository,
+session-state, and source-asset roots for forbidden canaries.
+
+Automated evidence is complete: the focused S3/S5 suite passes 30/30 tests;
+`npm run check`, `npm run test:coverage`, `npm run lint:complexity`,
+`npm run test:provider-free`, and `npm run test:workflow` pass. The named
+provider-free command passes its three workflows, and the complete silent suite
+passes 33 specs with one expected skip. The Section C victory-checklist item
+remains unchecked until the human owner reviews the exact unsigned macOS arm64
+package, visible confirmation surface, and isolated persistence/diagnostic
+searches. Deferred provider transmission, real credentials, telemetry/support
+bundles, configurable retention, OS keychain storage, and signed distribution
+remain outside this gate as documented in the governing specification.
 
 ## Review checkpoints
 

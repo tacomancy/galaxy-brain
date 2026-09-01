@@ -10,6 +10,7 @@ import {
   type SynthesisPayload,
   type SynthesisSavedResult,
   type SynthesisSourceIdentityAdapter,
+  type SourceProcessingDiagnostics,
   type StructuredAnnotation,
   type WorkingMaterialRepository,
   type SynthesisResultRepository,
@@ -324,6 +325,53 @@ describe("Synthesize selected evidence", () => {
       },
     );
     assert.deepEqual(requests, [preview.preview.payload]);
+  });
+
+  it("retains only sanitized diagnostics when a provider request fails", async () => {
+    const diagnostics: unknown[] = [];
+    const diagnosticSink: SourceProcessingDiagnostics = {
+      record: (diagnostic) => diagnostics.push(diagnostic),
+    };
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      diagnostics: diagnosticSink,
+      model: {
+        requestSynthesis: async () => {
+          throw new Error(
+            "GB_PRIVACY_PROVIDER_ERROR /private/fixture/prompt-and-payload",
+          );
+        },
+      },
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "confirmed",
+      }),
+      {
+        outcome: "operation-failed",
+        detail: "The Synthesis request could not be completed.",
+      },
+    );
+    assert.deepEqual(diagnostics, [
+      { category: "source-processing", operation: "request-synthesis" },
+    ]);
+    assert.doesNotMatch(
+      JSON.stringify(diagnostics),
+      /GB_PRIVACY_PROVIDER_ERROR/u,
+    );
+    assert.doesNotMatch(JSON.stringify(diagnostics), /\/private\/fixture/u);
   });
 
   it("preserves the preview and makes no request when declined or canceled", async () => {
