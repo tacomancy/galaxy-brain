@@ -1,7 +1,6 @@
 # Tracer Bullet 14: Keep learning progress human-owned
 
-Status: implementation-ready specification prepared on
-`codex/tb14-learning-progress`.
+Status: implementation and human acceptance complete on September 1, 2026.
 
 ## Dependency
 

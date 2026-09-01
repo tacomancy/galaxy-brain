@@ -1,12 +1,12 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation and automated acceptance are complete on September 1, 2026 for its bounded fixture scope, with human acceptance pending; TB14 implementation and automated acceptance are complete on September 1, 2026 for its bounded fixture scope, with human acceptance pending; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB14 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
 ## TB12–TB14 V1 scope classification
 
-Decision recorded on August 31, 2026: TB12, TB13, and TB14 are in scope for V1. TB12 implementation, verification, and human acceptance completed on September 1, 2026; TB13 and TB14 remain open.
+Decision recorded on August 31, 2026: TB12, TB13, and TB14 are in scope for V1. TB12, TB13, and TB14 implementation, verification, and human acceptance completed on September 1, 2026.
 
 | Tracer bullet | V1 scope decision | Required completion evidence | Tracker |
 | --- | --- | --- | --- |
@@ -633,7 +633,7 @@ The implementation entry point is the [TB13 specification](tracer-bullet-13-spec
 - **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, strict type checking, 131 Vitest tests, MC/DC, documentation tests, and documentation validation. The complete packaged Electron workflow passed all 29 WebdriverIO specs, including `tb13-atlas-actionable.e2e.ts`; the focused TB13 packaged workflow was rerun after the final metric-source refinement and passed.
 - **Implementation:** Added the framework-independent Atlas Orientation Module, empty and deterministic fixture sources, typed main/preload operations, Atlas metric/route/Generated Relationship presentation, Paper Desk navigation actions, session-local Learning Route title editing, the TB13 S1 workflow, and the guidance-compliant specification/code-map records.
 - **Scope confirmed:** No repository-backed Learning Route persistence, Agent Provider integration, Generated Relationship mutation, progress-stage changes, TB14 suggestions, composite health score, streak, or notification behavior was added. Normal launches continue to compose an empty orientation source.
-- **Acceptance:** Automated implementation evidence is complete. Human review of the packaged TB13 behavior remains pending.
+- **Acceptance:** Automated implementation evidence is complete. The user passed all five packaged human-acceptance gates and explicitly accepted TB13 on September 1, 2026.
 
 ### 14. Keep learning progress human-owned
 
@@ -654,7 +654,7 @@ The implementation entry point is the [TB14 specification](tracer-bullet-14-spec
 - **Review and risk:** The public Module contract keeps provider generation separate from local decisions, while Atlas evidence links back to Paper Desk. Human acceptance of the packaged suggestion, confirmation, correction, and unavailable-provider presentation remains the next review step; no ADR was added or changed.
 - **Completion boundary:** No later Tracer Bullet was implemented speculatively; durable learning persistence, production provider integration, and multi-stage progression remain deferred.
 - **Scope confirmed:** Learning state remains session-local; no repository files, Governed Knowledge, Learning Route content, provider credentials, prompts, or response payloads are changed. Durable Learning Repository Format, production OpenAI integration, multi-stage progression, and generic reminders remain deferred.
-- **Acceptance:** Automated implementation evidence for the focused slices is complete. Human review of the packaged TB14 behavior remains pending.
+- **Acceptance:** Automated implementation evidence for the focused slices is complete. The user passed all seven packaged human-acceptance gates and explicitly accepted TB14 on September 1, 2026.
 
 ### 15. Survive a missing or changed PDF
 
