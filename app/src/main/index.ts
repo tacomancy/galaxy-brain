@@ -48,6 +48,8 @@ import {
   type LearningOperationOutcome,
   type LearningReadOutcome,
 } from "../modules/learning";
+import { createFileBackedDiscoveryRepository } from "../adapters/discovery/file-backed-discovery-repository";
+import { createFixtureDiscoveryModelAdapter } from "../adapters/discovery/fixture-discovery-model";
 import { createGovernance } from "../modules/governance";
 import { contentTypeFor } from "./renderer-asset-content-type";
 import {
@@ -59,6 +61,15 @@ import {
   type KnowledgeAuthoring,
 } from "../modules/knowledge-authoring";
 import { createSourceProcessing } from "../modules/source-processing";
+import {
+  createDiscovery,
+  createInMemoryDiscoveryRepository,
+  type AskPreview,
+  type ConfirmAskOutcome,
+  type DiscoveryJumpOutcome,
+  type DiscoverySearchOutcome,
+  type PrepareAskOutcome,
+} from "../modules/discovery";
 import {
   createProposalReview,
   type ProposalReview,
@@ -210,6 +221,17 @@ const createWindow = async (): Promise<void> => {
       workingMaterial:
         createFileBackedWorkingMaterialRepository(repositoryPath),
     });
+  const discoveryFor = async () => {
+    const workbench = await workbenchSession.openFreshWorkbench();
+    const repository =
+      workbench.repositoryPath === undefined
+        ? createInMemoryDiscoveryRepository([])
+        : createFileBackedDiscoveryRepository(workbench.repositoryPath);
+    return createDiscovery({
+      repository,
+      ...(isFixtureMode ? { model: createFixtureDiscoveryModelAdapter() } : {}),
+    });
+  };
   const workbenchSession = createWorkbenchSession(
     createFileBackedKnowledgeRepository(starterRoot),
     createFileBackedWorkbenchSessionState(sessionStatePath),
@@ -404,6 +426,7 @@ const createWindow = async (): Promise<void> => {
   };
   let pendingSynthesis:
     { repositoryPath: string; preview: SynthesisPreview } | undefined;
+  let pendingAsk: { repositoryPath: string; preview: AskPreview } | undefined;
   const prepareSynthesisPreview = async (
     includeAllContext: boolean,
   ): Promise<PrepareSynthesisOutcome> => {
@@ -834,6 +857,135 @@ const createWindow = async (): Promise<void> => {
   });
 
   ipcMain.handle(
+    "workbench:discovery-search",
+    async (event, query: unknown): Promise<DiscoverySearchOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (typeof query !== "string") {
+        return {
+          outcome: "invalid-query",
+          detail: "Enter a Search term.",
+        };
+      }
+      return (await discoveryFor()).search(query);
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:prepare-ask",
+    async (event, prompt: unknown): Promise<PrepareAskOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (typeof prompt !== "string") {
+        return {
+          outcome: "invalid-prompt",
+          detail: "Enter a question before preparing an Ask request.",
+        };
+      }
+
+      const outcome = await (await discoveryFor()).prepareAsk({ prompt });
+      if (outcome.outcome === "preview-ready") {
+        const workbench = await workbenchSession.openFreshWorkbench();
+        pendingAsk = {
+          repositoryPath: workbench.repositoryPath ?? "",
+          preview: outcome.preview,
+        };
+      } else {
+        pendingAsk = undefined;
+      }
+      return outcome;
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:remove-ask-context-item",
+    async (event, itemId: unknown): Promise<PrepareAskOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (typeof itemId !== "string" || itemId.length === 0) {
+        return {
+          outcome: "unsupported",
+          detail: "The Ask context item is not available.",
+        };
+      }
+      if (pendingAsk === undefined) {
+        return {
+          outcome: "unsupported",
+          detail: "Prepare the Ask request again before editing it.",
+        };
+      }
+
+      const outcome = await (
+        await discoveryFor()
+      ).removeAskContextItem({
+        preview: pendingAsk.preview,
+        itemId,
+      });
+      if (outcome.outcome === "preview-ready") {
+        pendingAsk = { ...pendingAsk, preview: outcome.preview };
+      }
+      return outcome;
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:confirm-ask",
+    async (event, confirmation: unknown): Promise<ConfirmAskOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (
+        confirmation !== "confirmed" &&
+        confirmation !== "declined" &&
+        confirmation !== "canceled"
+      ) {
+        throw new Error("Invalid Ask confirmation.");
+      }
+      if (pendingAsk === undefined) {
+        return {
+          outcome: "operation-failed",
+          detail: "The Ask preview is no longer available. Prepare it again.",
+        };
+      }
+
+      const workbench = await workbenchSession.openFreshWorkbench();
+      if (
+        workbench.repositoryPath === undefined ||
+        workbench.repositoryPath !== pendingAsk.repositoryPath
+      ) {
+        pendingAsk = undefined;
+        return {
+          outcome: "operation-failed",
+          detail: "The Ask preview is no longer available. Prepare it again.",
+        };
+      }
+
+      const preview = pendingAsk.preview;
+      pendingAsk = undefined;
+      return (await discoveryFor()).confirmAsk({ preview, confirmation });
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:discovery-jump",
+    async (event, command: unknown): Promise<DiscoveryJumpOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (typeof command !== "string") {
+        return {
+          outcome: "invalid-command",
+          detail: "Enter a known Workbench destination or command.",
+        };
+      }
+      return (await discoveryFor()).jump(command);
+    },
+  );
+
+  ipcMain.handle(
     "workbench:prepare-synthesis",
     async (event, includeAllContext: unknown) => {
       if (event.sender !== mainWindow.webContents) {
@@ -1040,6 +1192,11 @@ const createWindow = async (): Promise<void> => {
     ipcMain.removeHandler("workbench:open-source-record-in-paper-desk");
     ipcMain.removeHandler("workbench:switch-workspace");
     ipcMain.removeHandler("workbench:open-saved-annotation");
+    ipcMain.removeHandler("workbench:discovery-search");
+    ipcMain.removeHandler("workbench:prepare-ask");
+    ipcMain.removeHandler("workbench:remove-ask-context-item");
+    ipcMain.removeHandler("workbench:confirm-ask");
+    ipcMain.removeHandler("workbench:discovery-jump");
     ipcMain.removeHandler("workbench:prepare-synthesis");
     ipcMain.removeHandler("workbench:remove-synthesis-context-item");
     ipcMain.removeHandler("workbench:confirm-synthesis");

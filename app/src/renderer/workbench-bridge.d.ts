@@ -36,6 +36,12 @@ import type {
   LearningOperationOutcome,
   LearningReadOutcome,
 } from "../modules/learning";
+import type {
+  ConfirmAskOutcome,
+  DiscoveryJumpOutcome,
+  DiscoverySearchOutcome,
+  PrepareAskOutcome,
+} from "../modules/discovery";
 
 declare global {
   interface Window {
@@ -86,6 +92,13 @@ declare global {
         workspace: WorkbenchWorkspace,
       ): Promise<WorkspaceTransitionOutcome>;
       openSavedAnnotation(): Promise<ReadingPositionOutcome>;
+      discoverySearch(query: string): Promise<DiscoverySearchOutcome>;
+      prepareAsk(prompt: string): Promise<PrepareAskOutcome>;
+      removeAskContextItem(itemId: string): Promise<PrepareAskOutcome>;
+      confirmAsk(
+        confirmation: "confirmed" | "declined" | "canceled",
+      ): Promise<ConfirmAskOutcome>;
+      discoveryJump(command: string): Promise<DiscoveryJumpOutcome>;
       prepareSynthesis(
         includeAllContext: boolean,
       ): Promise<PrepareSynthesisOutcome>;
