@@ -34,10 +34,20 @@ import {
   createFixtureAtlasOrientationSource,
 } from "../adapters/atlas-orientation/fixture-atlas-orientation";
 import {
+  createFixtureLearningStateSource,
+  createFixtureLearningSuggestionProvider,
+  createUnavailableLearningSuggestionProvider,
+} from "../adapters/learning/fixture-learning";
+import {
   createAtlasOrientation,
   type AtlasLearningRouteEditOutcome,
   type AtlasOrientationReadOutcome,
 } from "../modules/atlas-orientation";
+import {
+  createLearning,
+  type LearningOperationOutcome,
+  type LearningReadOutcome,
+} from "../modules/learning";
 import { createGovernance } from "../modules/governance";
 import { contentTypeFor } from "./renderer-asset-content-type";
 import {
@@ -152,7 +162,11 @@ const createWindow = async (): Promise<void> => {
   const isHumanReviewMode = process.argv.includes(
     "--galaxy-brain-test-mode=review",
   );
-  const isFixtureMode = isSilentTestMode || isHumanReviewMode;
+  const isProviderUnavailableTestMode = process.argv.includes(
+    "--galaxy-brain-test-mode=provider-unavailable",
+  );
+  const isFixtureMode =
+    isSilentTestMode || isHumanReviewMode || isProviderUnavailableTestMode;
   const starterRoot = app.isPackaged
     ? join(process.resourcesPath, "knowledge-repository")
     : join(app.getAppPath(), "templates", "knowledge-repository");
@@ -205,6 +219,20 @@ const createWindow = async (): Promise<void> => {
       ? createFixtureAtlasOrientationSource()
       : createEmptyAtlasOrientationSource(),
   );
+  const learning = createLearning({
+    state: isFixtureMode
+      ? createFixtureLearningStateSource()
+      : {
+          async read() {
+            return undefined;
+          },
+        },
+    suggestionProvider: isProviderUnavailableTestMode
+      ? createUnavailableLearningSuggestionProvider()
+      : isFixtureMode
+        ? createFixtureLearningSuggestionProvider()
+        : createUnavailableLearningSuggestionProvider(),
+  });
   let authoringRepositoryPath: string | undefined;
   let authoring: KnowledgeAuthoring | undefined;
   const getAuthoring = async (): Promise<KnowledgeAuthoring | undefined> => {
@@ -627,6 +655,55 @@ const createWindow = async (): Promise<void> => {
     },
   );
 
+  ipcMain.handle(
+    "workbench:read-learning-progress",
+    (event): Promise<LearningReadOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      return learning.suggest();
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:confirm-learning-progress",
+    (event, suggestionId: unknown): Promise<LearningOperationOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (typeof suggestionId !== "string" || suggestionId.length === 0) {
+        throw new Error("Invalid learning progress confirmation.");
+      }
+
+      return learning.confirm(suggestionId);
+    },
+  );
+
+  ipcMain.handle(
+    "workbench:correct-learning-progress",
+    (
+      event,
+      suggestionId: unknown,
+      correction: unknown,
+    ): Promise<LearningOperationOutcome> => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+
+      if (
+        typeof suggestionId !== "string" ||
+        suggestionId.length === 0 ||
+        typeof correction !== "string"
+      ) {
+        throw new Error("Invalid learning progress correction.");
+      }
+
+      return learning.correct(suggestionId, correction);
+    },
+  );
+
   ipcMain.handle("workbench:open-proposal-review", (event) => {
     if (event.sender !== mainWindow.webContents) {
       throw new Error("Untrusted Workbench bridge sender.");
@@ -951,6 +1028,9 @@ const createWindow = async (): Promise<void> => {
     ipcMain.removeHandler("workbench:read-proposal-review");
     ipcMain.removeHandler("workbench:read-atlas-orientation");
     ipcMain.removeHandler("workbench:edit-learning-route-title");
+    ipcMain.removeHandler("workbench:read-learning-progress");
+    ipcMain.removeHandler("workbench:confirm-learning-progress");
+    ipcMain.removeHandler("workbench:correct-learning-progress");
     ipcMain.removeHandler("workbench:open-proposal-review");
     ipcMain.removeHandler("workbench:accept-proposal-review");
     ipcMain.removeHandler("workbench:create-repository");

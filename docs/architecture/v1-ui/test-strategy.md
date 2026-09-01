@@ -195,6 +195,7 @@ The accepted architecture contains more Module Interfaces than confirmed Test Se
 
 - **Atlas, Studio, Paper Desk, and Proposal Review are not separate Test Seams.** Their meaningful behavior is visible through S1. Testing each UI adapter in isolation would encourage mocks of Workbench-owned Modules and couple tests to the initial presentation structure.
 - **Workbench Session, Knowledge Authoring, and Learning are not separate Test Seams in V1.** Their critical behavior is currently economical to observe through S1. If a tracer bullet exposes dense rules that S1 cannot express without excessive setup, a new seam may be proposed rather than assumed.
+- **TB14 bounded amendment:** The user-approved TB14 implementation specification explicitly adds a focused Learning Module contract suite for evidence validation and human-decision boundaries. This is a bounded amendment to the V1 seam policy, not a general license to test every Module directly; its S1 packaged workflows remain the authoritative product evidence.
 - **Editor parsers, reducers, view models, caches, and routing helpers are Implementation details.** Tests reach them through the Module that owns their behavior.
 - **The model provider is an External System Seam, not an application Test Seam.** A narrow Mock Adapter controls its responses while S4 verifies Galaxy Brain's behavior.
 

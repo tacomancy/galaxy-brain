@@ -144,7 +144,8 @@ process.env.GALAXY_BRAIN_TEST_INVALID_REPLACEMENT_PDF =
   testInvalidReplacementPdfPath;
 const sessionStateArgumentPrefix = "--galaxy-brain-session-state=";
 const sourceAssetsArgumentPrefix = "--galaxy-brain-source-assets=";
-const silentTestModeArgument = "--galaxy-brain-test-mode=silent";
+const configuredTestMode = process.env.GALAXY_BRAIN_WDIO_TEST_MODE ?? "silent";
+const testModeArgument = `--galaxy-brain-test-mode=${configuredTestMode}`;
 const desktopArtifactDirectory =
   process.env.GALAXY_BRAIN_WDIO_ARTIFACT_DIR ??
   mkdtempSync(join(tmpdir(), "galaxy-brain-wdio-artifacts-"));
@@ -191,7 +192,7 @@ export const config: Options.Testrunner &
       {
         appBinaryPath: packagedBinary,
         appArgs: [
-          silentTestModeArgument,
+          testModeArgument,
           `${sessionStateArgumentPrefix}${join(
             testSessionStateRoot,
             "workbench-session.json",
