@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent, type JSX } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type JSX,
+} from "react";
 
 import type {
   AskPreview,
@@ -97,30 +104,31 @@ export const Discovery = ({
   const wasOpen = useRef(false);
   const onCloseRef = useRef(onClose);
 
+  const requestClose = (): void => {
+    onCloseRef.current();
+    document.getElementById("discovery-trigger")?.focus();
+  };
+
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isOpen) {
       if (!wasOpen.current) return;
       wasOpen.current = false;
-      window.requestAnimationFrame(() => {
-        document.getElementById("discovery-trigger")?.focus();
-      });
+      document.getElementById("discovery-trigger")?.focus();
       setMode("search");
       setValue("");
       return;
     }
 
     wasOpen.current = true;
-    const focusFrame = window.requestAnimationFrame(() => {
-      document.getElementById("discovery-input")?.focus();
-    });
+    document.getElementById("discovery-input")?.focus();
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onCloseRef.current();
+        requestClose();
         return;
       }
       if (event.key !== "Tab") return;
@@ -149,7 +157,6 @@ export const Discovery = ({
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.cancelAnimationFrame(focusFrame);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
@@ -187,7 +194,7 @@ export const Discovery = ({
             id="discovery-close"
             className="button button-quiet"
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
           >
             Close Discovery
           </button>
