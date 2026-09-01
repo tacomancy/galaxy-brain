@@ -1,10 +1,10 @@
 ---
 title: Current capabilities
 summary: Versioned distinction between released, current-main, and planned Workbench behavior.
-applies_to_release: "0.15.0"
+applies_to_release: "0.16.0"
 tracks_main: true
-verified_commit: "87272d6bc99c32fcebf2249fd77a1f1ca486d653"
-reviewed_on: "2026-08-28"
+verified_commit: "49e0344bac634545637379d25eec9c3c2b16e635"
+reviewed_on: "2026-09-01"
 ---
 
 # Current capabilities
@@ -17,12 +17,12 @@ explains which source owns each kind of claim.
 
 ## Version markers
 
-This page was reviewed on **2026-08-28** against the following two baselines:
+This page was reviewed on **2026-09-01** against the following two baselines:
 
 | Baseline                 | Marker                                                                                                 | Meaning                                                                                                                               |
 | ------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Latest published release | [0.15.0 release notes](../app/CHANGELOG.md)                                                           | The version identified by the application package, changelog, and support policy.                                                     |
-| Current `main` snapshot  | [`87272d6`](https://github.com/tacomancy/galaxy-brain/commit/87272d6bc99c32fcebf2249fd77a1f1ca486d653) | The `main` revision reviewed for this page; later commits may change current-main behavior without changing the release claims above. |
+| Latest published release | [0.16.0 release notes](../app/CHANGELOG.md)                                                           | The version identified by the application package, changelog, and support policy.                                                     |
+| Current `main` snapshot  | [`49e0344`](https://github.com/tacomancy/galaxy-brain/commit/49e0344bac634545637379d25eec9c3c2b16e635) | The `main` revision reviewed for this page; later commits may change current-main behavior without changing the release claims above. |
 
 The support classes used below are deliberate:
 
@@ -35,9 +35,9 @@ The support classes used below are deliberate:
   current `main` surface. Architecture and issue descriptions are plans, not
   user instructions.
 
-## Latest published release: 0.15.0
+## Latest published release: 0.16.0
 
-The latest published release is **0.15.0**. Its desktop-supported baseline is
+The latest published release is **0.16.0**. Its desktop-supported baseline is
 the accepted TB1–TB7 Workbench behavior. The 0.15.0 release also contains the
 TB8 file-backed implementation, but that work remains module-only because the
 published release has no desktop persistence or rollback workflow.
@@ -54,10 +54,9 @@ published release has no desktop persistence or rollback workflow.
 ## Current `main` snapshot
 
 Current `main` is reviewed at commit
-[`87272d6`](https://github.com/tacomancy/galaxy-brain/commit/87272d6bc99c32fcebf2249fd77a1f1ca486d653).
-It contains the 0.11.0 application behavior plus the merged TB10 desktop
-Proposal Review implementation. TB8, TB9, and TB10 have implementation,
-automated evidence, and recorded human acceptance for their bounded scopes.
+[`49e0344`](https://github.com/tacomancy/galaxy-brain/commit/49e0344bac634545637379d25eec9c3c2b16e635).
+It contains the 0.16.0 application behavior and the merged V1 desktop
+workflows through the current release baseline.
 
 | Capability                                                    | Support class     | Current-main status                                                                                                                         |
 | ------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
