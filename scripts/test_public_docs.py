@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +26,39 @@ from scripts.build_public_docs import (  # noqa: E402
 
 
 class PublicDocumentationBuildTest(unittest.TestCase):
+    def test_release_please_owns_public_release_version_markers(self) -> None:
+        config = json.loads(
+            (REPOSITORY_ROOT / "release-please-config.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            config["extra-files"],
+            [
+                {"type": "generic", "path": "SECURITY.md"},
+                {
+                    "type": "generic",
+                    "path": "docs-site/current-capabilities.md",
+                },
+            ],
+        )
+
+        for path in ("SECURITY.md", "docs-site/current-capabilities.md"):
+            content = (REPOSITORY_ROOT / path).read_text(encoding="utf-8")
+            annotated_lines = [
+                line
+                for line in content.splitlines()
+                if "x-release-please-version" in line
+            ]
+            self.assertTrue(
+                annotated_lines,
+                msg=f"{path} must annotate its release-managed version markers",
+            )
+            self.assertTrue(
+                all(re.search(r"\d+\.\d+\.\d+", line) for line in annotated_lines),
+                msg=f"{path} has a release annotation without a version on its line",
+            )
+
     def test_current_capabilities_requires_version_markers_and_support_classes(self) -> None:
         content = """---
 title: Current capabilities
