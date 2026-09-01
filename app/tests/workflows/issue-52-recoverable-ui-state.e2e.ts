@@ -126,12 +126,7 @@ describe("Issue 52 recoverable Workbench failures", () => {
       await $("#bridge-operation-failed").waitForDisplayed();
       assert.equal(await $("#atlas-heading").isExisting(), true);
       await $("#retry-bridge-operation").click();
-      await browser.pause(1000);
-      assert.equal(
-        await $("#studio-heading").isExisting(),
-        true,
-        await $("body").getText(),
-      );
+      await $("#studio-heading").waitForDisplayed();
     });
   }
 

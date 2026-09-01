@@ -686,7 +686,7 @@ The implementation entry point is the [TB16 specification](tracer-bullet-16-spec
 
 The implementation entry point is the [Issue 52 recovery specification](issue-52-recoverable-ui-state-spec.md). Its preparation task confirmed that TB12, TB13, and TB14 were merged into `main`, retained S1 as the only new evidence seam, and defined safe renderer recovery, stable retry descriptors, optional saved-results recovery, structured main-process diagnostics, and native startup Retry/Quit handling.
 
-Implementation is complete on the `codex/issue-52-recoverable-ui-state` branch. Focused S1 workflows pass for one-shot bootstrap, saved-results read, repository-open, and workspace-transition failures; `npm run check`, `npm run lint:complexity`, and the complete packaged workflow pass. No domain outcomes, preload capabilities, portable repository fields, or automatic retries are added.
+Implementation is complete on the `codex/issue-52-recoverable-ui-state` branch. Focused S1 workflows pass for one-shot bootstrap, saved-results read, repository-open, workspace-transition, and nested Discovery-transition failures; `npm run check`, `npm run lint:complexity`, and the complete packaged workflow pass. No domain outcomes, preload capabilities, portable repository fields, or automatic retries are added.
 
 ### Release-readiness implementation preparation
 

@@ -105,12 +105,6 @@ const isPositiveInteger = (value: unknown): value is number =>
 
 let injectedFailureConsumed = false;
 
-const mainDiagnosticCauses: Array<{
-  operation: string;
-  timestamp: string;
-  cause: unknown;
-}> = [];
-
 // A custom secure scheme lets packaged renderer assets load without exposing
 // a broad file:// surface to the sandboxed renderer.
 protocol.registerSchemesAsPrivileged([
@@ -132,15 +126,8 @@ const recordMainDiagnostic = (
   operation: string,
   phase: "bridge" | "window",
   category: "unexpected-rejection" | "startup-failure",
-  cause?: unknown,
 ): void => {
   const timestamp = new Date().toISOString();
-  if (cause !== undefined) {
-    mainDiagnosticCauses.push({ operation, timestamp, cause });
-    if (mainDiagnosticCauses.length > 100) {
-      mainDiagnosticCauses.shift();
-    }
-  }
   // Keep diagnostics deliberately structured and non-sensitive. The renderer
   // receives only a safe generic recovery outcome, never this record or the
   // underlying exception.
@@ -639,8 +626,8 @@ const createWindow = async (): Promise<void> => {
     ipcMain.handle(channel, async (event, ...args) => {
       try {
         return await handler(event, ...args);
-      } catch (cause: unknown) {
-        recordMainDiagnostic(channel, "bridge", "unexpected-rejection", cause);
+      } catch {
+        recordMainDiagnostic(channel, "bridge", "unexpected-rejection");
         throw new Error("Workbench operation could not be completed.");
       }
     });
@@ -1381,8 +1368,8 @@ const createWindow = async (): Promise<void> => {
 
 // Window startup recovery keeps the application usable when loading fails and
 // never exposes the underlying exception through the native dialog.
-const recoverWindowStartup = async (cause: unknown): Promise<void> => {
-  recordMainDiagnostic("create-window", "window", "startup-failure", cause);
+const recoverWindowStartup = async (): Promise<void> => {
+  recordMainDiagnostic("create-window", "window", "startup-failure");
   const result = await dialog.showMessageBox({
     type: "error",
     title: "Galaxy Brain couldn't start",
@@ -1400,7 +1387,7 @@ const recoverWindowStartup = async (cause: unknown): Promise<void> => {
     // destroy it first so the retry can recreate the one-window composition.
     removeWorkbenchIpcHandlers();
     BrowserWindow.getAllWindows().forEach((window) => window.destroy());
-    await createWindow().catch(recoverWindowStartup);
+    await createWindow().catch(() => recoverWindowStartup());
     return;
   }
 
@@ -1408,7 +1395,7 @@ const recoverWindowStartup = async (cause: unknown): Promise<void> => {
 };
 
 const startWindow = async (): Promise<void> => {
-  await createWindow().catch(recoverWindowStartup);
+  await createWindow().catch(() => recoverWindowStartup());
 };
 
 // Wait for Electron's lifecycle before creating windows or registering window

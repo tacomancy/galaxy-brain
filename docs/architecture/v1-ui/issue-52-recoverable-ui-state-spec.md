@@ -28,7 +28,7 @@ Independently known expectations:
 
 ## Minimum vertical path
 
-1. Add focused S1 workflows for bootstrap recovery, optional saved-results recovery, repository-open recovery, and workspace-transition recovery; observe the missing behavior as Red.
+1. Add focused S1 workflows for bootstrap recovery, optional saved-results recovery, repository-open recovery, workspace-transition recovery, and nested Discovery-transition recovery; observe the missing behavior as Red.
 2. Add the renderer bootstrap boundary and safe optional results projection.
 3. Add a renderer operation wrapper with stable retry descriptors and a single visible recovery notice, then cover representative repository and workspace operations.
 4. Add the main-process one-shot test injection, safe structured diagnostics, and native `createWindow` Retry/Quit handling.
@@ -47,4 +47,4 @@ This change does not alter domain outcomes, add automatic retries, persist trans
 
 ## Acceptance evidence
 
-The implementation is ready for review. Focused Issue #52 workflows pass for all four injected failure modes; existing S1/S5 tests remain green; `npm run check`, `npm run lint:complexity`, the packaged workflow, and documentation checks pass. Recovery text contains no sensitive values, and the branch contains no changes beyond Issue #52 recovery and its documentation.
+The implementation is ready for review. Focused Issue #52 workflows pass for all five injected failure modes; existing S1/S5 tests remain green; `npm run check`, `npm run lint:complexity`, the packaged workflow, and documentation checks pass. Recovery text contains no sensitive values, and the branch contains no changes beyond Issue #52 recovery and its documentation.

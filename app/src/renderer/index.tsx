@@ -118,6 +118,17 @@ type BridgeOperationOptions = {
   nested?: boolean;
 };
 
+const focusWorkbenchHeading = (): void => {
+  window.requestAnimationFrame(() => {
+    const heading = document.querySelector<HTMLElement>(
+      "#atlas-heading, #studio-heading, #paper-desk-heading",
+    );
+    if (heading === null) return;
+    heading.tabIndex = -1;
+    heading.focus();
+  });
+};
+
 // Bridge recovery preserves the last rendered projection and offers only a
 // user-invoked retry of the failed operation.
 const BridgeOperationRecovery = ({
@@ -137,6 +148,7 @@ const BridgeOperationRecovery = ({
       await onRetry();
     } finally {
       setIsRetrying(false);
+      focusWorkbenchHeading();
     }
   };
 
@@ -170,8 +182,12 @@ const StartupRecovery = ({
   const [isRetrying, setIsRetrying] = useState(false);
   const retry = async (): Promise<void> => {
     setIsRetrying(true);
-    await onRetry();
-    setIsRetrying(false);
+    try {
+      await onRetry();
+    } finally {
+      setIsRetrying(false);
+      focusWorkbenchHeading();
+    }
   };
 
   return (
@@ -267,7 +283,8 @@ const WorkbenchShell = ({
         const result = await action();
         if (
           isRootOperation &&
-          bridgeFailureVersion.current === failureVersionAtStart
+          bridgeFailureVersion.current === failureVersionAtStart &&
+          bridgeRetry.current === undefined
         ) {
           bridgeRetry.current = undefined;
           bridgeRootOperation.current = undefined;
@@ -402,10 +419,11 @@ const WorkbenchShell = ({
       if (outcome.outcome === "found") {
         setSavedSynthesisResults(outcome.results);
         setSavedSynthesisResultsReadError(undefined);
+        didRead = true;
       } else {
         setSavedSynthesisResultsReadError(outcome.detail);
+        throw new Error("Saved Synthesis results are unavailable.");
       }
-      didRead = true;
     });
     if (!didRead) {
       setSavedSynthesisResultsReadError(
@@ -1031,7 +1049,10 @@ const WorkbenchShell = ({
       {bridgeFailure !== undefined ? (
         <BridgeOperationRecovery
           failure={bridgeFailure}
-          onRetry={bridgeFailure.retry}
+          onRetry={async () => {
+            bridgeRetry.current = undefined;
+            await bridgeFailure.retry();
+          }}
         />
       ) : null}
       {workbench.repositoryStatus === "selected" ? (
