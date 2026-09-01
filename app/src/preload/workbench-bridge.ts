@@ -7,7 +7,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 import type {
-  FreshWorkbench,
   ReadingPositionOutcome,
   RepositoryOperationOutcome,
   WorkbenchContextSelection,
@@ -17,6 +16,7 @@ import type {
   WorkbenchTheme,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
+import type { WorkbenchViewState } from "../modules/workbench-view";
 import type {
   CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
@@ -55,7 +55,7 @@ import type {
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
   // serializable state needed to render the current workspace.
-  openFreshWorkbench: (): Promise<FreshWorkbench> =>
+  openFreshWorkbench: (): Promise<WorkbenchViewState> =>
     ipcRenderer.invoke("workbench:open-fresh"),
   readSourceAvailability: (): Promise<
     CheckSourceAvailabilityOutcome | undefined

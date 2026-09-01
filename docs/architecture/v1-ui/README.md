@@ -33,6 +33,7 @@ navigation or release-status authorities:
 - [Provider-free PDF source-status packaged-gate specification](provider-free-pdf-gate-spec.md) records the implemented and human-accepted packaged linked-PDF preservation slice and its explicit deferrals.
 - [Provider-free privacy and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md) records the implemented and human-accepted Section C privacy boundary, its evidence, and its explicit deferrals.
 - [V1 stable distribution and release operations specification](v1-release-operations-spec.md) defines the implementation and acceptance boundary for Section D, including the required public-versus-developer-only decision.
+- [Section E hardening specification](section-e-hardening-spec.md) defines the implementation and acceptance boundary for Issues #70–#72 and the reconciliation required to close the post-tracer-bullet quality map in Issue #21.
 - `tracer-bullet-*-spec.md` and `issue-51-explicit-context-selection-spec.md` record scoped implementation briefs and delivery evidence.
 - `stack-research.md` records primary-source evidence for the desktop foundation.
 - `complexity-policy.md` records the production complexity limits and verification evidence.
@@ -60,6 +61,7 @@ The hard-to-reverse decisions are recorded separately:
 - [ADR 0012](../../adr/0012-require-explicit-confirmation-before-agent-transmission.md): require explicit confirmation before Agent transmission.
 - [ADR 0013](../../adr/0013-do-not-retain-openai-payloads-by-default.md): do not retain OpenAI payloads by default.
 - [ADR 0014](../../adr/0014-preserve-agent-provenance-on-explicit-save.md): preserve agent provenance on explicit save.
+- [ADR 0016](../../adr/0016-use-append-only-synthesis-result-versions.md): use append-only Synthesis result versions.
 
 ## TDD gate
 

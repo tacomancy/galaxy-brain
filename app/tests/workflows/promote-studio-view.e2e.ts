@@ -25,6 +25,20 @@ describe("Promote the Studio view", () => {
     await $("#studio-topic-surface").waitForDisplayed();
 
     assert.equal(
+      await browser.execute(
+        () =>
+          Array.from(
+            document.querySelectorAll(
+              "#studio-topic-surface .card-kicker, #studio-topic-surface h2",
+            ),
+          ).filter((heading) => heading.textContent?.trim() === "Current topic")
+            .length,
+        [],
+      ),
+      1,
+    );
+
+    assert.equal(
       await $("#studio-topic-title").getText(),
       "Bayesian statistics",
     );

@@ -122,6 +122,25 @@ describe("Source Processing", () => {
     );
   });
 
+  it("reads the saved source annotation through Source Processing", async () => {
+    const workingMaterial = createInMemoryWorkingMaterialRepository();
+    await workingMaterial.saveAnnotation(expectedAnnotation);
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial,
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.readSavedAnnotation(
+        expectedAnnotation.sourceRecord.id,
+      ),
+      {
+        outcome: "found",
+        annotation: expectedAnnotation,
+      },
+    );
+  });
+
   it("reopens the captured annotation from portable repository files", async () => {
     const temporaryRoot = await mkdtemp(join(tmpdir(), "galaxy-brain-tb5-"));
     const repositoryPath = join(temporaryRoot, "repository");
