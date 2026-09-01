@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB14 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; the Section C provider-free privacy/non-retention implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for the bounded recorded scope; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB12 implementation, automated acceptance, and human acceptance are complete on September 1, 2026; TB13 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB14 implementation, automated acceptance, and human acceptance are complete on September 1, 2026 for its bounded fixture scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; Issue #69 shared repository-scoped artifact storage implementation and automated acceptance are complete on September 1, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -771,6 +771,45 @@ Verification is green at the reviewed revision: `npm run check`,
 workflow passed 35 specs with one intentional skip, including the Issue #22 and
 Issue #52 recovery workflows. This issue is complete as a review and
 disposition activity; Issues #69–#72 remain separate implementation work.
+
+### Issue 69. Repository-scoped safe artifact storage
+
+Issue #69 centralizes the filesystem-safety and durability mechanics shared by
+the file-backed Working Material and Synthesis-result Adapters. The new
+internal [repository-scoped Artifact Store](../../../app/src/adapters/working-material/repository-scoped-artifact-store.ts)
+validates the selected root and configured artifact directory, rejects unsafe
+symlinks and non-directory targets, constrains descendant file names, reads
+regular files through a no-follow descriptor, computes content fingerprints,
+cleans abandoned temporary files, and delegates atomic replacement to the
+existing write primitive.
+
+The public Working Material and Synthesis-result Interfaces, portable Markdown
+and JSON formats, format-specific validation/serialization, and caller-visible
+outcomes remain unchanged. `sources` and `scratch` remain required validated
+repository directories; only their configured artifact subdirectories are
+created when saving. No new Test Seam, Repository Format field, or ADR was
+needed.
+
+#### Issue 69 implementation evidence
+
+- **Red/green boundary:** Existing S5 contract suites were the confirmed
+  behavior seam for this behavior-preserving refactor. The first shared-store
+  slice compiled and the focused suites passed after preserving the required
+  `sources`/`scratch` directory rule; the final migration removed the duplicated
+  root, directory, file-read, fingerprint, and atomic-write setup from both
+  format-specific Adapters.
+- **Changed files:** Added the internal Artifact Store under
+  `app/src/adapters/working-material/`, updated `file-backed-atomic-write.ts`
+  directory-entry typing, and migrated the Working Material and Synthesis-result
+  Adapters. The code map records the new ownership seam.
+- **Verification:** The focused S5 suites pass 16 tests. The complete
+  `npm run check`, `npm run test:coverage`, and `npm run lint:complexity` gates
+  are required before delivery. Existing contract cases continue to cover
+  symlink rejection, missing/unreadable artifacts, external-change
+  preservation, and interrupted writes for both Adapters.
+- **Scope confirmed:** Working Material and Synthesis-result domain models,
+  codecs, repository formats, result-history shape, Governance persistence,
+  session-state storage, and broad filesystem API exposure remain unchanged.
 
 ### Release-readiness implementation preparation
 

@@ -4,17 +4,17 @@
  * containment and reporting only sanitized storage-failure metadata to
  * main-process diagnostics.
  */
-import { createHash } from "node:crypto";
-import { constants } from "node:fs";
-import { lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
-import { join, resolve, sep } from "node:path";
+import { join } from "node:path";
 
 import {
-  discardAbandonedTemporaryFiles,
   defaultAtomicFileSystem,
   type AtomicFileSystem,
-  writeFileAtomically,
 } from "../file-backed-atomic-write";
+import {
+  createRepositoryScopedArtifactStore,
+  isRepositoryScopedArtifactStoreRepositoryError,
+} from "./repository-scoped-artifact-store";
+import type { RepositoryArtifactEntry } from "./repository-scoped-artifact-store";
 import type {
   SynthesisContextSnapshot,
   SynthesisHumanEdit,
@@ -167,141 +167,22 @@ const isSynthesisSavedResult = (
   );
 };
 
-const resultFilePath = (
-  canonicalRepositoryPath: string,
-  resultId: string,
-): string => {
+const resultFileName = (resultId: string): string => {
   if (!/^[a-z0-9-]+$/.test(resultId)) {
     throw new InvalidSynthesisResultError("The result identity is invalid.");
   }
 
-  const resultDirectory = resolve(canonicalRepositoryPath, resultDirectoryName);
-  const filePath = resolve(resultDirectory, `${resultId}.json`);
-
-  if (!filePath.startsWith(`${resultDirectory}${sep}`)) {
-    throw new InvalidSynthesisResultError(
-      "The result path escapes the Knowledge Repository.",
-    );
-  }
-
-  return filePath;
+  return `${resultId}.json`;
 };
 
 const serializeResult = (result: SynthesisSavedResult): string =>
   `${JSON.stringify(result, null, 2)}\n`;
 
-const canonicalRepositoryPath = async (
-  repositoryPath: string,
-): Promise<string> => {
-  const stats = await lstat(repositoryPath);
-
-  if (stats.isSymbolicLink() || !stats.isDirectory()) {
-    throw new UnsafeSynthesisResultTargetError(
-      "The selected Knowledge Repository is not a safe directory.",
-    );
-  }
-
-  const canonicalPath = await realpath(repositoryPath);
-  const scratchStats = await lstat(join(canonicalPath, "scratch"));
-
-  if (scratchStats.isSymbolicLink() || !scratchStats.isDirectory()) {
-    throw new UnsafeSynthesisResultTargetError(
-      "The Knowledge Repository scratch directory is unsafe.",
-    );
-  }
-
-  return canonicalPath;
-};
-
-const ensureResultDirectory = async (
-  canonicalPath: string,
-): Promise<string> => {
-  const resultDirectory = resolve(canonicalPath, resultDirectoryName);
-
-  try {
-    const stats = await lstat(resultDirectory);
-
-    if (stats.isSymbolicLink() || !stats.isDirectory()) {
-      throw new UnsafeSynthesisResultTargetError(
-        "The Synthesis result directory is unsafe.",
-      );
-    }
-  } catch (cause: unknown) {
-    if (!isErrnoException(cause) || cause.code !== "ENOENT") {
-      throw cause;
-    }
-
-    await mkdir(resultDirectory);
-  }
-
-  return resultDirectory;
-};
-
-const readResultDirectory = async (
-  canonicalPath: string,
-): Promise<string | undefined> => {
-  const resultDirectory = resolve(canonicalPath, resultDirectoryName);
-
-  try {
-    const stats = await lstat(resultDirectory);
-
-    if (stats.isSymbolicLink() || !stats.isDirectory()) {
-      throw new UnsafeSynthesisResultTargetError(
-        "The Synthesis result directory is unsafe.",
-      );
-    }
-
-    return resultDirectory;
-  } catch (cause: unknown) {
-    if (isErrnoException(cause) && cause.code === "ENOENT") {
-      return undefined;
-    }
-
-    throw cause;
-  }
-};
-
-type FileFingerprint = string | undefined;
-
-const readRegularFile = async (filePath: string): Promise<Buffer> => {
-  // Open and validate the same descriptor so a path replacement cannot turn
-  // the prior safety check into a read of a different file.
-  const fileHandle = await open(
-    filePath,
-    constants.O_RDONLY | constants.O_NOFOLLOW,
-  );
-
-  try {
-    if (!(await fileHandle.stat()).isFile()) {
-      throw new UnsafeSynthesisResultTargetError(
-        "The Synthesis result target is unsafe.",
-      );
-    }
-
-    return await fileHandle.readFile();
-  } finally {
-    await fileHandle.close();
-  }
-};
-
-const fingerprint = async (filePath: string): Promise<FileFingerprint> => {
-  try {
-    const contents = await readRegularFile(filePath);
-    return createHash("sha256").update(contents).digest("hex");
-  } catch (cause: unknown) {
-    if (isErrnoException(cause) && cause.code === "ENOENT") {
-      return undefined;
-    }
-
-    throw cause;
-  }
-};
-
 const readResultFile = async (
-  filePath: string,
   resultId: string,
+  readFile: () => Promise<Buffer>,
 ): Promise<SynthesisSavedResult> => {
-  const contents = (await readRegularFile(filePath)).toString("utf8");
+  const contents = (await readFile()).toString("utf8");
   let parsed: unknown;
 
   try {
@@ -333,46 +214,34 @@ export const createFileBackedSynthesisResultRepository = (
   diagnostics?: SynthesisResultDiagnostics,
   filesystem: AtomicFileSystem = defaultAtomicFileSystem,
 ): SynthesisResultRepository => {
+  const artifactStore = createRepositoryScopedArtifactStore({
+    artifactDirectory: resultDirectoryName,
+    externalChangeDetail:
+      "The Synthesis result changed while it was being saved.",
+    filesystem,
+    requiredDirectory: "scratch",
+    repositoryPath,
+    unsafeDirectoryDetail: "The Synthesis result directory is unsafe.",
+    unsafeFileDetail: "The Synthesis result target is unsafe.",
+    unsafeRepositoryDetail:
+      "The selected Knowledge Repository is not a safe directory.",
+  });
+
   const readResult = async (
     resultId: string,
   ): Promise<SynthesisResultReadOutcome> => {
-    let canonicalPath: string;
-
     try {
-      canonicalPath = await canonicalRepositoryPath(repositoryPath);
-    } catch (cause: unknown) {
-      diagnostics?.record(
-        {
-          category: "filesystem",
-          operation: "read-repository",
-        },
-        cause,
-      );
-      return {
-        outcome: "unavailable",
-        detail: "The Knowledge Repository could not be read.",
-      };
-    }
+      const entries = await artifactStore.readDirectory("result.json");
 
-    try {
-      const resultDirectory = await readResultDirectory(canonicalPath);
-
-      if (resultDirectory === undefined) {
+      if (entries === undefined) {
         return {
           outcome: "not-found",
           detail: "The Synthesis result was not found.",
         };
       }
 
-      await discardAbandonedTemporaryFiles(
-        resultDirectory,
-        resultFilePath(canonicalPath, resultId),
-        filesystem,
-      );
-
-      const result = await readResultFile(
-        resultFilePath(canonicalPath, resultId),
-        resultId,
+      const result = await readResultFile(resultId, () =>
+        artifactStore.readFile(resultFileName(resultId)),
       );
       return { outcome: "found", result };
     } catch (cause: unknown) {
@@ -386,13 +255,17 @@ export const createFileBackedSynthesisResultRepository = (
       diagnostics?.record(
         {
           category: "filesystem",
-          operation: "read-result",
+          operation: isRepositoryScopedArtifactStoreRepositoryError(cause)
+            ? "read-repository"
+            : "read-result",
         },
         cause,
       );
       return {
         outcome: "unavailable",
-        detail: "The Synthesis result could not be read.",
+        detail: isRepositoryScopedArtifactStoreRepositoryError(cause)
+          ? "The Knowledge Repository could not be read."
+          : "The Synthesis result could not be read.",
       };
     }
   };
@@ -405,73 +278,39 @@ export const createFileBackedSynthesisResultRepository = (
         );
       }
 
-      const canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      await ensureResultDirectory(canonicalPath);
-      const filePath = resultFilePath(canonicalPath, result.id);
-      const existingFingerprint = await fingerprint(filePath);
-      await writeFileAtomically({
+      await artifactStore.writeFile({
         contents: serializeResult(result),
-        externalChangeDetail:
-          "The Synthesis result changed while it was being saved.",
-        expectedFingerprint: existingFingerprint,
-        filePath,
-        filesystem,
-        readFingerprint: () => fingerprint(filePath),
+        expectedFingerprint: await artifactStore.fingerprint(
+          resultFileName(result.id),
+        ),
+        fileName: resultFileName(result.id),
       });
     },
     readResult,
     readResults: async (): Promise<SynthesisResultListReadOutcome> => {
-      let canonicalPath: string;
+      let entries: ReadonlyArray<RepositoryArtifactEntry> | undefined;
 
       try {
-        canonicalPath = await canonicalRepositoryPath(repositoryPath);
-      } catch (cause: unknown) {
-        diagnostics?.record(
-          {
-            category: "filesystem",
-            operation: "read-repository",
-          },
-          cause,
-        );
-        return {
-          outcome: "unavailable",
-          detail: "The Knowledge Repository could not be read.",
-        };
-      }
+        entries = await artifactStore.readDirectory("result.json");
 
-      let entries: {
-        name: string;
-        isFile(): boolean;
-        isSymbolicLink(): boolean;
-      }[];
-
-      try {
-        const resultDirectory = await readResultDirectory(canonicalPath);
-
-        if (resultDirectory === undefined) {
+        if (entries === undefined) {
           return { outcome: "found", results: [] };
         }
-
-        await discardAbandonedTemporaryFiles(
-          resultDirectory,
-          join(resultDirectory, "result.json"),
-          filesystem,
-        );
-        entries = await readdir(resultDirectory, {
-          encoding: "utf8",
-          withFileTypes: true,
-        });
       } catch (cause: unknown) {
         diagnostics?.record(
           {
             category: "filesystem",
-            operation: "read-results",
+            operation: isRepositoryScopedArtifactStoreRepositoryError(cause)
+              ? "read-repository"
+              : "read-results",
           },
           cause,
         );
         return {
           outcome: "unavailable",
-          detail: "The Synthesis results could not be read.",
+          detail: isRepositoryScopedArtifactStoreRepositoryError(cause)
+            ? "The Knowledge Repository could not be read."
+            : "The Synthesis results could not be read.",
         };
       }
 
@@ -482,7 +321,7 @@ export const createFileBackedSynthesisResultRepository = (
           continue;
         }
 
-        if (entry.isSymbolicLink()) {
+        if (entry.kind === "symbolic-link") {
           diagnostics?.record(
             {
               category: "filesystem",
@@ -498,16 +337,15 @@ export const createFileBackedSynthesisResultRepository = (
           };
         }
 
-        if (!entry.isFile()) {
+        if (entry.kind !== "file") {
           continue;
         }
 
         const resultId = entry.name.slice(0, -5);
         try {
           results.push(
-            await readResultFile(
-              resultFilePath(canonicalPath, resultId),
-              resultId,
+            await readResultFile(resultId, () =>
+              artifactStore.readFile(resultFileName(resultId)),
             ),
           );
         } catch (cause: unknown) {
