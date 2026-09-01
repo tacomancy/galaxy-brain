@@ -1291,6 +1291,14 @@ describe("Synthesize selected evidence", () => {
         outcome: "refreshed",
         result: {
           ...savedResult,
+          resultVersion: 2,
+          priorVersions: [
+            {
+              version: 1,
+              generatedAt: "2026-08-27T20:30:00.000Z",
+              title: "Bayesian statistics synthesis",
+            },
+          ],
           contextSnapshotVersion: 2,
           contextSnapshotRefreshedAt: "2026-08-27T21:00:00.000Z",
           contextSnapshot: [
@@ -1321,6 +1329,14 @@ describe("Synthesize selected evidence", () => {
     assert.deepEqual(refreshedResults, [
       {
         ...savedResult,
+        resultVersion: 2,
+        priorVersions: [
+          {
+            version: 1,
+            generatedAt: "2026-08-27T20:30:00.000Z",
+            title: "Bayesian statistics synthesis",
+          },
+        ],
         contextSnapshotVersion: 2,
         contextSnapshotRefreshedAt: "2026-08-27T21:00:00.000Z",
         contextSnapshot: [
@@ -1531,7 +1547,13 @@ describe("Synthesize selected evidence", () => {
             ],
           },
           resultVersion: 2,
-          priorResults: [previousResult],
+          priorVersions: [
+            {
+              version: 1,
+              generatedAt: "2026-08-27T20:30:00.000Z",
+              title: "Bayesian statistics synthesis",
+            },
+          ],
         },
       },
     );
@@ -1559,7 +1581,13 @@ describe("Synthesize selected evidence", () => {
           ],
         },
         resultVersion: 2,
-        priorResults: [previousResult],
+        priorVersions: [
+          {
+            version: 1,
+            generatedAt: "2026-08-27T20:30:00.000Z",
+            title: "Bayesian statistics synthesis",
+          },
+        ],
       },
     ]);
     assert.deepEqual(previousResult, {
@@ -1642,7 +1670,18 @@ describe("Synthesize selected evidence", () => {
         result: {
           ...firstResult,
           resultVersion: 3,
-          priorResults: [firstResult, currentResult],
+          priorVersions: [
+            {
+              version: 1,
+              generatedAt: "2026-08-27T20:30:00.000Z",
+              title: "Bayesian statistics synthesis",
+            },
+            {
+              version: 2,
+              generatedAt: "2026-08-27T21:00:00.000Z",
+              title: "Regenerated Bayesian statistics synthesis",
+            },
+          ],
         },
       },
     );
@@ -1650,7 +1689,18 @@ describe("Synthesize selected evidence", () => {
       {
         ...firstResult,
         resultVersion: 3,
-        priorResults: [firstResult, currentResult],
+        priorVersions: [
+          {
+            version: 1,
+            generatedAt: "2026-08-27T20:30:00.000Z",
+            title: "Bayesian statistics synthesis",
+          },
+          {
+            version: 2,
+            generatedAt: "2026-08-27T21:00:00.000Z",
+            title: "Regenerated Bayesian statistics synthesis",
+          },
+        ],
       },
     ]);
     assert.equal(modelCalls, 0);
@@ -1711,6 +1761,14 @@ describe("Synthesize selected evidence", () => {
           ...result,
           title: "Bayesian statistics synthesis — reviewed",
           text: "Bayesian inference updates prior belief with evidence; reviewed by a human.",
+          resultVersion: 2,
+          priorVersions: [
+            {
+              version: 1,
+              generatedAt: "2026-08-27T20:30:00.000Z",
+              title: "Bayesian statistics synthesis",
+            },
+          ],
           humanAuthorship: "human-authored",
           humanEdits: [
             {
@@ -1727,6 +1785,14 @@ describe("Synthesize selected evidence", () => {
         ...result,
         title: "Bayesian statistics synthesis — reviewed",
         text: "Bayesian inference updates prior belief with evidence; reviewed by a human.",
+        resultVersion: 2,
+        priorVersions: [
+          {
+            version: 1,
+            generatedAt: "2026-08-27T20:30:00.000Z",
+            title: "Bayesian statistics synthesis",
+          },
+        ],
         humanAuthorship: "human-authored",
         humanEdits: [
           {

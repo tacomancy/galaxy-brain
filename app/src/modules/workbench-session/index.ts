@@ -1,8 +1,3 @@
-import type {
-  StructuredAnnotation,
-  WorkingMaterialReadOutcome,
-} from "../source-processing";
-
 /** Workspace names exposed by the V1 Workbench shell. */
 export type WorkbenchWorkspace = "atlas" | "studio" | "paper-desk";
 
@@ -57,8 +52,6 @@ export interface WorkbenchState {
   context?: WorkbenchContext;
   /** Complete topic contexts shown when the repository needs an explicit choice. */
   contextOptions?: WorkbenchContext[];
-  /** The saved source claim shown when Paper Desk resumes meaningful work. */
-  sourceAnnotation?: StructuredAnnotation;
   /** The machine-local reading position for the selected Source Record. */
   readingPosition?: ReadingPosition;
   /** The remembered root could not be validated; recovery stays unselected. */
@@ -147,11 +140,6 @@ export interface KnowledgeRepository {
   readWorkbenchContext(
     repositoryPath: string,
   ): Promise<WorkbenchContextReadOutcome>;
-  /** Reads the saved source annotation associated with a Source Record. */
-  readWorkbenchAnnotation(
-    repositoryPath: string,
-    sourceRecordId: string,
-  ): Promise<WorkingMaterialReadOutcome>;
 }
 
 /**
@@ -201,8 +189,10 @@ export interface WorkbenchSession {
   switchWorkspace(
     workspace: WorkbenchWorkspace,
   ): Promise<WorkspaceTransitionOutcome>;
-  /** Moves Paper Desk to the saved annotation and persists its position. */
-  openSavedAnnotation(): Promise<ReadingPositionOutcome>;
+  /** Moves Paper Desk to a caller-supplied saved annotation position. */
+  openSavedAnnotation(
+    position: ReadingPosition,
+  ): Promise<ReadingPositionOutcome>;
   /** Reads the explicit machine-local theme preference. */
   readTheme(): Promise<WorkbenchTheme>;
   /** Changes the explicit machine-local theme preference. */
@@ -212,15 +202,6 @@ export interface WorkbenchSession {
 const themeFromSnapshot = (
   snapshot: WorkbenchSessionSnapshot | undefined,
 ): WorkbenchTheme => snapshot?.theme ?? "light";
-
-const rememberSourceAnnotation = (
-  repository: { sourceAnnotation?: StructuredAnnotation },
-  annotation: StructuredAnnotation | undefined,
-): void => {
-  if (repository.sourceAnnotation === undefined && annotation !== undefined) {
-    repository.sourceAnnotation = annotation;
-  }
-};
 
 /**
  * Composes repository and machine-local session Adapters behind the
@@ -246,7 +227,6 @@ export const createWorkbenchSession = (
           WorkbenchContextReadOutcome,
           { outcome: "unavailable" }
         >;
-        sourceAnnotation?: StructuredAnnotation;
       }
     | undefined;
 
@@ -372,59 +352,6 @@ export const createWorkbenchSession = (
     }
   };
 
-  const restoreRememberedAnnotation = async (
-    repositoryPath: string,
-    contextReadOutcome: WorkbenchContextReadOutcome,
-  ): Promise<void> => {
-    if (
-      (activeWorkspace !== "studio" && activeWorkspace !== "paper-desk") ||
-      contextReadOutcome.outcome !== "available" ||
-      selectedRepository === undefined
-    ) {
-      return;
-    }
-
-    const annotationOutcome = await knowledgeRepository.readWorkbenchAnnotation(
-      repositoryPath,
-      contextReadOutcome.context.sourceRecord.id,
-    );
-
-    if (annotationOutcome.outcome === "found") {
-      selectedRepository.sourceAnnotation = annotationOutcome.annotation;
-      return;
-    }
-
-    activeWorkspace = "atlas";
-    readingPosition = undefined;
-  };
-
-  const isContextualWorkspace = (workspace: WorkbenchWorkspace): boolean =>
-    workspace === "studio" || workspace === "paper-desk";
-
-  const ensureSourceAnnotation = async (
-    repository: SelectedRepository,
-    workspace: WorkbenchWorkspace,
-  ): Promise<StructuredAnnotation | undefined> => {
-    if (
-      !isContextualWorkspace(workspace) ||
-      repository.context === undefined ||
-      repository.sourceAnnotation !== undefined
-    ) {
-      return repository.sourceAnnotation;
-    }
-
-    const annotationOutcome = await knowledgeRepository.readWorkbenchAnnotation(
-      repository.path,
-      repository.context.sourceRecord.id,
-    );
-
-    if (annotationOutcome.outcome === "found") {
-      return annotationOutcome.annotation;
-    }
-
-    return undefined;
-  };
-
   const restoreSelectedRepository = async (): Promise<void> => {
     if (hasRestoredSession) {
       return;
@@ -456,10 +383,6 @@ export const createWorkbenchSession = (
       );
       restoreRememberedPosition(
         rememberedSession?.readingPosition,
-        contextReadOutcome,
-      );
-      await restoreRememberedAnnotation(
-        outcome.repositoryPath,
         contextReadOutcome,
       );
       return;
@@ -530,15 +453,6 @@ export const createWorkbenchSession = (
       workbench.context = repository.context;
     }
 
-    const sourceAnnotation = await ensureSourceAnnotation(
-      repository,
-      workspace,
-    );
-
-    if (isContextualWorkspace(workspace) && sourceAnnotation !== undefined) {
-      workbench.sourceAnnotation = sourceAnnotation;
-    }
-
     if (
       readingPosition !== undefined &&
       readingPosition.sourceRecordId === repository.context?.sourceRecord.id
@@ -572,8 +486,6 @@ export const createWorkbenchSession = (
       };
     }
 
-    rememberSourceAnnotation(repository, sourceAnnotation);
-
     activeWorkspace = workspace;
 
     return { outcome: "transitioned", workbench };
@@ -603,10 +515,6 @@ export const createWorkbenchSession = (
 
         if (selectedRepository.contextOptions !== undefined) {
           workbench.contextOptions = selectedRepository.contextOptions;
-        }
-
-        if (selectedRepository.sourceAnnotation !== undefined) {
-          workbench.sourceAnnotation = selectedRepository.sourceAnnotation;
         }
 
         if (
@@ -729,25 +637,25 @@ export const createWorkbenchSession = (
       return transitionToWorkspace("paper-desk");
     },
     switchWorkspace: (workspace) => transitionToWorkspace(workspace),
-    openSavedAnnotation: async (): Promise<ReadingPositionOutcome> => {
+    openSavedAnnotation: async (
+      position: ReadingPosition,
+    ): Promise<ReadingPositionOutcome> => {
       const repository = selectedRepository;
 
       if (
         repository === undefined ||
         repository.context === undefined ||
-        repository.sourceAnnotation === undefined
+        position.sourceRecordId !== repository.context.sourceRecord.id ||
+        !Number.isSafeInteger(position.page) ||
+        position.page <= 0 ||
+        !Number.isSafeInteger(position.characterOffset) ||
+        position.characterOffset < 0
       ) {
         return {
           outcome: "context-unavailable",
           detail: "The saved source annotation is not available.",
         };
       }
-
-      const nextReadingPosition: ReadingPosition = {
-        sourceRecordId: repository.sourceAnnotation.sourceRecord.id,
-        page: repository.sourceAnnotation.sourceLocator.page,
-        characterOffset: repository.sourceAnnotation.sourceLocator.start,
-      };
 
       const selectedContext = selectedContextFor(repository);
 
@@ -757,7 +665,7 @@ export const createWorkbenchSession = (
           ...persistedTheme(),
           activeWorkspace: "paper-desk",
           ...(selectedContext === undefined ? {} : { selectedContext }),
-          readingPosition: nextReadingPosition,
+          readingPosition: position,
         });
       } catch {
         return {
@@ -766,7 +674,7 @@ export const createWorkbenchSession = (
         };
       }
 
-      readingPosition = nextReadingPosition;
+      readingPosition = position;
       activeWorkspace = "paper-desk";
 
       return {
@@ -778,8 +686,7 @@ export const createWorkbenchSession = (
           repositoryAccess: repository.access,
           repositorySelection: repository.selection,
           context: repository.context,
-          sourceAnnotation: repository.sourceAnnotation,
-          readingPosition: nextReadingPosition,
+          readingPosition: position,
         },
       };
     },

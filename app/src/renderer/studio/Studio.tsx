@@ -14,14 +14,12 @@ import type {
   SynthesisSavedResult,
 } from "../../modules/source-processing";
 import type { RestoreSynthesisResultOutcome } from "../../modules/source-processing";
-import type {
-  WorkbenchContext,
-  WorkbenchState,
-} from "../../modules/workbench-session";
+import type { WorkbenchContext } from "../../modules/workbench-session";
+import type { WorkbenchViewState } from "../../modules/workbench-view";
 
 interface StudioProps {
   controls: JSX.Element;
-  workbench: WorkbenchState;
+  workbench: WorkbenchViewState;
   authoring: AuthoringReadOutcome;
   isAuthoringOpen: boolean;
   onOpenAuthoringDraft: () => Promise<void>;
@@ -618,15 +616,15 @@ const SavedSynthesisResultsCard = ({
               <dd>{result.resultVersion ?? 1}</dd>
             </div>
           </dl>
-          {result.priorResults?.map((prior) => (
+          {result.priorVersions?.map((prior) => (
             <button
-              key={`${result.id}-restore-${prior.resultVersion ?? 1}`}
-              id={`studio-synthesis-restore-${result.id}-${prior.resultVersion ?? 1}`}
+              key={`${result.id}-restore-${prior.version}`}
+              id={`studio-synthesis-restore-${result.id}-${prior.version}`}
               className="button button-quiet"
               type="button"
-              onClick={() => onRestore(result.id, prior.resultVersion ?? 1)}
+              onClick={() => onRestore(result.id, prior.version)}
             >
-              Restore version {prior.resultVersion ?? 1}
+              Restore version {prior.version}
             </button>
           ))}
         </article>

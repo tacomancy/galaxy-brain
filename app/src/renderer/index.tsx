@@ -45,15 +45,14 @@ import type {
   SynthesisSavedResult,
 } from "../modules/source-processing";
 import type {
-  FreshWorkbench,
   RepositoryOperationOutcome,
   WorkbenchContextSelection,
   WorkbenchContextSelectionOutcome,
-  WorkbenchState,
   WorkbenchTheme,
   WorkbenchWorkspace,
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
+import type { WorkbenchViewState } from "../modules/workbench-view";
 
 const rootElement = document.getElementById("root");
 
@@ -227,7 +226,7 @@ const WorkbenchShell = ({
   initialAtlasOrientation,
   initialLearning,
 }: {
-  initialWorkbench: FreshWorkbench;
+  initialWorkbench: WorkbenchViewState;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
   initialProposalReview: ProposalReviewReadOutcome;
   initialAuthoring: AuthoringReadOutcome;
@@ -235,7 +234,8 @@ const WorkbenchShell = ({
   initialAtlasOrientation: AtlasOrientationReadOutcome;
   initialLearning: LearningReadOutcome;
 }) => {
-  const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
+  const [workbench, setWorkbench] =
+    useState<WorkbenchViewState>(initialWorkbench);
   const [authoring, setAuthoring] =
     useState<AuthoringReadOutcome>(initialAuthoring);
   const [theme, setTheme] = useState<WorkbenchTheme>(initialTheme);

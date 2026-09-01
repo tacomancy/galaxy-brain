@@ -332,6 +332,17 @@ the linked GitHub issues. Close #70–#72 only when their acceptance criteria
 and evidence are complete. Close or disposition #21 only after its child
 workstreams, related follow-ups, and whole-release acceptance are reconciled.
 
+### 5.1 Implementation evidence — September 1, 2026
+
+E1, E2, and E3 are implemented on the Section E branch. The complete Vitest
+suite passes 32 files and 189 tests; strict type checking, formatting, and
+linting pass; and the MC/DC gate passes both registered decisions. Focused
+tests cover the Source Processing annotation read, lifecycle ownership and
+invalidation, immutable pointer/version files, explicit version reads, and
+legacy migration on explicit write. With Node.js `24.19.0`, the complete
+packaged workflow passes 37/37 specs, including the Issue #52 recovery matrix.
+Human acceptance remains intentionally pending.
+
 ## 6. Explicit non-goals and deferred work
 
 The following remain deferred unless a later approved issue changes the scope:
