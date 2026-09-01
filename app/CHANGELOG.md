@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.0](https://github.com/tacomancy/galaxy-brain/compare/v0.15.0...v0.16.0) (2026-09-01)
+
+
+### Features
+
+* separate Search, Ask, and Jump ([#130](https://github.com/tacomancy/galaxy-brain/issues/130)) ([884b5fc](https://github.com/tacomancy/galaxy-brain/commit/884b5fca2b15d02732aed07f5e1ed8563115518c))
+
 ## [0.15.0](https://github.com/tacomancy/galaxy-brain/compare/v0.14.0...v0.15.0) (2026-09-01)
 
 
