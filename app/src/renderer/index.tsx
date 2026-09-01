@@ -19,6 +19,10 @@ import type {
   ProposalReviewReadOutcome,
 } from "../modules/proposal-review";
 import type {
+  AtlasLearningRouteEditOutcome,
+  AtlasOrientationReadOutcome,
+} from "../modules/atlas-orientation";
+import type {
   CheckSourceAvailabilityOutcome,
   ConfirmSynthesisOutcome,
   RelinkSourceOutcome,
@@ -88,12 +92,14 @@ const WorkbenchShell = ({
   initialProposalReview,
   initialAuthoring,
   initialTheme,
+  initialAtlasOrientation,
 }: {
   initialWorkbench: FreshWorkbench;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
   initialProposalReview: ProposalReviewReadOutcome;
   initialAuthoring: AuthoringReadOutcome;
   initialTheme: WorkbenchTheme;
+  initialAtlasOrientation: AtlasOrientationReadOutcome;
 }) => {
   const [workbench, setWorkbench] = useState<WorkbenchState>(initialWorkbench);
   const [authoring, setAuthoring] =
@@ -136,6 +142,8 @@ const WorkbenchShell = ({
   >();
   const [proposalReview, setProposalReview] =
     useState<ProposalReviewReadOutcome>(initialProposalReview);
+  const [atlasOrientation, setAtlasOrientation] =
+    useState<AtlasOrientationReadOutcome>(initialAtlasOrientation);
   const [sourceStatus, setSourceStatus] = useState<
     SourceStatusPresentation | undefined
   >();
@@ -197,6 +205,7 @@ const WorkbenchShell = ({
       setSavedSynthesisResultsReadError(outcome.detail);
     }
     setProposalReview(await window.workbench.readProposalReview());
+    setAtlasOrientation(await window.workbench.readAtlasOrientation());
   };
 
   const openAuthoringDraft = async (): Promise<void> => {
@@ -277,6 +286,20 @@ const WorkbenchShell = ({
   const openTopicInStudio = async (topicId: string): Promise<void> => {
     const outcome = await window.workbench.openTopicInStudio(topicId);
     applyWorkspaceTransition(outcome);
+  };
+
+  const editLearningRouteTitle = async (
+    routeId: string,
+    title: string,
+  ): Promise<AtlasLearningRouteEditOutcome> => {
+    const outcome = await window.workbench.editLearningRouteTitle(
+      routeId,
+      title,
+    );
+    if (outcome.outcome === "updated") {
+      setAtlasOrientation({ outcome: "available", overview: outcome.overview });
+    }
+    return outcome;
   };
 
   const openProposalReview = async (): Promise<void> => {
@@ -510,6 +533,9 @@ const WorkbenchShell = ({
         onOpenTopicInStudio={openTopicInStudio}
         proposalReview={proposalReview}
         onOpenProposalReview={openProposalReview}
+        orientation={atlasOrientation}
+        onOpenSourceRecordInPaperDesk={openSourceRecordInPaperDesk}
+        onEditLearningRouteTitle={editLearningRouteTitle}
       />
     );
   })();
@@ -518,12 +544,14 @@ const WorkbenchShell = ({
 };
 
 void window.workbench.openFreshWorkbench().then(async (workbench) => {
-  const [authoring, outcome, proposalReview, theme] = await Promise.all([
-    window.workbench.readAuthoringDraft(),
-    window.workbench.readSynthesisResults(),
-    window.workbench.readProposalReview(),
-    window.workbench.readTheme(),
-  ]);
+  const [authoring, outcome, proposalReview, theme, atlasOrientation] =
+    await Promise.all([
+      window.workbench.readAuthoringDraft(),
+      window.workbench.readSynthesisResults(),
+      window.workbench.readProposalReview(),
+      window.workbench.readTheme(),
+      window.workbench.readAtlasOrientation(),
+    ]);
 
   root.render(
     <WorkbenchShell
@@ -532,6 +560,7 @@ void window.workbench.openFreshWorkbench().then(async (workbench) => {
       initialSavedSynthesisResults={outcome}
       initialProposalReview={proposalReview}
       initialTheme={theme}
+      initialAtlasOrientation={atlasOrientation}
     />,
   );
 });

@@ -1,6 +1,6 @@
 # Test-driven delivery plan
 
-Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
+Status: Tracer Bullets 1 through 6 and TB6.1–TB6.3 complete and accepted on August 27, 2026; TB7 implementation and human acceptance complete on August 28, 2026; TB8 S2 and S5 implementation cycles and human acceptance are complete on August 28, 2026; TB9 implementation and human acceptance are complete for all recorded slices on August 28, 2026; TB10 implementation, automated acceptance, and human acceptance are complete on August 28, 2026; TB11 implementation, automated acceptance, and human acceptance are complete on August 28, 2026 for its bounded six-construct scope; TB13 implementation and automated acceptance are complete on September 1, 2026 for its bounded fixture scope, with human acceptance pending; TB15 S3 implementation and human acceptance are complete on August 31, 2026; the provider-free linked-PDF packaged gate implementation, automated acceptance, and human acceptance are complete on August 31, 2026; S1–S5 Test Seams remain confirmed.
 
 Scope note: the release gate proves the provider-free core V1 workflow. Agentic Capabilities are optional V1 extensions and must degrade clearly when no Agent Provider is configured; post-V1 work remains outside this delivery sequence unless the Product Decisions explicitly promote it.
 
@@ -611,6 +611,18 @@ At S4, prove one mode at a time. Start with a literal Search result, add a cited
 Before implementation, complete the [documentation prerequisite](#documentation-prerequisite).
 
 At S1, prove the fixture session appears under Continue working and the fixture Proposal under Needs your judgment. Add individual cycles for a traceable metric, a human-authored Learning Route, and a visually distinct Generated Relationship.
+
+The implementation entry point is the [TB13 specification](tracer-bullet-13-spec.md). It defines the bounded provider-free fixture, the Atlas Orientation Module and Adapter seam, the three intermediate slices, the session-local route edit boundary, and the explicit TB14 deferral.
+
+#### TB13 implementation record — September 1, 2026
+
+- **Public Behavior:** Atlas preserves separate continuation and pending-Judgment lanes, then presents a fixture-backed traceable metric with two named annotation source items and a Paper Desk action, a human-authored Learning Route with visible steps and session-local editable title, and a visually distinct Generated Relationship suggestion with evidence, non-governed status, and a Paper Desk action.
+- **Test Seam:** S1 packaged Electron workflow through the real main process, typed preload bridge, Atlas Orientation Module, deterministic fixture Adapter, Workbench Session, file-backed Knowledge Repository, and Atlas/Paper Desk UI Adapters; focused S2 Module tests cover overview reads, route edits, and invalid title preservation.
+- **Test-first evidence:** The Module contract test was authored before the Module implementation; the first packaged TB13 workflow run reached the new assertions and exposed the ownership-label presentation mismatch (`HUMAN AUTHORED` versus the required `Human-authored`) before the label correction.
+- **Green evidence:** With Node.js `24.19.0`, `npm run check` passed formatting, linting, strict type checking, 131 Vitest tests, MC/DC, documentation tests, and documentation validation. The complete packaged Electron workflow passed all 29 WebdriverIO specs, including `tb13-atlas-actionable.e2e.ts`; the focused TB13 packaged workflow was rerun after the final metric-source refinement and passed.
+- **Implementation:** Added the framework-independent Atlas Orientation Module, empty and deterministic fixture sources, typed main/preload operations, Atlas metric/route/Generated Relationship presentation, Paper Desk navigation actions, session-local Learning Route title editing, the TB13 S1 workflow, and the guidance-compliant specification/code-map records.
+- **Scope confirmed:** No repository-backed Learning Route persistence, Agent Provider integration, Generated Relationship mutation, progress-stage changes, TB14 suggestions, composite health score, streak, or notification behavior was added. Normal launches continue to compose an empty orientation source.
+- **Acceptance:** Automated implementation evidence is complete. Human review of the packaged TB13 behavior remains pending.
 
 ### 14. Keep learning progress human-owned
 
