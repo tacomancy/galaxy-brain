@@ -45,7 +45,7 @@ path without losing the selected topic or Source Record.
    wait for Atlas to present **Select a Workbench context**. Choose the intended
    candidate and confirm with **Use this context**. The Workbench does not
    silently continue with the first filesystem entry.
-3. When Atlas presents the selected topic context, choose **Open in Studio**.
+3. When Atlas presents the selected topic context, choose **Open topic in Studio**.
 4. In **Studio**, review the topic and its related Source Record.
 5. Choose **Open Source Record in Paper Desk** to move into source-first reading.
 6. In **Paper Desk**, review the Source Record, source preview, reading position,
