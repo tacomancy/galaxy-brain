@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/tacomancy/galaxy-brain/compare/v0.14.0...v0.15.0) (2026-09-01)
+
+
+### Features
+
+* keep learning progress human-owned ([#128](https://github.com/tacomancy/galaxy-brain/issues/128)) ([5ff7761](https://github.com/tacomancy/galaxy-brain/commit/5ff77614ea522a4258f4d93ee0d8c7484b271afb))
+
 ## [0.14.0](https://github.com/tacomancy/galaxy-brain/compare/v0.13.2...v0.14.0) (2026-09-01)
 
 
