@@ -235,6 +235,52 @@ describe("Synthesize selected evidence", () => {
     );
   });
 
+  it("rejects an empty preview without a prompt or valid target", async () => {
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.prepareSynthesis({
+        targetTopic: { id: "", title: "" },
+        selectedAnnotations: [],
+        provider: { destination: "", model: "" },
+      }),
+      {
+        outcome: "invalid-selection",
+        detail: "Synthesis requires a target topic and selected evidence.",
+      },
+    );
+  });
+
+  it("does not leave a preview when removing its only context item without a prompt", async () => {
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+    });
+    const initial = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(initial.outcome, "preview-ready");
+    if (initial.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.removeSynthesisContextItem({
+        preview: initial.preview,
+        annotationId: expectedAnnotation.id,
+      }),
+      {
+        outcome: "invalid-selection",
+        detail: "Synthesis requires a target topic and selected evidence.",
+      },
+    );
+  });
+
   it("sends only the confirmed exact payload to the Model Adapter", async () => {
     const requests: unknown[] = [];
     const model: SynthesisModelAdapter = {
@@ -367,6 +413,87 @@ describe("Synthesize selected evidence", () => {
         detail: "Synthesis requires a configured Agent Provider.",
       },
     );
+    assert.equal(
+      preview.preview.payload.context[0]?.text,
+      expectedAnnotation.text,
+    );
+  });
+
+  it("passes through a Model Adapter provider-unavailable outcome", async () => {
+    let requestCount = 0;
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model: {
+        requestSynthesis: async () => {
+          requestCount += 1;
+          return {
+            outcome: "agent-provider-unavailable" as const,
+            detail: "The configured Agent Provider is unavailable.",
+          };
+        },
+      },
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "confirmed",
+      }),
+      {
+        outcome: "agent-provider-unavailable",
+        detail: "The configured Agent Provider is unavailable.",
+      },
+    );
+    assert.equal(requestCount, 1);
+    assert.equal(
+      preview.preview.payload.context[0]?.text,
+      expectedAnnotation.text,
+    );
+  });
+
+  it("sanitizes a Model Adapter failure and leaves selected evidence unchanged", async () => {
+    const causes: unknown[] = [];
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      model: {
+        requestSynthesis: async () => {
+          throw new Error("private provider response details");
+        },
+      },
+      diagnostics: { record: (cause) => causes.push(cause) },
+    });
+    const preview = await sourceProcessing.prepareSynthesis({
+      ...synthesisInput,
+      selectedAnnotations: [expectedAnnotation],
+    });
+
+    assert.equal(preview.outcome, "preview-ready");
+    if (preview.outcome !== "preview-ready") {
+      return;
+    }
+
+    assert.deepEqual(
+      await sourceProcessing.confirmSynthesis({
+        preview: preview.preview,
+        confirmation: "confirmed",
+      }),
+      {
+        outcome: "operation-failed",
+        detail: "The Synthesis request could not be completed.",
+      },
+    );
+    assert.deepEqual(causes, [new Error("private provider response details")]);
     assert.equal(
       preview.preview.payload.context[0]?.text,
       expectedAnnotation.text,

@@ -1,6 +1,7 @@
 import { strict as assert } from "node:assert";
 import {
   cp,
+  mkdir,
   mkdtemp,
   readFile,
   rename,
@@ -255,6 +256,190 @@ describe("Synthesis result Repository Adapter", () => {
         outcome: "unavailable",
         detail: "The Synthesis result could not be read.",
       });
+      assert.deepEqual(await repository.readResults?.(), {
+        outcome: "unavailable",
+        detail: "The Synthesis results could not be read.",
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("distinguishes a missing result directory from malformed result content", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const repository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+      const resultDirectory = join(
+        repositoryPath,
+        "scratch",
+        "synthesis-results",
+      );
+      await rm(resultDirectory, { recursive: true, force: true });
+      await mkdir(resultDirectory);
+      assert.deepEqual(await repository.readResults?.(), {
+        outcome: "found",
+        results: [],
+      });
+      assert.deepEqual(await repository.readResult?.("missing-result"), {
+        outcome: "not-found",
+        detail: "The Synthesis result was not found.",
+      });
+
+      await writeFile(
+        join(resultDirectory, `${result.id}.json`),
+        "{ malformed result\n",
+        "utf8",
+      );
+
+      assert.deepEqual(await repository.readResult?.(result.id), {
+        outcome: "unavailable",
+        detail: "The Synthesis result could not be read.",
+      });
+      assert.deepEqual(await repository.readResults?.(), {
+        outcome: "unavailable",
+        detail: "The Synthesis results could not be read.",
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves an external result edit instead of overwriting it", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+    const resultPath = join(
+      repositoryPath,
+      "scratch",
+      "synthesis-results",
+      `${result.id}.json`,
+    );
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const originalRepository =
+        createFileBackedSynthesisResultRepository(repositoryPath);
+      await originalRepository.saveResult(result);
+
+      const externalEditFilesystem: AtomicFileSystem = {
+        ...defaultAtomicFileSystem,
+        writeFile: async (path, contents, options) => {
+          await defaultAtomicFileSystem.writeFile(path, contents, options);
+          if (String(path).includes(".galaxy-brain-atomic-")) {
+            const current = await readFile(resultPath, "utf8");
+            await writeFile(
+              resultPath,
+              current.replace(result.text, "an external result edit"),
+              "utf8",
+            );
+          }
+        },
+      };
+
+      await assert.rejects(
+        createFileBackedSynthesisResultRepository(
+          repositoryPath,
+          undefined,
+          externalEditFilesystem,
+        ).saveResult({ ...result, text: "a competing local result" }),
+        /changed while it was being saved/,
+      );
+      assert.deepEqual(await originalRepository.readResult?.(result.id), {
+        outcome: "found",
+        result: { ...result, text: "an external result edit" },
+      });
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports an unsafe result directory without following its symlink", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+    const resultDirectory = join(
+      repositoryPath,
+      "scratch",
+      "synthesis-results",
+    );
+    const externalDirectory = join(temporaryRoot, "external-results");
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      await rename(resultDirectory, externalDirectory);
+      await symlink(externalDirectory, resultDirectory);
+      assert.deepEqual(
+        await createFileBackedSynthesisResultRepository(
+          repositoryPath,
+        ).readResults?.(),
+        {
+          outcome: "unavailable",
+          detail: "The Synthesis results could not be read.",
+        },
+      );
+    } finally {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("reports an unreadable result directory as unavailable", async () => {
+    const temporaryRoot = await mkdtemp(
+      join(tmpdir(), "galaxy-brain-synthesis-"),
+    );
+    const repositoryPath = join(temporaryRoot, "repository");
+    const causes: unknown[] = [];
+
+    await cp(
+      join(process.cwd(), "tests", "fixtures", "knowledge-repository"),
+      repositoryPath,
+      { recursive: true },
+    );
+
+    try {
+      const unreadableFilesystem: AtomicFileSystem = {
+        ...defaultAtomicFileSystem,
+        readdir: async () => {
+          throw new Error("result directory is unreadable");
+        },
+      };
+      const repository = createFileBackedSynthesisResultRepository(
+        repositoryPath,
+        { record: (cause) => causes.push(cause) },
+        unreadableFilesystem,
+      );
+
+      assert.deepEqual(await repository.readResult?.(result.id), {
+        outcome: "unavailable",
+        detail: "The Synthesis result could not be read.",
+      });
+      assert.deepEqual(await repository.readResults?.(), {
+        outcome: "unavailable",
+        detail: "The Synthesis results could not be read.",
+      });
+      assert.equal(causes.length, 2);
     } finally {
       await rm(temporaryRoot, { recursive: true, force: true });
     }

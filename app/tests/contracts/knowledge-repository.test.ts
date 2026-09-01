@@ -1028,4 +1028,167 @@ describe("Workbench Session selection contract", () => {
       },
     });
   });
+
+  it("keeps the selected state when an active-work session write is rejected", async () => {
+    const context: WorkbenchContext = {
+      topic: { id: "topic-id", title: "Bayesian statistics" },
+      sourceRecord: { id: "source-id", title: "Bayesian source" },
+    };
+    let writeCount = 0;
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "available" as const,
+          context,
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "found" as const,
+          annotation: {
+            id: "annotation-id",
+            state: "working-material" as const,
+            sourceRecord: context.sourceRecord,
+            sourceLocator: {
+              page: 2,
+              start: 0,
+              end: 5,
+              logical: "page:2#chars=0-5",
+            },
+            text: "claim",
+            attribution: "source-claim" as const,
+            classification: "source-claim" as const,
+          },
+        }),
+      },
+      {
+        readSession: async () => undefined,
+        writeSession: async () => {
+          writeCount += 1;
+          if (writeCount > 1) {
+            throw new Error("session write rejected");
+          }
+        },
+      },
+    );
+
+    assert.deepEqual(await session.createRepository("/requested-repository"), {
+      outcome: "created",
+      repositoryPath: "/selected-repository",
+    });
+    assert.deepEqual(await session.openTopicInStudio("topic-id"), {
+      outcome: "operation-failed",
+      detail: "The Workbench session could not be saved.",
+    });
+    assert.deepEqual(await session.openFreshWorkbench(), {
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: "/selected-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "created",
+      context,
+    });
+  });
+
+  it("does not restore a stale reading position for a different Source Record", async () => {
+    const context: WorkbenchContext = {
+      topic: { id: "topic-id", title: "Bayesian statistics" },
+      sourceRecord: { id: "source-id", title: "Bayesian source" },
+    };
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "available" as const,
+          context,
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+      },
+      {
+        readSession: async () => ({
+          selectedRepositoryPath: "/selected-repository",
+          activeWorkspace: "paper-desk",
+          readingPosition: {
+            sourceRecordId: "removed-source-id",
+            page: 4,
+            characterOffset: 12,
+          },
+        }),
+        writeSession: async () => {},
+      },
+    );
+
+    assert.deepEqual(await session.openFreshWorkbench(), {
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: "/selected-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "opened",
+      context,
+    });
+  });
+
+  it("returns to Atlas when a remembered Paper Desk annotation is unavailable", async () => {
+    const context: WorkbenchContext = {
+      topic: { id: "topic-id", title: "Bayesian statistics" },
+      sourceRecord: { id: "source-id", title: "Bayesian source" },
+    };
+    const session = createWorkbenchSession(
+      {
+        createAt: async () => ({
+          outcome: "created" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        openAt: async () => ({
+          outcome: "opened" as const,
+          repositoryPath: "/selected-repository",
+        }),
+        readWorkbenchContext: async () => ({
+          outcome: "available" as const,
+          context,
+        }),
+        readWorkbenchAnnotation: async () => ({
+          outcome: "unavailable" as const,
+          detail: "The saved source annotation could not be read.",
+        }),
+      },
+      {
+        readSession: async () => ({
+          selectedRepositoryPath: "/selected-repository",
+          activeWorkspace: "paper-desk",
+          readingPosition: {
+            sourceRecordId: "source-id",
+            page: 2,
+            characterOffset: 10,
+          },
+        }),
+        writeSession: async () => {},
+      },
+    );
+
+    assert.deepEqual(await session.openFreshWorkbench(), {
+      activeWorkspace: "atlas",
+      repositoryStatus: "selected",
+      repositoryPath: "/selected-repository",
+      repositoryAccess: "read-write",
+      repositorySelection: "opened",
+      context,
+    });
+  });
 });

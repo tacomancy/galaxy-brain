@@ -410,7 +410,11 @@ export const createFileBackedSynthesisResultRepository = (
         };
       }
 
-      let entries: { name: string; isFile(): boolean }[];
+      let entries: {
+        name: string;
+        isFile(): boolean;
+        isSymbolicLink(): boolean;
+      }[];
 
       try {
         const resultDirectory = await readResultDirectory(canonicalPath);
@@ -439,7 +443,23 @@ export const createFileBackedSynthesisResultRepository = (
       const results: SynthesisSavedResult[] = [];
 
       for (const entry of entries) {
-        if (!entry.isFile() || !entry.name.endsWith(".json")) {
+        if (!entry.name.endsWith(".json")) {
+          continue;
+        }
+
+        if (entry.isSymbolicLink()) {
+          diagnostics?.record(
+            new UnsafeSynthesisResultTargetError(
+              "The Synthesis result directory contains a symbolic link.",
+            ),
+          );
+          return {
+            outcome: "unavailable",
+            detail: "The Synthesis results could not be read.",
+          };
+        }
+
+        if (!entry.isFile()) {
           continue;
         }
 

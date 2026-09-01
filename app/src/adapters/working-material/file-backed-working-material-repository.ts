@@ -68,6 +68,24 @@ const logicalLocatorFor = (
 const compareStrings = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0;
 
+const isReadableAnnotationEntry = (entry: {
+  name: string;
+  isFile(): boolean;
+  isSymbolicLink(): boolean;
+}): boolean => {
+  if (!entry.name.endsWith(".md")) {
+    return false;
+  }
+
+  if (entry.isSymbolicLink()) {
+    throw new UnsafeAnnotationTargetError(
+      "The annotation directory contains a symbolic link.",
+    );
+  }
+
+  return entry.isFile();
+};
+
 const isValidLocator = (locator: SourceLocator): boolean =>
   Number.isInteger(locator.page) &&
   locator.page > 0 &&
@@ -526,7 +544,7 @@ export const createFileBackedWorkingMaterialRepository = (
         const annotations: StructuredAnnotation[] = [];
 
         for (const entry of entries) {
-          if (!entry.isFile() || !entry.name.endsWith(".md")) {
+          if (!isReadableAnnotationEntry(entry)) {
             continue;
           }
 

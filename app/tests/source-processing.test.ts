@@ -160,4 +160,145 @@ describe("Source Processing", () => {
       },
     );
   });
+
+  it("rejects an invalid locator before contacting the PDF or Working Material adapters", async () => {
+    let pdfCalls = 0;
+    let saveCalls = 0;
+    const sourceProcessing = createSourceProcessing({
+      pdf: {
+        readSelection: async () => {
+          pdfCalls += 1;
+          return { outcome: "located" as const, text: "never used" };
+        },
+      },
+      workingMaterial: {
+        saveAnnotation: async () => {
+          saveCalls += 1;
+        },
+        readAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+        readAnnotationForSourceRecord: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+      },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.captureSourceClaim({
+        sourceRecord: expectedAnnotation.sourceRecord,
+        page: 0,
+        start: 54,
+        end: 0,
+      }),
+      { outcome: "invalid-locator", detail: "The source locator is invalid." },
+    );
+    assert.equal(pdfCalls, 0);
+    assert.equal(saveCalls, 0);
+  });
+
+  it("returns an unavailable PDF outcome without saving a claim", async () => {
+    let saveCalls = 0;
+    const sourceProcessing = createSourceProcessing({
+      pdf: {
+        readSelection: async () => ({
+          outcome: "source-unavailable" as const,
+          detail: "The linked PDF is unavailable.",
+        }),
+      },
+      workingMaterial: {
+        saveAnnotation: async () => {
+          saveCalls += 1;
+        },
+        readAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+        readAnnotationForSourceRecord: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+      },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.captureSourceClaim({
+        sourceRecord: expectedAnnotation.sourceRecord,
+        page: 2,
+        start: 0,
+        end: 54,
+      }),
+      {
+        outcome: "source-unavailable",
+        detail: "The linked PDF is unavailable.",
+      },
+    );
+    assert.equal(saveCalls, 0);
+  });
+
+  it("sanitizes PDF failures and records the cause without exposing it", async () => {
+    const causes: unknown[] = [];
+    const sourceProcessing = createSourceProcessing({
+      pdf: {
+        readSelection: async () => {
+          throw new Error("private PDF path and parser details");
+        },
+      },
+      workingMaterial: createInMemoryWorkingMaterialRepository(),
+      diagnostics: { record: (cause) => causes.push(cause) },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.captureSourceClaim({
+        sourceRecord: expectedAnnotation.sourceRecord,
+        page: 2,
+        start: 0,
+        end: 54,
+      }),
+      {
+        outcome: "operation-failed",
+        detail: "The source passage could not be resolved.",
+      },
+    );
+    assert.deepEqual(causes, [
+      new Error("private PDF path and parser details"),
+    ]);
+  });
+
+  it("returns a save failure without claiming that the source claim was captured", async () => {
+    const causes: unknown[] = [];
+    const sourceProcessing = createSourceProcessing({
+      pdf: createFixturePdfAdapter(),
+      workingMaterial: {
+        saveAnnotation: async () => {
+          throw new Error("private repository write failure");
+        },
+        readAnnotation: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+        readAnnotationForSourceRecord: async () => ({
+          outcome: "not-found" as const,
+          detail: "The source annotation was not found.",
+        }),
+      },
+      diagnostics: { record: (cause) => causes.push(cause) },
+    });
+
+    assert.deepEqual(
+      await sourceProcessing.captureSourceClaim({
+        sourceRecord: expectedAnnotation.sourceRecord,
+        page: 2,
+        start: 0,
+        end: 54,
+      }),
+      {
+        outcome: "operation-failed",
+        detail: "The source claim could not be saved as Working Material.",
+      },
+    );
+    assert.deepEqual(causes, [new Error("private repository write failure")]);
+  });
 });
