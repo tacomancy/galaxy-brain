@@ -7,7 +7,10 @@ import { Atlas } from "./atlas/Atlas";
 import { PaperDesk } from "./paper-desk/PaperDesk";
 import { ProposalReview } from "./proposal-review/ProposalReview";
 import { Studio } from "./studio/Studio";
-import { WorkspaceSwitcher } from "./workspace-switcher/WorkspaceSwitcher";
+import {
+  WorkspaceSideNavigation,
+  WorkspaceSwitcher,
+} from "./workspace-switcher/WorkspaceSwitcher";
 import { Discovery } from "./discovery/Discovery";
 import type {
   AuthoringConstruct,
@@ -368,6 +371,7 @@ const WorkbenchShell = ({
   const [discoveryJumpOutcome, setDiscoveryJumpOutcome] = useState<
     DiscoveryJumpOutcome | undefined
   >();
+  const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
   const [proposalReview, setProposalReview] =
     useState<ProposalReviewReadOutcome>(initialProposalReview);
   const [atlasOrientation, setAtlasOrientation] =
@@ -617,6 +621,15 @@ const WorkbenchShell = ({
     });
   };
 
+  const closeDiscovery = (): void => {
+    setIsDiscoveryOpen(false);
+    setDiscoverySearchOutcome(undefined);
+    setDiscoveryAskPreview(undefined);
+    setDiscoveryAskOutcome(undefined);
+    setDiscoveryJumpOutcome(undefined);
+    setSelectedDiscoveryAskContextIds([]);
+  };
+
   const confirmAsk = async (
     confirmation: "confirmed" | "declined" | "canceled",
   ): Promise<void> => {
@@ -682,7 +695,15 @@ const WorkbenchShell = ({
           );
         }
 
-        if (transition !== undefined) applyWorkspaceTransition(transition);
+        if (transition === undefined) {
+          closeDiscovery();
+          return;
+        }
+
+        applyWorkspaceTransition(transition);
+        if (transition.outcome === "transitioned") {
+          closeDiscovery();
+        }
       };
 
       await transitionDiscoveryTarget();
@@ -978,11 +999,22 @@ const WorkbenchShell = ({
   const controls = (
     <div id="workbench-controls">
       {workbench.repositoryStatus === "selected" ? (
-        <WorkspaceSwitcher
-          activeWorkspace={workbench.activeWorkspace}
-          hasContext={workbench.context !== undefined}
-          onSwitchWorkspace={switchWorkspace}
-        />
+        <>
+          <WorkspaceSwitcher
+            activeWorkspace={workbench.activeWorkspace}
+            hasContext={workbench.context !== undefined}
+            onSwitchWorkspace={switchWorkspace}
+          />
+          <button
+            id="discovery-trigger"
+            className="button button-secondary"
+            type="button"
+            aria-label="Open Discovery"
+            onClick={() => setIsDiscoveryOpen(true)}
+          >
+            Discovery
+          </button>
+        </>
       ) : null}
       <ThemeControl theme={theme} onChange={changeTheme} />
     </div>
@@ -1079,6 +1111,7 @@ const WorkbenchShell = ({
       ) : null}
       {workbench.repositoryStatus === "selected" ? (
         <Discovery
+          isOpen={isDiscoveryOpen}
           askContextCandidates={discoveryAskContextCandidates}
           askOutcome={discoveryAskOutcome}
           askPreview={discoveryAskPreview}
@@ -1092,9 +1125,33 @@ const WorkbenchShell = ({
           onToggleAskContextItem={toggleDiscoveryAskContextItem}
           onRemoveAskContextItem={removeAskContextItem}
           onSearch={searchDiscovery}
+          onClose={closeDiscovery}
         />
       ) : null}
-      {workspace}
+      <div
+        id="workbench-layout"
+        className={
+          workbench.repositoryStatus === "selected"
+            ? "has-side-navigation"
+            : undefined
+        }
+      >
+        {workbench.repositoryStatus === "selected" ? (
+          <aside
+            className="workbench-side-navigation-shell"
+            aria-label="Workbench navigation"
+          >
+            <p className="side-navigation-brand">Galaxy Brain</p>
+            <span className="side-navigation-kicker">Workspaces</span>
+            <WorkspaceSideNavigation
+              activeWorkspace={workbench.activeWorkspace}
+              hasContext={workbench.context !== undefined}
+              onSwitchWorkspace={switchWorkspace}
+            />
+          </aside>
+        ) : null}
+        <div id="workbench-main">{workspace}</div>
+      </div>
     </div>
   );
 };

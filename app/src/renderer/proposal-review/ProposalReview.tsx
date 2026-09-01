@@ -109,6 +109,7 @@ export const ProposalReview = ({
   return (
     <main
       className="workspace-page proposal-review-page"
+      data-workbench-theme-surface="page"
       aria-labelledby="proposal-review-heading"
     >
       <ReviewHeader />
@@ -126,6 +127,7 @@ export const ProposalReview = ({
           <div className="proposal-review-primary">
             <section
               className="review-card review-summary-card"
+              data-workbench-theme-surface="panel"
               aria-labelledby="proposal-review-target-heading"
             >
               <span className="card-kicker">Proposal</span>

@@ -123,6 +123,7 @@ export const PaperDesk = ({
   return (
     <main
       className="workspace-page paper-desk-page"
+      data-workbench-theme-surface="page"
       aria-labelledby="paper-desk-heading"
     >
       <header className="workspace-header">
@@ -147,15 +148,11 @@ export const PaperDesk = ({
             reading together.
           </p>
         </div>
-        <SourceStatusCard
-          sourceStatus={sourceStatus}
-          relinkOutcome={relinkOutcome}
-          onRelinkSource={onRelinkSource}
-        />
         <div id="paper-desk-reading-surface" className="paper-desk-layout">
           <section
             id="paper-desk-source-preview"
             className="source-preview"
+            data-workbench-theme-surface="panel"
             aria-labelledby="paper-desk-preview-heading"
           >
             <div className="source-preview-header">
@@ -167,20 +164,35 @@ export const PaperDesk = ({
               </div>
               <span className="page-badge">Page 2</span>
             </div>
-            <article className="source-page">
+            <article
+              className="source-page"
+              data-workbench-theme-surface="viewer"
+            >
               <p className="source-page-label">Captured passage</p>
               {workbench.sourceAnnotation === undefined ? (
                 <p className="source-page-empty">
                   No saved source claim is available for this Source Record.
                 </p>
               ) : (
-                <p className="source-page-text">
+                <p
+                  className="source-page-text"
+                  data-workbench-theme-text="viewer"
+                >
                   <mark>{workbench.sourceAnnotation.text}</mark>
                 </p>
               )}
             </article>
           </section>
-          <aside className="paper-desk-sidebar">
+          <aside
+            id="paper-desk-supporting-sidebar"
+            className="paper-desk-sidebar"
+            aria-label="Supporting context"
+          >
+            <SourceStatusCard
+              sourceStatus={sourceStatus}
+              relinkOutcome={relinkOutcome}
+              onRelinkSource={onRelinkSource}
+            />
             <section
               data-source-record-id={workbench.context.sourceRecord.id}
               className="source-identity-card"

@@ -7,6 +7,8 @@ import { join } from "node:path";
 import { $, browser } from "@wdio/globals";
 import "@wdio/electron-service";
 
+import { openDiscovery } from "./discovery-helper";
+
 const failure = process.env.GALAXY_BRAIN_WDIO_FAILURE;
 
 const waitForAtlas = async (): Promise<void> => {
@@ -149,7 +151,7 @@ describe("Issue 52 recoverable Workbench failures", () => {
       });
 
       await $("#open-repository").click();
-      await $("#discovery-surface").waitForDisplayed();
+      await openDiscovery();
       await $("#discovery-mode-jump").click();
       await $("#discovery-input").setValue("Studio");
       await $("#discovery-submit").click();

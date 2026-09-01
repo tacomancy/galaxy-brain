@@ -38,7 +38,7 @@ describe("Promote the Atlas view", () => {
     );
 
     const action = await $("#atlas-topic-open-studio");
-    assert.equal(await action.getText(), "Open in Studio");
+    assert.equal(await action.getText(), "Open topic in Studio");
     assert.equal(await action.isEnabled(), true);
     await action.click();
 

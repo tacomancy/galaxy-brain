@@ -16,6 +16,8 @@ import { dirname, join, sep } from "node:path";
 import { $ } from "@wdio/globals";
 import "@wdio/electron-service";
 
+import { openDiscovery } from "./discovery-helper";
+
 const promptCanaries = [
   "GB_PRIVACY_PROMPT_DO_NOT_RETAIN",
   "GB_PRIVACY_CREDENTIAL",
@@ -165,7 +167,7 @@ describe("Section C provider-free privacy gate", () => {
         filePaths: [repositoryPath],
       });
       await $("#open-repository").click();
-      await $("#discovery-surface").waitForDisplayed();
+      await openDiscovery();
       await $("#discovery-mode-ask").click();
       await $("#discovery-ask-context-bayesian-statistics").click();
       await $(
@@ -227,6 +229,7 @@ describe("Section C provider-free privacy gate", () => {
       );
       assert.equal(await $("#discovery-ask-preview").isExisting(), false);
       assertStateUnchanged(beforeCancel, await snapshotRoots(stateRoots));
+      await $("#discovery-close").click();
 
       const savedResultPath = join(
         repositoryPath,

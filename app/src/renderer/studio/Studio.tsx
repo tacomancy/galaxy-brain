@@ -163,6 +163,7 @@ const AuthoringSurface = ({
     <section
       id="studio-authoring-surface"
       className="working-material-card authoring-card"
+      data-workbench-theme-surface="panel"
       aria-labelledby="studio-authoring-heading"
     >
       <div className="card-header-row">
@@ -692,6 +693,7 @@ export const Studio = ({
   return (
     <main
       className="workspace-page studio-page"
+      data-workbench-theme-surface="page"
       aria-labelledby="studio-heading"
     >
       <StudioHeader />
@@ -706,40 +708,48 @@ export const Studio = ({
           </p>
         </div>
         <div id="studio-topic-surface" className="studio-layout">
-          <StudioTopicSurface
-            context={workbench.context}
-            onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
-          />
-          <AuthoringDraftCard
-            authoring={authoring}
-            isOpen={isAuthoringOpen}
-            onOpen={onOpenAuthoringDraft}
-            onEdit={onEditAuthoringSemanticText}
-            onUndo={onUndoAuthoringSemanticText}
-            onOpenConstruct={onOpenAuthoringConstruct}
-            onSetMode={onSetAuthoringMode}
-            onClose={onCloseAuthoringDraft}
-          />
-          {workbench.sourceAnnotation === undefined ? null : (
-            <WorkingMaterialCard annotation={workbench.sourceAnnotation} />
-          )}
-          {workbench.sourceAnnotation === undefined ? null : (
-            <SynthesisReviewCard
-              includeAllContext={includeAllContext}
-              onPrepareSynthesis={onPrepareSynthesis}
-              onRemoveSynthesisContextItem={onRemoveSynthesisContextItem}
-              onConfirmSynthesis={onConfirmSynthesis}
-              synthesisPreview={synthesisPreview}
-              synthesisOutcome={synthesisOutcome}
-              onIncludeAllContextChange={setIncludeAllContext}
+          <div className="studio-primary-column">
+            <AuthoringDraftCard
+              authoring={authoring}
+              isOpen={isAuthoringOpen}
+              onOpen={onOpenAuthoringDraft}
+              onEdit={onEditAuthoringSemanticText}
+              onUndo={onUndoAuthoringSemanticText}
+              onOpenConstruct={onOpenAuthoringConstruct}
+              onSetMode={onSetAuthoringMode}
+              onClose={onCloseAuthoringDraft}
             />
-          )}
-          <SavedSynthesisResultsCard
-            results={savedSynthesisResults}
-            readError={savedSynthesisResultsReadError}
-            restoreOutcome={restoreOutcome}
-            onRestore={onRestoreSynthesisResult}
-          />
+          </div>
+          <aside
+            id="studio-supporting-sidebar"
+            className="studio-sidebar"
+            aria-label="Supporting context"
+          >
+            <StudioTopicSurface
+              context={workbench.context}
+              onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
+            />
+            {workbench.sourceAnnotation === undefined ? null : (
+              <WorkingMaterialCard annotation={workbench.sourceAnnotation} />
+            )}
+            {workbench.sourceAnnotation === undefined ? null : (
+              <SynthesisReviewCard
+                includeAllContext={includeAllContext}
+                onPrepareSynthesis={onPrepareSynthesis}
+                onRemoveSynthesisContextItem={onRemoveSynthesisContextItem}
+                onConfirmSynthesis={onConfirmSynthesis}
+                synthesisPreview={synthesisPreview}
+                synthesisOutcome={synthesisOutcome}
+                onIncludeAllContextChange={setIncludeAllContext}
+              />
+            )}
+            <SavedSynthesisResultsCard
+              results={savedSynthesisResults}
+              readError={savedSynthesisResultsReadError}
+              restoreOutcome={restoreOutcome}
+              onRestore={onRestoreSynthesisResult}
+            />
+          </aside>
         </div>
       </div>
     </main>
