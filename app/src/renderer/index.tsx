@@ -609,19 +609,23 @@ const WorkbenchShell = ({
   };
 
   const createRepository = async (): Promise<void> => {
-    await runBridgeOperation("create-repository", async () => {
-      const outcome = await window.workbench.createRepository();
-      setLastOutcome(outcome);
-      await refreshWorkbench();
-    });
+    const outcome = await runBridgeOperation(
+      "create-repository",
+      window.workbench.createRepository,
+    );
+    if (outcome === undefined) return;
+    setLastOutcome(outcome);
+    await refreshWorkbench();
   };
 
   const openRepository = async (): Promise<void> => {
-    await runBridgeOperation("open-repository", async () => {
-      const outcome = await window.workbench.openRepository();
-      setLastOutcome(outcome);
-      await refreshWorkbench();
-    });
+    const outcome = await runBridgeOperation(
+      "open-repository",
+      window.workbench.openRepository,
+    );
+    if (outcome === undefined) return;
+    setLastOutcome(outcome);
+    await refreshWorkbench();
   };
 
   const selectWorkbenchContext = async (
@@ -731,30 +735,32 @@ const WorkbenchShell = ({
   const openSourceRecordInPaperDesk = async (
     sourceRecordId: string,
   ): Promise<void> => {
-    await runBridgeOperation("open-source-record-in-paper-desk", async () => {
-      const outcome =
-        await window.workbench.openSourceRecordInPaperDesk(sourceRecordId);
-      applyWorkspaceTransition(outcome);
-      if (outcome.outcome === "transitioned" && outcome.workbench.context) {
-        await refreshSourceStatus();
-      }
-    });
+    const outcome = await runBridgeOperation(
+      "open-source-record-in-paper-desk",
+      () => window.workbench.openSourceRecordInPaperDesk(sourceRecordId),
+    );
+    if (outcome === undefined) return;
+    applyWorkspaceTransition(outcome);
+    if (outcome.outcome === "transitioned" && outcome.workbench.context) {
+      await refreshSourceStatus();
+    }
   };
 
   const switchWorkspace = async (
     workspace: WorkbenchWorkspace,
   ): Promise<void> => {
-    await runBridgeOperation("switch-workspace", async () => {
-      const outcome = await window.workbench.switchWorkspace(workspace);
-      applyWorkspaceTransition(outcome);
-      if (
-        outcome.outcome === "transitioned" &&
-        outcome.workbench.activeWorkspace === "paper-desk" &&
-        outcome.workbench.context
-      ) {
-        await refreshSourceStatus();
-      }
-    });
+    const outcome = await runBridgeOperation("switch-workspace", () =>
+      window.workbench.switchWorkspace(workspace),
+    );
+    if (outcome === undefined) return;
+    applyWorkspaceTransition(outcome);
+    if (
+      outcome.outcome === "transitioned" &&
+      outcome.workbench.activeWorkspace === "paper-desk" &&
+      outcome.workbench.context
+    ) {
+      await refreshSourceStatus();
+    }
   };
 
   const openSavedAnnotation = async (): Promise<void> => {
@@ -845,16 +851,14 @@ const WorkbenchShell = ({
     resultId: string,
     version: number,
   ): Promise<void> => {
-    await runBridgeOperation("restore-synthesis-result", async () => {
-      const outcome = await window.workbench.restoreSynthesisResult(
-        resultId,
-        version,
-      );
-      setRestoreOutcome(outcome);
-      if (outcome.outcome === "restored") {
-        await readSavedSynthesisResults();
-      }
-    });
+    const outcome = await runBridgeOperation("restore-synthesis-result", () =>
+      window.workbench.restoreSynthesisResult(resultId, version),
+    );
+    if (outcome === undefined) return;
+    setRestoreOutcome(outcome);
+    if (outcome.outcome === "restored") {
+      await readSavedSynthesisResults();
+    }
   };
 
   const controls = (

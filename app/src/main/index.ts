@@ -420,6 +420,7 @@ const createWindow = async (): Promise<void> => {
       sourceRecord: workbench.context.sourceRecord,
     });
   };
+  let pendingReplacementReference: string | undefined;
   const relinkSource = async (): Promise<RelinkSourceOperationOutcome> => {
     const workbench = await workbenchSession.openFreshWorkbench();
 
@@ -439,39 +440,54 @@ const createWindow = async (): Promise<void> => {
       };
     }
 
-    const selection = await dialog.showOpenDialog(mainWindow, {
-      buttonLabel: "Verify and Relink PDF",
-      message: "Choose the replacement PDF for this Source Record.",
-      properties: ["openFile"],
-      filters: [{ name: "PDF documents", extensions: ["pdf"] }],
-    });
+    let replacementReference = pendingReplacementReference;
+    if (replacementReference === undefined) {
+      const selection = await dialog.showOpenDialog(mainWindow, {
+        buttonLabel: "Verify and Relink PDF",
+        message: "Choose the replacement PDF for this Source Record.",
+        properties: ["openFile"],
+        filters: [{ name: "PDF documents", extensions: ["pdf"] }],
+      });
 
-    if (selection.canceled || selection.filePaths[0] === undefined) {
-      return { outcome: "canceled" };
+      if (selection.canceled || selection.filePaths[0] === undefined) {
+        return { outcome: "canceled" };
+      }
+
+      replacementReference = selection.filePaths[0];
     }
 
-    const replacementReference = selection.filePaths[0];
-    const replacementIdentity =
-      await sourceAsset.readReferenceIdentity(replacementReference);
+    try {
+      pendingReplacementReference = replacementReference;
+      const replacementIdentity =
+        await sourceAsset.readReferenceIdentity(replacementReference);
 
-    if (replacementIdentity.outcome === "unavailable") {
-      return {
-        outcome: "source-status-unavailable",
-        sourceRecord: { ...workbench.context.sourceRecord },
-        warning: "source status unavailable",
-        detail: replacementIdentity.detail,
-      };
+      if (replacementIdentity.outcome === "unavailable") {
+        pendingReplacementReference = undefined;
+        return {
+          outcome: "source-status-unavailable",
+          sourceRecord: { ...workbench.context.sourceRecord },
+          warning: "source status unavailable",
+          detail: replacementIdentity.detail,
+        };
+      }
+
+      const outcome = await sourceProcessingFor(
+        workbench.repositoryPath,
+      ).relinkSource({
+        sourceRecord: workbench.context.sourceRecord,
+        replacementReference,
+        expectedReplacementSourceIdentity:
+          replacementIdentity.current.sourceIdentity,
+        expectedReplacementContentIdentity:
+          replacementIdentity.current.contentIdentity,
+        verificationLocator: workbench.sourceAnnotation.sourceLocator,
+      });
+      pendingReplacementReference = undefined;
+      return outcome;
+    } catch (cause: unknown) {
+      pendingReplacementReference = replacementReference;
+      throw cause;
     }
-
-    return sourceProcessingFor(workbench.repositoryPath).relinkSource({
-      sourceRecord: workbench.context.sourceRecord,
-      replacementReference,
-      expectedReplacementSourceIdentity:
-        replacementIdentity.current.sourceIdentity,
-      expectedReplacementContentIdentity:
-        replacementIdentity.current.contentIdentity,
-      verificationLocator: workbench.sourceAnnotation.sourceLocator,
-    });
   };
   let pendingSynthesis:
     { repositoryPath: string; preview: SynthesisPreview } | undefined;
@@ -567,6 +583,7 @@ const createWindow = async (): Promise<void> => {
   });
 
   let pendingOpenRepositoryPath: string | undefined;
+  let pendingCreateRepositoryPath: string | undefined;
 
   const registerIpcHandler = (
     channel: string,
@@ -821,18 +838,31 @@ const createWindow = async (): Promise<void> => {
       throw new Error("Untrusted Workbench bridge sender.");
     }
 
-    const selection = await dialog.showOpenDialog(mainWindow, {
-      buttonLabel: "Create Repository",
-      message: "Choose where to create the Knowledge Repository.",
-      properties: ["openDirectory", "createDirectory"],
-    });
+    let repositoryPath = pendingCreateRepositoryPath;
+    if (repositoryPath === undefined) {
+      const selection = await dialog.showOpenDialog(mainWindow, {
+        buttonLabel: "Create Repository",
+        message: "Choose where to create the Knowledge Repository.",
+        properties: ["openDirectory", "createDirectory"],
+      });
 
-    if (selection.canceled || selection.filePaths[0] === undefined) {
-      return { outcome: "canceled" as const };
+      if (selection.canceled || selection.filePaths[0] === undefined) {
+        return { outcome: "canceled" as const };
+      }
+
+      repositoryPath = selection.filePaths[0];
     }
 
-    maybeInjectFailure("repository-create");
-    return workbenchSession.createRepository(selection.filePaths[0]);
+    try {
+      pendingCreateRepositoryPath = repositoryPath;
+      maybeInjectFailure("repository-create");
+      const outcome = await workbenchSession.createRepository(repositoryPath);
+      pendingCreateRepositoryPath = undefined;
+      return outcome;
+    } catch (cause: unknown) {
+      pendingCreateRepositoryPath = repositoryPath;
+      throw cause;
+    }
   });
 
   registerIpcHandler("workbench:open-repository", async (event) => {
@@ -1342,8 +1372,8 @@ const createWindow = async (): Promise<void> => {
 
 // Window startup recovery keeps the application usable when loading fails and
 // never exposes the underlying exception through the native dialog.
-const recoverWindowStartup = async (): Promise<void> => {
-  recordMainDiagnostic("create-window", "window", "startup-failure");
+const recoverWindowStartup = async (cause: unknown): Promise<void> => {
+  recordMainDiagnostic("create-window", "window", "startup-failure", cause);
   const result = await dialog.showMessageBox({
     type: "error",
     title: "Galaxy Brain couldn't start",
