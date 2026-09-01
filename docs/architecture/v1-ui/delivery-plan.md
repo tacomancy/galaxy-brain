@@ -10,7 +10,7 @@ Decision recorded on August 31, 2026: TB12, TB13, and TB14 are in scope for V1. 
 
 | Tracer bullet | V1 scope decision | Required completion evidence | Tracker |
 | --- | --- | --- | --- |
-| TB12 — Separate Search, Ask, and Jump | In scope for V1 | Guidance-compliant implementation brief, S4/S1 behavior evidence, and human acceptance | [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31) |
+| TB12 — Separate Search, Ask, and Jump | In scope for V1 | [Guidance-compliant implementation brief](tracer-bullet-12-spec.md), S4/S1 behavior evidence, and human acceptance | [Issue #31](https://github.com/tacomancy/galaxy-brain/issues/31) |
 | TB13 — Make Atlas actionable | In scope for V1 | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
 | TB14 — Keep learning progress human-owned | In scope for V1 | Guidance-compliant implementation brief, S1 behavior evidence, and human acceptance | [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32) |
 

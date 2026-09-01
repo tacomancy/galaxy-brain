@@ -167,6 +167,7 @@ Evidence links or notes: __________________________________________________
 - [Delivery Plan](delivery-plan.md)
 - [TB15 specification](tracer-bullet-15-spec.md)
 - [TB16 specification](tracer-bullet-16-spec.md)
+- [TB12 specification](tracer-bullet-12-spec.md)
 - [V1 release operations specification](v1-release-operations-spec.md)
 - [Open GitHub issues](https://github.com/tacomancy/galaxy-brain/issues?q=is%3Aissue%20state%3Aopen)
 - [Post-TB quality hardening, Issue #21](https://github.com/tacomancy/galaxy-brain/issues/21)
