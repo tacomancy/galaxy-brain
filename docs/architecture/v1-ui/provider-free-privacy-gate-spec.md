@@ -1,10 +1,9 @@
 # Provider-free privacy and non-retention packaged-gate specification
 
-Status: implementation complete on `codex/section-c-privacy-gate`; the
-automated evidence below is recorded, but the human owner must still inspect
-the exact packaged application before the Section C checklist item can be
-marked complete. No Section C checklist item is complete from this document
-alone.
+Status: implementation and human acceptance complete on
+`codex/section-c-privacy-gate` on September 1, 2026. The bounded Section C
+privacy/non-retention checklist item is complete for the recorded scope; the
+explicit deferrals below remain outside that acceptance.
 
 This brief addresses the remaining unchecked item in Section C of the [V1
 victory checklist](v1-victory-checklist.md): confirm, in the exact packaged
@@ -253,8 +252,11 @@ The bounded implementation is complete on this branch:
 
 The packaged baseline workflow supplies unavailable-provider evidence, while
 the new privacy workflow supplies canary-based post-decline evidence. The
-remaining work is the visible human inspection of the confirmation surface,
-repository/session/diagnostic state, and the documented manual searches.
+human owner completed all seven visible acceptance gates on September 1, 2026
+and explicitly accepted the Section C privacy/non-retention gate. The
+acceptance covered the exact pending payload, decline, cancellation,
+unavailable-provider handling, isolated persistence scans, relaunch behavior,
+and documented deferrals.
 
 ## Explicit deferrals
 
@@ -310,5 +312,17 @@ The Section C privacy item is ready to mark complete only when all are true:
   package identity, commands, evidence, accepted scope, and any remaining
   deferrals.
 
-This specification does not itself grant human acceptance or authorize a
-provider request. It is the implementation starting point for the new branch.
+This specification does not authorize a provider request. Its bounded
+implementation and human acceptance record are complete; real provider
+transmission remains outside this gate.
+
+## Human acceptance record — September 1, 2026
+
+The human owner passed Gates 1–7 against the unsigned macOS arm64 package
+generated from this branch and explicitly accepted the Section C
+privacy/non-retention gate. The review confirmed the visible exact Ask
+payload, declined and canceled no-request outcomes, unavailable-provider
+behavior, unchanged isolated repository state, canary absence from repository,
+session, and source-assets roots, relaunch behavior, and the documented
+deferrals. The victory-checklist privacy item is therefore complete for this
+bounded scope.

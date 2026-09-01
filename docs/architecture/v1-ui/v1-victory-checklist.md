@@ -2,9 +2,10 @@
 
 Status: draft release checklist. TB12–TB16, the provider-free release gate,
 Issue #52 recovery, and Issue #22 behavioral-contract coverage are merged and
-accepted for their recorded scopes. Privacy review, the MC/DC release-candidate
-rule, Issue #23 follow-up approval, remaining architecture hardening, and other
-release-readiness dispositions below remain open.
+accepted for their recorded scopes. The Section C privacy/non-retention gate
+is implemented, human-accepted, and complete for its bounded scope. The MC/DC
+release-candidate rule, Issue #23 follow-up approval, remaining architecture
+hardening, and other release-readiness dispositions below remain open.
 
 This is the durable, printable checklist for declaring Knowledge Workbench V1 complete. Check an item only when its evidence is available in the repository, CI, packaged application, or recorded human acceptance. The checklist is a release decision aid; the authoritative behavior and verification details remain in the linked architecture documents.
 
@@ -56,7 +57,7 @@ Verify the packaged macOS Workbench against a real file-backed Knowledge Reposit
 - [x] Complete human acceptance of the packaged linked-PDF status/relink workflow and confirm that private paths and source payloads remain within the approved main-process boundary.
 - [x] Show a clear unavailable-provider state without blocking provider-free
       workflows; the named packaged gate reports `agent-provider-unavailable`.
-- [ ] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy. The implementation and automated evidence are recorded in the [provider-free privacy and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md); completion remains an explicit human inspection of packaged logs, session state, repository artifacts, and the confirmation surface.
+- [x] Confirm that paths, credentials, and provider payloads are not leaked or retained contrary to policy. The implementation, automated evidence, seven passed human acceptance gates, and explicit owner approval are recorded in the [provider-free privacy and non-retention packaged-gate specification](provider-free-privacy-gate-spec.md) for its bounded scope.
 
 This gate proves the packaged application behavior. It does not by itself prove that an unsigned development `.app` is a supported end-user distribution.
 
