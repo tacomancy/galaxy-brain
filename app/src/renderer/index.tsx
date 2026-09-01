@@ -109,7 +109,10 @@ const ThemeControl = ({
   </div>
 );
 
-type BridgeOperationFailure = { operation: string };
+type BridgeOperationFailure = {
+  operation: string;
+  retry: () => Promise<void>;
+};
 
 // Bridge recovery preserves the last rendered projection and offers only a
 // user-invoked retry of the failed operation.
@@ -219,23 +222,22 @@ const WorkbenchShell = ({
   const bridgeRetry = useRef<(() => Promise<void>) | undefined>(undefined);
   const [bridgeFailure, setBridgeFailure] = useState<
     BridgeOperationFailure | undefined
-  >(
-    initialSavedSynthesisResults.outcome === "unavailable"
-      ? { operation: "read-synthesis-results" }
-      : undefined,
-  );
+  >();
   const runBridgeOperation = async <T,>(
     operation: string,
     action: () => Promise<T>,
+    retryOperation?: () => Promise<void>,
   ): Promise<T | undefined> => {
     const isRootOperation = bridgeOperationDepth.current === 0;
     const failureVersionAtStart = bridgeFailureVersion.current;
     if (isRootOperation) {
       bridgeRootOperation.current = operation;
     }
-    const retry = async (): Promise<void> => {
-      await runBridgeOperation(operation, action);
-    };
+    const retry =
+      retryOperation ??
+      (async (): Promise<void> => {
+        await runBridgeOperation(operation, action);
+      });
     bridgeOperationDepth.current += 1;
     try {
       const result = await action();
@@ -255,6 +257,7 @@ const WorkbenchShell = ({
       }
       setBridgeFailure({
         operation: bridgeRootOperation.current ?? operation,
+        retry: isRootOperation ? retry : (bridgeRetry.current ?? retry),
       });
       return undefined;
     } finally {
@@ -373,10 +376,15 @@ const WorkbenchShell = ({
   };
 
   useEffect(() => {
-    if (initialSavedSynthesisResults.outcome === "unavailable") {
-      bridgeRetry.current = async () => {
+    if (
+      initialSavedSynthesisResults.outcome === "unavailable" &&
+      bridgeRetry.current === undefined
+    ) {
+      const retry = async (): Promise<void> => {
         await readSavedSynthesisResults();
       };
+      bridgeRetry.current = retry;
+      setBridgeFailure({ operation: "read-synthesis-results", retry });
     }
     // The retry ref intentionally captures the current operation descriptor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -611,7 +619,8 @@ const WorkbenchShell = ({
   const createRepository = async (): Promise<void> => {
     const outcome = await runBridgeOperation(
       "create-repository",
-      window.workbench.createRepository,
+      async () => window.workbench.createRepository(),
+      createRepository,
     );
     if (outcome === undefined) return;
     setLastOutcome(outcome);
@@ -621,7 +630,8 @@ const WorkbenchShell = ({
   const openRepository = async (): Promise<void> => {
     const outcome = await runBridgeOperation(
       "open-repository",
-      window.workbench.openRepository,
+      async () => window.workbench.openRepository(),
+      openRepository,
     );
     if (outcome === undefined) return;
     setLastOutcome(outcome);
@@ -738,6 +748,7 @@ const WorkbenchShell = ({
     const outcome = await runBridgeOperation(
       "open-source-record-in-paper-desk",
       () => window.workbench.openSourceRecordInPaperDesk(sourceRecordId),
+      async () => openSourceRecordInPaperDesk(sourceRecordId),
     );
     if (outcome === undefined) return;
     applyWorkspaceTransition(outcome);
@@ -749,8 +760,10 @@ const WorkbenchShell = ({
   const switchWorkspace = async (
     workspace: WorkbenchWorkspace,
   ): Promise<void> => {
-    const outcome = await runBridgeOperation("switch-workspace", () =>
-      window.workbench.switchWorkspace(workspace),
+    const outcome = await runBridgeOperation(
+      "switch-workspace",
+      () => window.workbench.switchWorkspace(workspace),
+      async () => switchWorkspace(workspace),
     );
     if (outcome === undefined) return;
     applyWorkspaceTransition(outcome);
@@ -851,8 +864,10 @@ const WorkbenchShell = ({
     resultId: string,
     version: number,
   ): Promise<void> => {
-    const outcome = await runBridgeOperation("restore-synthesis-result", () =>
-      window.workbench.restoreSynthesisResult(resultId, version),
+    const outcome = await runBridgeOperation(
+      "restore-synthesis-result",
+      () => window.workbench.restoreSynthesisResult(resultId, version),
+      async () => restoreSynthesisResult(resultId, version),
     );
     if (outcome === undefined) return;
     setRestoreOutcome(outcome);
@@ -957,9 +972,7 @@ const WorkbenchShell = ({
       {bridgeFailure !== undefined ? (
         <BridgeOperationRecovery
           failure={bridgeFailure}
-          onRetry={async () => {
-            await bridgeRetry.current?.();
-          }}
+          onRetry={bridgeFailure.retry}
         />
       ) : null}
       {workbench.repositoryStatus === "selected" ? (
