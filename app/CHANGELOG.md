@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/tacomancy/galaxy-brain/compare/v0.16.0...v0.17.0) (2026-09-01)
+
+
+### Features
+
+* close Section C provider-free privacy gate ([#135](https://github.com/tacomancy/galaxy-brain/issues/135)) ([273d2fb](https://github.com/tacomancy/galaxy-brain/commit/273d2fb741b70892126876eaa5d5b516f8103ccc))
+
 ## [0.16.0](https://github.com/tacomancy/galaxy-brain/compare/v0.15.0...v0.16.0) (2026-09-01)
 
 
