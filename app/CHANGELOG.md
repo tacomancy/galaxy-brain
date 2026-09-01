@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/tacomancy/galaxy-brain/compare/v0.18.0...v0.19.0) (2026-09-01)
+
+
+### Features
+
+* polish Workbench navigation and layout ([#142](https://github.com/tacomancy/galaxy-brain/issues/142)) ([786a274](https://github.com/tacomancy/galaxy-brain/commit/786a274c4f70789877c3add7f4e426958bfc0dc7))
+
 ## [0.18.0](https://github.com/tacomancy/galaxy-brain/compare/v0.17.0...v0.18.0) (2026-09-01)
 
 
