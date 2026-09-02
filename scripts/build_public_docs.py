@@ -59,7 +59,7 @@ CHANGELOG_VERSION_PATTERN = re.compile(
     re.MULTILINE,
 )
 SECURITY_VERSION_PATTERN = re.compile(
-    rf"^\|\s*Latest published release\s+\(`(?P<version>{RELEASE_VERSION_PATTERN})`\)\s*\|\s*Yes\s*\|\s*$",
+    rf"^\|\s*Latest published release\s+\(`(?P<version>{RELEASE_VERSION_PATTERN})`\)\s*\|\s*Yes\s*\|\s*(?:<!--\s*x-release-please-version\s*-->)?\s*$",
     re.MULTILINE,
 )
 CURRENT_CAPABILITIES_SOURCE = "docs-site/current-capabilities.md"

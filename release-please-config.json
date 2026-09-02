@@ -1,5 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "extra-files": [
+    {
+      "type": "generic",
+      "path": "SECURITY.md"
+    },
+    {
+      "type": "generic",
+      "path": "docs-site/current-capabilities.md"
+    }
+  ],
   "packages": {
     "app": {
       "release-type": "node",
