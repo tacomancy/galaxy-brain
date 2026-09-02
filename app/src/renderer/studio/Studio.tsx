@@ -16,6 +16,7 @@ import type {
 import type { RestoreSynthesisResultOutcome } from "../../modules/source-processing";
 import type { WorkbenchContext } from "../../modules/workbench-session";
 import type { WorkbenchViewState } from "../../modules/workbench-view";
+import type { WorkingMaterialNote } from "../../modules/working-material-authoring";
 
 interface StudioProps {
   controls: JSX.Element;
@@ -28,6 +29,10 @@ interface StudioProps {
   onUndoAuthoringSemanticText: () => Promise<void>;
   onSetAuthoringMode: (mode: AuthoringMode) => Promise<void>;
   onCloseAuthoringDraft: () => void;
+  note: WorkingMaterialNote | undefined;
+  noteOutcome: string | undefined;
+  onCreateNote: () => Promise<void>;
+  onEditNote: (title: string, body: string) => Promise<void>;
   onOpenSourceRecordInPaperDesk: (sourceRecordId: string) => Promise<void>;
   onPrepareSynthesis: (includeAllContext: boolean) => Promise<void>;
   onRemoveSynthesisContextItem: (annotationId: string) => Promise<void>;
@@ -362,6 +367,106 @@ const AuthoringDraftCard = ({
   );
 };
 
+const WorkingMaterialNoteCard = ({
+  note,
+  noteOutcome,
+  onCreate,
+  onEdit,
+}: {
+  note: WorkingMaterialNote | undefined;
+  noteOutcome: string | undefined;
+  onCreate: () => Promise<void>;
+  onEdit: (title: string, body: string) => Promise<void>;
+}): JSX.Element => {
+  const [title, setTitle] = useState(note?.title ?? "");
+  const [body, setBody] = useState(note?.body ?? "");
+
+  if (note === undefined) {
+    return (
+      <section
+        className="working-material-card authoring-card"
+        aria-labelledby="studio-new-note-heading"
+      >
+        <span className="card-kicker">Knowledge Authoring</span>
+        <h2 id="studio-new-note-heading">Working Material</h2>
+        <p>Create a local note for provisional thinking.</p>
+        <button
+          id="studio-new-working-material"
+          className="button button-primary"
+          type="button"
+          onClick={() => void onCreate()}
+        >
+          New Working Material
+        </button>
+        {noteOutcome === undefined ? null : (
+          <p id="studio-working-material-note-outcome" role="status">
+            {noteOutcome}
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  const isSaved =
+    note.saved && note.path !== "scratch/untitled-working-material.md";
+
+  return (
+    <section
+      id="studio-working-material-note"
+      className="working-material-card authoring-card"
+      aria-labelledby="studio-working-material-note-heading"
+    >
+      <div className="card-header-row">
+        <div>
+          <span className="card-kicker">Knowledge Authoring</span>
+          <h2 id="studio-working-material-note-heading">
+            Working Material note
+          </h2>
+        </div>
+        <span id="studio-working-material-note-state" className="status-pill">
+          Working Material
+        </span>
+      </div>
+      <label htmlFor="studio-working-material-note-title">Title</label>
+      <input
+        id="studio-working-material-note-title"
+        value={title}
+        onChange={(event) => setTitle(event.currentTarget.value)}
+      />
+      <label htmlFor="studio-working-material-note-body">Content</label>
+      <textarea
+        id="studio-working-material-note-body"
+        rows={8}
+        value={body}
+        onChange={(event) => setBody(event.currentTarget.value)}
+      />
+      <div className="action-row">
+        <button
+          id="studio-working-material-note-save-button"
+          className="button button-primary"
+          type="button"
+          onClick={() => void onEdit(title, body)}
+        >
+          Save note
+        </button>
+        <span id="studio-working-material-note-save" className="status-pill">
+          {noteOutcome ?? (isSaved ? "Saved locally" : "Draft not yet saved")}
+        </span>
+      </div>
+      {noteOutcome === undefined ? null : (
+        <p id="studio-working-material-note-outcome" role="status">
+          {noteOutcome}
+        </p>
+      )}
+      <p id="studio-working-material-note-path" className="context-note">
+        {isSaved
+          ? `Saved locally under ${note.path}`
+          : "Choose a title, then save this note under scratch/."}
+      </p>
+    </section>
+  );
+};
+
 interface SynthesisReviewCardProps {
   includeAllContext: boolean;
   onPrepareSynthesis: (includeAllContext: boolean) => Promise<void>;
@@ -669,6 +774,10 @@ export const Studio = ({
   onUndoAuthoringSemanticText,
   onSetAuthoringMode,
   onCloseAuthoringDraft,
+  note,
+  noteOutcome,
+  onCreateNote,
+  onEditNote,
   onOpenSourceRecordInPaperDesk,
   onPrepareSynthesis,
   onRemoveSynthesisContextItem,
@@ -684,10 +793,6 @@ export const Studio = ({
 
   if (workbench.activeWorkspace !== "studio") {
     throw new Error("Studio requires an active Studio workspace.");
-  }
-
-  if (workbench.context === undefined) {
-    throw new Error("Studio requires a contextual topic.");
   }
 
   return (
@@ -709,6 +814,13 @@ export const Studio = ({
         </div>
         <div id="studio-topic-surface" className="studio-layout">
           <div className="studio-primary-column">
+            <WorkingMaterialNoteCard
+              key={note?.path ?? "new-working-material"}
+              note={note}
+              noteOutcome={noteOutcome}
+              onCreate={onCreateNote}
+              onEdit={onEditNote}
+            />
             <AuthoringDraftCard
               authoring={authoring}
               isOpen={isAuthoringOpen}
@@ -725,10 +837,12 @@ export const Studio = ({
             className="studio-sidebar"
             aria-label="Supporting context"
           >
-            <StudioTopicSurface
-              context={workbench.context}
-              onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
-            />
+            {workbench.context === undefined ? null : (
+              <StudioTopicSurface
+                context={workbench.context}
+                onOpenSourceRecordInPaperDesk={onOpenSourceRecordInPaperDesk}
+              />
+            )}
             {workbench.sourceAnnotation === undefined ? null : (
               <WorkingMaterialCard annotation={workbench.sourceAnnotation} />
             )}

@@ -127,6 +127,17 @@ These remaining planned bullets must not remain ambiguous. The scope decision be
 - [x] TB14, “Keep learning progress human-owned,” is in scope for V1; implementation, verification, and human acceptance completed on September 1, 2026 in [Issue #32](https://github.com/tacomancy/galaxy-brain/issues/32).
 - [x] TB12–TB14 implementation, verification, and human acceptance are complete for V1 as of September 1, 2026.
 
+### G1. Durable Working Material authoring and repository navigation
+
+- [ ] TB17, “Author Working Material and navigate the Knowledge Repository,”
+  is implemented, verified, and human-accepted according to the
+  [TB17 specification](tracer-bullet-17-spec.md). It is required for V1
+  because the minimum release promises authoring Working Material and the
+  repository must provide a discoverable way to reach authored notes.
+- [ ] TB17's explicit deferrals—including arbitrary filesystem operations,
+  project-aware placement, live watching, collaboration, and new note or
+  repository schemas—are recorded with rationale, owner, and revisit condition.
+
 If any of TB12–TB14 is required for V1, review the governing documentation and create a guidance-compliant implementation spec before implementation begins. If deferred, document the boundary clearly rather than leaving an unimplemented tracer bullet implied by the release label.
 
 ## H. Documentation, issue-tracker, and release hygiene

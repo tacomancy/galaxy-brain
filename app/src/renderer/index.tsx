@@ -12,6 +12,7 @@ import {
   WorkspaceSwitcher,
 } from "./workspace-switcher/WorkspaceSwitcher";
 import { Discovery } from "./discovery/Discovery";
+import { RepositoryTree } from "./repository-tree/RepositoryTree";
 import type {
   AuthoringConstruct,
   AuthoringMode,
@@ -56,6 +57,15 @@ import type {
   WorkspaceTransitionOutcome,
 } from "../modules/workbench-session";
 import type { WorkbenchViewState } from "../modules/workbench-view";
+import type {
+  RepositoryNavigationEntry,
+  RepositoryNavigationOpenOutcome,
+  RepositoryNavigationReadOutcome,
+} from "../modules/repository-navigation";
+import type {
+  WorkingMaterialNote,
+  WorkingMaterialNoteOutcome,
+} from "../modules/working-material-authoring";
 
 const rootElement = document.getElementById("root");
 
@@ -228,6 +238,8 @@ const WorkbenchShell = ({
   initialTheme,
   initialAtlasOrientation,
   initialLearning,
+  initialRepositoryTree,
+  initialWorkingMaterialNote,
 }: {
   initialWorkbench: WorkbenchViewState;
   initialSavedSynthesisResults: SynthesisResultListReadOutcome;
@@ -236,6 +248,8 @@ const WorkbenchShell = ({
   initialTheme: WorkbenchTheme;
   initialAtlasOrientation: AtlasOrientationReadOutcome;
   initialLearning: LearningReadOutcome;
+  initialRepositoryTree: RepositoryNavigationReadOutcome;
+  initialWorkingMaterialNote: WorkingMaterialNoteOutcome;
 }) => {
   const [workbench, setWorkbench] =
     useState<WorkbenchViewState>(initialWorkbench);
@@ -378,6 +392,30 @@ const WorkbenchShell = ({
     useState<AtlasOrientationReadOutcome>(initialAtlasOrientation);
   const [learning, setLearning] =
     useState<LearningReadOutcome>(initialLearning);
+  const [repositoryTree, setRepositoryTree] = useState<
+    RepositoryNavigationEntry[]
+  >(
+    initialRepositoryTree.outcome === "available"
+      ? initialRepositoryTree.entries
+      : [],
+  );
+  const [repositoryTreeOutcome, setRepositoryTreeOutcome] = useState<
+    string | undefined
+  >(
+    initialRepositoryTree.outcome === "unavailable"
+      ? initialRepositoryTree.detail
+      : undefined,
+  );
+  const [workingMaterialNote, setWorkingMaterialNote] = useState<
+    WorkingMaterialNote | undefined
+  >(
+    initialWorkingMaterialNote.outcome === "available"
+      ? initialWorkingMaterialNote.note
+      : undefined,
+  );
+  const [workingMaterialNoteOutcome, setWorkingMaterialNoteOutcome] = useState<
+    string | undefined
+  >(undefined);
   const [sourceStatus, setSourceStatus] = useState<
     SourceStatusPresentation | undefined
   >();
@@ -517,6 +555,71 @@ const WorkbenchShell = ({
       didReadLearning = true;
     });
     if (!didReadLearning) return;
+    await readRepositoryTree();
+    await readWorkingMaterialNote();
+  };
+
+  const readRepositoryTree = async (): Promise<void> => {
+    await runBridgeOperation("read-repository-tree", async () => {
+      const outcome = await window.workbench.readRepositoryTree();
+      if (outcome.outcome === "available") {
+        setRepositoryTree(outcome.entries);
+        setRepositoryTreeOutcome(undefined);
+      } else {
+        setRepositoryTree([]);
+        setRepositoryTreeOutcome(outcome.detail);
+      }
+    });
+  };
+
+  const readWorkingMaterialNote = async (): Promise<void> => {
+    await runBridgeOperation("read-working-material-note", async () => {
+      const outcome = await window.workbench.readWorkingMaterialNote();
+      setWorkingMaterialNote(
+        outcome.outcome === "available" ? outcome.note : undefined,
+      );
+      setWorkingMaterialNoteOutcome(
+        outcome.outcome === "not-found" || outcome.outcome === "available"
+          ? undefined
+          : outcome.detail,
+      );
+    });
+  };
+
+  const createWorkingMaterialNote = async (): Promise<void> => {
+    let didCreate = false;
+    await runBridgeOperation("create-working-material-note", async () => {
+      const outcome = await window.workbench.createWorkingMaterialNote();
+      if (outcome.outcome === "available") {
+        setWorkingMaterialNote(outcome.note);
+        setWorkingMaterialNoteOutcome(undefined);
+        didCreate = true;
+      } else {
+        setWorkingMaterialNoteOutcome(outcome.detail);
+      }
+    });
+    if (didCreate) await readRepositoryTree();
+  };
+
+  const editWorkingMaterialNote = async (
+    title: string,
+    body: string,
+  ): Promise<void> => {
+    let didSave = false;
+    await runBridgeOperation("edit-working-material-note", async () => {
+      const outcome = await window.workbench.editWorkingMaterialNote(
+        title,
+        body,
+      );
+      if (outcome.outcome === "available") {
+        setWorkingMaterialNote(outcome.note);
+        setWorkingMaterialNoteOutcome(undefined);
+        didSave = true;
+      } else {
+        setWorkingMaterialNoteOutcome(outcome.detail);
+      }
+    });
+    if (didSave) await readRepositoryTree();
   };
 
   const openAuthoringDraft = async (): Promise<void> => {
@@ -712,6 +815,62 @@ const WorkbenchShell = ({
 
   const closeAuthoringDraft = (): void => {
     setIsAuthoringOpen(false);
+  };
+
+  const openRepositorySourceEntry = async (identity: string): Promise<void> => {
+    const transition =
+      await window.workbench.openSourceRecordInPaperDesk(identity);
+    applyWorkspaceTransition(transition);
+    if (transition.outcome === "transitioned") {
+      setSourceStatus(await window.workbench.readSourceAvailability());
+    }
+  };
+
+  const openRepositoryNoteEntry = async (path: string): Promise<void> => {
+    const transition = await window.workbench.openWorkingMaterialInStudio(path);
+    if (transition.outcome !== "transitioned") {
+      setRepositoryTreeOutcome(transition.detail);
+      return;
+    }
+    const note = await window.workbench.readWorkingMaterialNote();
+    if (note.outcome === "available" && note.note.path === path) {
+      setWorkingMaterialNote(note.note);
+      applyWorkspaceTransition(transition);
+    }
+  };
+
+  const openRepositoryEntry = async (
+    entry: RepositoryNavigationEntry,
+  ): Promise<void> => {
+    await runBridgeOperation("open-repository-entry", async () => {
+      const outcome: RepositoryNavigationOpenOutcome =
+        await window.workbench.openRepositoryEntry(entry.path);
+      if (outcome.outcome === "topic") {
+        applyWorkspaceTransition(
+          await window.workbench.openTopicInStudio(outcome.identity),
+        );
+      } else if (outcome.outcome === "source-record") {
+        await openRepositorySourceEntry(outcome.identity);
+      } else if (outcome.outcome === "working-material") {
+        await openRepositoryNoteEntry(outcome.path);
+      } else if (outcome.outcome === "structured-annotation") {
+        if (workbench.context !== undefined) {
+          await openRepositorySourceEntry(workbench.context.sourceRecord.id);
+        } else {
+          setRepositoryTreeOutcome(
+            "Choose a topic context before opening this annotation.",
+          );
+        }
+      } else if (outcome.outcome === "saved-synthesis-result") {
+        await applyWorkspaceTransition(
+          await window.workbench.switchWorkspace("studio"),
+        );
+      } else if (outcome.outcome === "unsupported") {
+        setRepositoryTreeOutcome(outcome.detail);
+      } else {
+        setRepositoryTreeOutcome(outcome.detail);
+      }
+    });
   };
 
   const createRepository = async (): Promise<void> => {
@@ -1050,6 +1209,10 @@ const WorkbenchShell = ({
           onUndoAuthoringSemanticText={undoAuthoringSemanticText}
           onSetAuthoringMode={setAuthoringMode}
           onCloseAuthoringDraft={closeAuthoringDraft}
+          note={workingMaterialNote}
+          noteOutcome={workingMaterialNoteOutcome}
+          onCreateNote={createWorkingMaterialNote}
+          onEditNote={editWorkingMaterialNote}
           onOpenSourceRecordInPaperDesk={openSourceRecordInPaperDesk}
           onPrepareSynthesis={prepareSynthesis}
           onConfirmSynthesis={confirmSynthesis}
@@ -1150,7 +1313,23 @@ const WorkbenchShell = ({
             />
           </aside>
         ) : null}
-        <div id="workbench-main">{workspace}</div>
+        <div id="workbench-main">
+          <div id="workbench-main-layout">
+            <RepositoryTree
+              entries={repositoryTree}
+              selectedPath={workingMaterialNote?.path}
+              onOpen={openRepositoryEntry}
+            />
+            <div id="workbench-workspace-column">
+              {repositoryTreeOutcome !== undefined ? (
+                <p id="repository-tree-outcome" role="status">
+                  {repositoryTreeOutcome}
+                </p>
+              ) : null}
+              {workspace}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1171,6 +1350,8 @@ const bootstrapWorkbench = async (): Promise<void> => {
       theme,
       atlasOrientation,
       learning,
+      repositoryTree,
+      workingMaterialNote,
     ] = await Promise.all([
       window.workbench.readAuthoringDraft(),
       readInitialSynthesisResults(),
@@ -1178,6 +1359,8 @@ const bootstrapWorkbench = async (): Promise<void> => {
       window.workbench.readTheme(),
       window.workbench.readAtlasOrientation(),
       window.workbench.readLearningProgress(),
+      window.workbench.readRepositoryTree(),
+      window.workbench.readWorkingMaterialNote(),
     ]);
 
     root.render(
@@ -1189,6 +1372,8 @@ const bootstrapWorkbench = async (): Promise<void> => {
         initialTheme={theme}
         initialAtlasOrientation={atlasOrientation}
         initialLearning={learning}
+        initialRepositoryTree={repositoryTree}
+        initialWorkingMaterialNote={workingMaterialNote}
       />,
     );
   } catch {

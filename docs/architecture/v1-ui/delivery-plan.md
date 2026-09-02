@@ -1009,9 +1009,48 @@ credentials, telemetry/support bundles, configurable retention, OS keychain
 storage, and signed distribution remain outside this gate as documented in the
 governing specification.
 
+### 17. Author Working Material and navigate the Knowledge Repository
+
+Before implementation, complete the [documentation prerequisite](#documentation-prerequisite)
+and review the new [TB17 implementation specification](tracer-bullet-17-spec.md).
+The brief explicitly records the two Public Behaviors, exact fixture note and
+tree entries, confirmed S1/S5 Test Seams, safe repository-relative navigation,
+portable Markdown persistence, accessibility outcomes, discarded alternatives,
+and all deferred work before the first Red test.
+
+TB17 is proposed as V1 work because the V1 scope already promises authoring
+Working Material, while TB11 only proves transient fixture editing. It also
+adds the missing left-hand repository navigation needed to find authored notes
+and existing supported artifacts.
+
+The implementation is split into independently reviewable slices:
+
+1. enumerate a deterministic, safe repository tree;
+2. open representative tree items through existing Studio, Paper Desk, and
+   contextual routes;
+3. create and persist a new `scratch/` Working Material note;
+4. edit, close/reopen, and relaunch-resume that note; and
+5. preserve content and report explicit outcomes for external edits,
+   interruptions, unsupported files, symlinks, and unavailable repositories.
+
+The tree is a repository-aware projection, not a raw filesystem browser. It
+must hide machine-local and application-owned internals, never expose absolute
+paths to the renderer, never follow symlinks, and never discover or switch the
+selected repository. The note remains Working Material and does not create a
+Proposal, Judgment, Governed Knowledge change, Git operation, network request,
+or Agent Provider request.
+
+Implementation is complete on `codex/tb17-authoring-navigation`. The branch
+implements the safe tree projection, durable Markdown note path, title/body
+editor, fingerprint-protected writes, explicit failure outcomes, and selected-note
+session resume. Automated evidence is complete: the full repository check passes,
+the changed-lines command is ready for committed CI context, and the packaged
+workflow suite passes 37 specs with one expected skip plus all five Issue 52
+recovery variants. Final human acceptance remains pending.
+
 ## Review checkpoints
 
-Pause after slices 4, 10, 13, and 16 for a green-suite review. At each checkpoint:
+Pause after slices 4, 10, 13, 16, and 17 for a green-suite review. At each checkpoint:
 
 - assess whether module interfaces remain deep;
 - remove duplication through refactoring only after the red-to-green cycle is complete;
