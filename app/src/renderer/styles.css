@@ -1861,6 +1861,15 @@ summary:focus-visible {
   border: 0;
 }
 
+@media (max-width: 1180px) {
+  #workbench-layout.has-side-navigation .atlas-layout,
+  #workbench-layout.has-side-navigation .studio-layout,
+  #workbench-layout.has-side-navigation .paper-desk-layout,
+  #workbench-layout.has-side-navigation .proposal-review-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 760px) {
   #workbench-layout.has-side-navigation {
     display: block;
