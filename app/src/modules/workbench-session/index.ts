@@ -54,6 +54,8 @@ export interface WorkbenchState {
   contextOptions?: WorkbenchContext[];
   /** The machine-local reading position for the selected Source Record. */
   readingPosition?: ReadingPosition;
+  /** The selected repository-relative Working Material note, when any. */
+  selectedWorkingMaterialPath?: string;
   /** The remembered root could not be validated; recovery stays unselected. */
   repositoryResumeFailure?: RepositoryResumeFailure;
 }
@@ -153,6 +155,7 @@ export interface WorkbenchSessionSnapshot {
   activeWorkspace?: WorkbenchWorkspace;
   selectedContext?: WorkbenchContextSelection;
   readingPosition?: ReadingPosition;
+  selectedWorkingMaterialPath?: string;
 }
 
 /** Machine-local persistence Interface for resumable Workbench state. */
@@ -181,6 +184,10 @@ export interface WorkbenchSession {
   ): Promise<WorkbenchContextSelectionOutcome>;
   /** Carries a known topic into Studio and persists active-work state. */
   openTopicInStudio(topicId: string): Promise<WorkspaceTransitionOutcome>;
+  /** Carries one repository-relative Working Material note into Studio. */
+  openWorkingMaterialInStudio(
+    path: string,
+  ): Promise<WorkspaceTransitionOutcome>;
   /** Carries the selected Source Record and its topic into Paper Desk. */
   openSourceRecordInPaperDesk(
     sourceRecordId: string,
@@ -202,6 +209,25 @@ export interface WorkbenchSession {
 const themeFromSnapshot = (
   snapshot: WorkbenchSessionSnapshot | undefined,
 ): WorkbenchTheme => snapshot?.theme ?? "light";
+
+const isSuccessfulRepositoryOutcome = (
+  outcome: RepositoryOperationOutcome,
+): outcome is Extract<
+  RepositoryOperationOutcome,
+  { outcome: "created" | "opened" | "read-only-compatible" }
+> =>
+  outcome.outcome === "created" ||
+  outcome.outcome === "opened" ||
+  outcome.outcome === "read-only-compatible";
+
+const isRepositoryResumeFailure = (
+  outcome: RepositoryOperationOutcome,
+): outcome is RepositoryResumeFailure =>
+  outcome.outcome === "invalid-format" ||
+  outcome.outcome === "unsafe-target" ||
+  outcome.outcome === "target-unavailable" ||
+  outcome.outcome === "unsupported-format" ||
+  outcome.outcome === "operation-failed";
 
 /**
  * Composes repository and machine-local session Adapters behind the
@@ -234,6 +260,7 @@ export const createWorkbenchSession = (
   let repositoryResumeFailure: RepositoryResumeFailure | undefined;
   let activeWorkspace: WorkbenchWorkspace = "atlas";
   let readingPosition: ReadingPosition | undefined;
+  let selectedWorkingMaterialPath: string | undefined;
   let theme: WorkbenchTheme = "light";
   type SelectedRepository = NonNullable<typeof selectedRepository>;
 
@@ -325,6 +352,7 @@ export const createWorkbenchSession = (
   const restoreRememberedWorkspace = (
     workspace: WorkbenchWorkspace | undefined,
     contextReadOutcome: WorkbenchContextReadOutcome,
+    rememberedWorkingMaterialPath: string | undefined,
   ): void => {
     if (workspace === "atlas") {
       activeWorkspace = workspace;
@@ -333,7 +361,8 @@ export const createWorkbenchSession = (
 
     if (
       (workspace === "studio" || workspace === "paper-desk") &&
-      contextReadOutcome.outcome === "available"
+      (contextReadOutcome.outcome === "available" ||
+        (workspace === "studio" && rememberedWorkingMaterialPath !== undefined))
     ) {
       activeWorkspace = workspace;
     }
@@ -360,6 +389,8 @@ export const createWorkbenchSession = (
     hasRestoredSession = true;
     const rememberedSession = await sessionState.readSession();
     theme = themeFromSnapshot(rememberedSession);
+    selectedWorkingMaterialPath =
+      rememberedSession?.selectedWorkingMaterialPath;
     const rememberedPath = rememberedSession?.selectedRepositoryPath;
 
     if (rememberedPath === undefined) {
@@ -368,10 +399,7 @@ export const createWorkbenchSession = (
 
     const outcome = await knowledgeRepository.openAt(rememberedPath);
 
-    if (
-      outcome.outcome === "opened" ||
-      outcome.outcome === "read-only-compatible"
-    ) {
+    if (isSuccessfulRepositoryOutcome(outcome)) {
       const contextReadOutcome = restoreRememberedContext(
         await readWorkbenchContext(outcome.repositoryPath),
         rememberedSession?.selectedContext,
@@ -380,6 +408,7 @@ export const createWorkbenchSession = (
       restoreRememberedWorkspace(
         rememberedSession?.activeWorkspace,
         contextReadOutcome,
+        rememberedSession?.selectedWorkingMaterialPath,
       );
       restoreRememberedPosition(
         rememberedSession?.readingPosition,
@@ -388,13 +417,7 @@ export const createWorkbenchSession = (
       return;
     }
 
-    if (
-      outcome.outcome === "invalid-format" ||
-      outcome.outcome === "unsafe-target" ||
-      outcome.outcome === "target-unavailable" ||
-      outcome.outcome === "unsupported-format" ||
-      outcome.outcome === "operation-failed"
-    ) {
+    if (isRepositoryResumeFailure(outcome)) {
       repositoryResumeFailure = outcome;
     }
   };
@@ -424,6 +447,7 @@ export const createWorkbenchSession = (
     setSelectedRepository(outcome, contextReadOutcome);
     activeWorkspace = "atlas";
     readingPosition = undefined;
+    selectedWorkingMaterialPath = undefined;
     repositoryResumeFailure = undefined;
 
     return outcome;
@@ -447,6 +471,9 @@ export const createWorkbenchSession = (
       repositoryPath: repository.path,
       repositoryAccess: repository.access,
       repositorySelection: repository.selection,
+      ...(selectedWorkingMaterialPath === undefined
+        ? {}
+        : { selectedWorkingMaterialPath }),
     };
 
     if (repository.context !== undefined) {
@@ -460,7 +487,7 @@ export const createWorkbenchSession = (
       workbench.readingPosition = readingPosition;
     }
 
-    if (workspace !== "atlas" && workbench.context === undefined) {
+    if (workspace === "paper-desk" && workbench.context === undefined) {
       return {
         outcome: "context-unavailable",
         detail:
@@ -478,6 +505,9 @@ export const createWorkbenchSession = (
         activeWorkspace: workspace,
         ...(selectedContext === undefined ? {} : { selectedContext }),
         ...(readingPosition === undefined ? {} : { readingPosition }),
+        ...(selectedWorkingMaterialPath === undefined
+          ? {}
+          : { selectedWorkingMaterialPath }),
       });
     } catch {
       return {
@@ -523,6 +553,10 @@ export const createWorkbenchSession = (
             selectedRepository.context?.sourceRecord.id
         ) {
           workbench.readingPosition = readingPosition;
+        }
+
+        if (selectedWorkingMaterialPath !== undefined) {
+          workbench.selectedWorkingMaterialPath = selectedWorkingMaterialPath;
         }
       }
 
@@ -616,6 +650,28 @@ export const createWorkbenchSession = (
       }
 
       return transitionToWorkspace("studio");
+    },
+    openWorkingMaterialInStudio: async (
+      path,
+    ): Promise<WorkspaceTransitionOutcome> => {
+      const repository = selectedRepository;
+      if (
+        repository === undefined ||
+        !/^scratch\/[a-z0-9-]+\.md$/u.test(path)
+      ) {
+        return {
+          outcome: "context-unavailable",
+          detail: "The selected Working Material note is not available.",
+        };
+      }
+
+      const priorPath = selectedWorkingMaterialPath;
+      selectedWorkingMaterialPath = path;
+      const outcome = await transitionToWorkspace("studio");
+      if (outcome.outcome !== "transitioned") {
+        selectedWorkingMaterialPath = priorPath;
+      }
+      return outcome;
     },
     openSourceRecordInPaperDesk: async (
       sourceRecordId,

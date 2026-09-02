@@ -44,6 +44,11 @@ import type {
   PrepareAskRequest,
   PrepareAskOutcome,
 } from "../modules/discovery";
+import type {
+  RepositoryNavigationOpenOutcome,
+  RepositoryNavigationReadOutcome,
+} from "../modules/repository-navigation";
+import type { WorkingMaterialNoteOutcome } from "../modules/working-material-authoring";
 
 declare global {
   interface Window {
@@ -65,6 +70,19 @@ declare global {
       ): Promise<AuthoringOperationOutcome>;
       undoAuthoringSemanticText(): Promise<AuthoringOperationOutcome>;
       setAuthoringMode(mode: AuthoringMode): Promise<AuthoringOperationOutcome>;
+      readRepositoryTree(): Promise<RepositoryNavigationReadOutcome>;
+      openRepositoryEntry(
+        path: string,
+      ): Promise<RepositoryNavigationOpenOutcome>;
+      openWorkingMaterialInStudio(
+        path: string,
+      ): Promise<WorkspaceTransitionOutcome>;
+      readWorkingMaterialNote(): Promise<WorkingMaterialNoteOutcome>;
+      createWorkingMaterialNote(): Promise<WorkingMaterialNoteOutcome>;
+      editWorkingMaterialNote(
+        title: string,
+        body: string,
+      ): Promise<WorkingMaterialNoteOutcome>;
       readProposalReview(): Promise<ProposalReviewReadOutcome>;
       readAtlasOrientation(): Promise<AtlasOrientationReadOutcome>;
       editLearningRouteTitle(

@@ -61,6 +61,14 @@ import {
   type AuthoringReadOutcome,
   type KnowledgeAuthoring,
 } from "../modules/knowledge-authoring";
+import { createFileBackedRepositoryNavigation } from "../adapters/knowledge-repository/file-backed-repository-navigation";
+import { createRepositoryNavigation } from "../modules/repository-navigation";
+import { createFileBackedWorkingMaterialNoteRepository } from "../adapters/working-material/file-backed-working-material-note-repository";
+import {
+  createWorkingMaterialNoteAuthoring,
+  type WorkingMaterialNoteAuthoring,
+  type WorkingMaterialNoteOutcome,
+} from "../modules/working-material-authoring";
 import { createSourceProcessing } from "../modules/source-processing";
 import { createSynthesisLifecycle } from "../modules/synthesis-lifecycle";
 import {
@@ -209,6 +217,12 @@ const workbenchIpcChannels = [
   "workbench:undo-authoring-semantic-text",
   "workbench:open-authoring-construct",
   "workbench:set-authoring-mode",
+  "workbench:read-repository-tree",
+  "workbench:open-repository-entry",
+  "workbench:open-working-material-in-studio",
+  "workbench:read-working-material-note",
+  "workbench:create-working-material-note",
+  "workbench:edit-working-material-note",
   "workbench:read-proposal-review",
   "workbench:read-atlas-orientation",
   "workbench:edit-learning-route-title",
@@ -500,6 +514,62 @@ const createWindow = async (): Promise<void> => {
       outcome: "not-available",
       detail: "A Knowledge Repository must be selected first.",
     };
+  let noteAuthoringRepositoryPath: string | undefined;
+  let noteAuthoring: WorkingMaterialNoteAuthoring | undefined;
+  const getNoteAuthoring = async (): Promise<
+    WorkingMaterialNoteAuthoring | undefined
+  > => {
+    const workbench = await workbenchSession.openFreshWorkbench();
+    if (workbench.repositoryPath === undefined) return undefined;
+    if (
+      noteAuthoring !== undefined &&
+      noteAuthoringRepositoryPath === workbench.repositoryPath
+    ) {
+      return noteAuthoring;
+    }
+    noteAuthoringRepositoryPath = workbench.repositoryPath;
+    noteAuthoring = createWorkingMaterialNoteAuthoring(
+      createFileBackedWorkingMaterialNoteRepository(workbench.repositoryPath),
+    );
+    return noteAuthoring;
+  };
+  const readWorkingMaterialNote =
+    async (): Promise<WorkingMaterialNoteOutcome> => {
+      const authoring = await getNoteAuthoring();
+      if (authoring === undefined) {
+        return {
+          outcome: "not-found",
+          detail: "A Knowledge Repository must be selected first.",
+        };
+      }
+      const workbench = await workbenchSession.openFreshWorkbench();
+      return workbench.selectedWorkingMaterialPath === undefined
+        ? authoring.readNote()
+        : authoring.openNote(workbench.selectedWorkingMaterialPath);
+    };
+  const createWorkingMaterialNote =
+    async (): Promise<WorkingMaterialNoteOutcome> =>
+      (await getNoteAuthoring())?.createNote() ?? {
+        outcome: "unavailable",
+        detail: "A Knowledge Repository must be selected first.",
+      };
+  const editWorkingMaterialNote = async (
+    title: string,
+    body: string,
+  ): Promise<WorkingMaterialNoteOutcome> => {
+    const authoring = await getNoteAuthoring();
+    const outcome =
+      authoring === undefined
+        ? {
+            outcome: "unavailable" as const,
+            detail: "A Knowledge Repository must be selected first.",
+          }
+        : await authoring.editNote({ title, body });
+    if (outcome.outcome === "available") {
+      await workbenchSession.openWorkingMaterialInStudio(outcome.note.path);
+    }
+    return outcome;
+  };
   let proposalReviewRepositoryPath: string | undefined;
   let proposalReview: ProposalReview | undefined;
   const getProposalReview = async (): Promise<ProposalReview | undefined> => {
@@ -862,6 +932,86 @@ const createWindow = async (): Promise<void> => {
 
     return setAuthoringMode(mode);
   });
+
+  registerIpcHandler("workbench:read-repository-tree", async (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+    const workbench = await workbenchSession.openFreshWorkbench();
+    if (workbench.repositoryPath === undefined) {
+      return {
+        outcome: "unavailable" as const,
+        detail: "A Knowledge Repository must be selected first.",
+      };
+    }
+    return createRepositoryNavigation(
+      createFileBackedRepositoryNavigation(workbench.repositoryPath),
+    ).readTree();
+  });
+
+  registerIpcHandler(
+    "workbench:open-repository-entry",
+    async (event, path: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (typeof path !== "string") {
+        throw new Error("Invalid repository navigation target.");
+      }
+      const workbench = await workbenchSession.openFreshWorkbench();
+      if (workbench.repositoryPath === undefined) {
+        return {
+          outcome: "unavailable" as const,
+          detail: "A Knowledge Repository must be selected first.",
+        };
+      }
+      return createRepositoryNavigation(
+        createFileBackedRepositoryNavigation(workbench.repositoryPath),
+      ).open(path);
+    },
+  );
+
+  registerIpcHandler(
+    "workbench:open-working-material-in-studio",
+    async (event, path: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (typeof path !== "string") {
+        throw new Error("Invalid Working Material note path.");
+      }
+      return composeTransitionOutcome(
+        await workbenchSession.openWorkingMaterialInStudio(path),
+      );
+    },
+  );
+
+  registerIpcHandler("workbench:read-working-material-note", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+    return readWorkingMaterialNote();
+  });
+
+  registerIpcHandler("workbench:create-working-material-note", (event) => {
+    if (event.sender !== mainWindow.webContents) {
+      throw new Error("Untrusted Workbench bridge sender.");
+    }
+    return createWorkingMaterialNote();
+  });
+
+  registerIpcHandler(
+    "workbench:edit-working-material-note",
+    (event, title: unknown, body: unknown) => {
+      if (event.sender !== mainWindow.webContents) {
+        throw new Error("Untrusted Workbench bridge sender.");
+      }
+      if (typeof title !== "string" || typeof body !== "string") {
+        throw new Error("Invalid Working Material note edit.");
+      }
+      return editWorkingMaterialNote(title, body);
+    },
+  );
 
   registerIpcHandler("workbench:read-proposal-review", (event) => {
     if (event.sender !== mainWindow.webContents) {

@@ -28,6 +28,7 @@ interface PersistedWorkbenchSession {
   activeWorkspace?: WorkbenchWorkspace;
   selectedContext?: WorkbenchContextSelection;
   readingPosition?: ReadingPosition;
+  selectedWorkingMaterialPath?: string;
 }
 
 /** Filesystem operations used by the session-state durability contract. */
@@ -76,6 +77,10 @@ const isReadingPosition = (value: unknown): value is ReadingPosition => {
   );
 };
 
+const isWorkingMaterialPath = (value: unknown): value is string =>
+  value === undefined ||
+  (typeof value === "string" && /^scratch\/[a-z0-9-]+\.md$/u.test(value));
+
 const isContextSelection = (
   value: unknown,
 ): value is WorkbenchContextSelection => {
@@ -106,7 +111,8 @@ const isPersistedWorkbenchSession = (
     isWorkbenchTheme(value.theme) &&
     isWorkbenchWorkspace(value.activeWorkspace) &&
     isContextSelection(value.selectedContext) &&
-    isReadingPosition(value.readingPosition)
+    isReadingPosition(value.readingPosition) &&
+    isWorkingMaterialPath(value.selectedWorkingMaterialPath)
   );
 };
 
@@ -169,6 +175,11 @@ export const createFileBackedWorkbenchSessionState = (
         ...(parsed.readingPosition === undefined
           ? {}
           : { readingPosition: parsed.readingPosition }),
+        ...(parsed.selectedWorkingMaterialPath === undefined
+          ? {}
+          : {
+              selectedWorkingMaterialPath: parsed.selectedWorkingMaterialPath,
+            }),
       };
     } catch {
       return undefined;

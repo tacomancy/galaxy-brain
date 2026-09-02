@@ -51,6 +51,11 @@ import type {
   PrepareAskRequest,
   PrepareAskOutcome,
 } from "../modules/discovery";
+import type {
+  RepositoryNavigationOpenOutcome,
+  RepositoryNavigationReadOutcome,
+} from "../modules/repository-navigation";
+import type { WorkingMaterialNoteOutcome } from "../modules/working-material-authoring";
 
 contextBridge.exposeInMainWorld("workbench", {
   // The main process owns session composition; the renderer receives only the
@@ -78,6 +83,25 @@ contextBridge.exposeInMainWorld("workbench", {
     ipcRenderer.invoke("workbench:undo-authoring-semantic-text"),
   setAuthoringMode: (mode: AuthoringMode): Promise<AuthoringOperationOutcome> =>
     ipcRenderer.invoke("workbench:set-authoring-mode", mode),
+  readRepositoryTree: (): Promise<RepositoryNavigationReadOutcome> =>
+    ipcRenderer.invoke("workbench:read-repository-tree"),
+  openRepositoryEntry: (
+    path: string,
+  ): Promise<RepositoryNavigationOpenOutcome> =>
+    ipcRenderer.invoke("workbench:open-repository-entry", path),
+  openWorkingMaterialInStudio: (
+    path: string,
+  ): Promise<WorkspaceTransitionOutcome> =>
+    ipcRenderer.invoke("workbench:open-working-material-in-studio", path),
+  readWorkingMaterialNote: (): Promise<WorkingMaterialNoteOutcome> =>
+    ipcRenderer.invoke("workbench:read-working-material-note"),
+  createWorkingMaterialNote: (): Promise<WorkingMaterialNoteOutcome> =>
+    ipcRenderer.invoke("workbench:create-working-material-note"),
+  editWorkingMaterialNote: (
+    title: string,
+    body: string,
+  ): Promise<WorkingMaterialNoteOutcome> =>
+    ipcRenderer.invoke("workbench:edit-working-material-note", title, body),
   readProposalReview: (): Promise<ProposalReviewReadOutcome> =>
     ipcRenderer.invoke("workbench:read-proposal-review"),
   readAtlasOrientation: (): Promise<AtlasOrientationReadOutcome> =>
